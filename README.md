@@ -1,2 +1,57 @@
-# fin-avatar
-Privacy-focused SVG avatar generator for Filament.
+# FinAvatar for Filament
+
+A privacy-focused, high-performance avatar provider for Filament V4.
+It generates SVGs locally using a dedicated route, ensuring **zero external requests** (GDPR compliant) and utilizing **browser caching** for instant loads.
+
+
+## Features
+- Zero External APIs: No data sent to ui-avatars.com or Gravatar.
+
+- Smart Initials: Automatically strips "Mr.", "Dr.", "PhD" etc.
+
+- Theme Aware: Uses your Filament Panel's primary color automatically.
+
+- High Performance: SVGs are cached by the browser for 1 year.
+
+
+## Installation
+You can install the package via composer:
+```bash
+composer require finity-labs/fin-avatar
+```
+Running the install command will configure the selected panel automatically:
+```bash
+php artisan finity-labs:install
+```
+
+## Usage
+
+Add in AdminPanelProvider.php:
+
+```php
+use FinityLabs\FinAvatar\Providers\UiTextAvatarsProvider;
+
+public function panel(Panel $panel): Panel
+{
+    return $panel
+        // ...
+        ->defaultAvatarProvider(UiTextAvatarsProvider::class);
+}
+```
+
+## Configuration (Optional)
+
+Publish the config file to customize ignored prefixes (like "Mr", "Dr"), default background color and text color:
+
+```php
+php artisan vendor:publish --tag=fin-avatar-config
+```
+:bulb: `Note: Leave default_bg null to use theme color as background.`
+
+## Credits
+
+- [Finity Labs](https://github.com/finity-labs)
+
+## License
+
+The MIT License (MIT). Please see [License File](LICENSE) for more information.
