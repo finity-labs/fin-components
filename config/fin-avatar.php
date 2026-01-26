@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -24,6 +26,6 @@ return [
     | Leave default_bg null to use theme color as background.
     |
     */
-    'default_bg' => null, //'#1f2937', // Gray 950
+    'default_bg' => null, // '#1f2937', // Gray 950
     'default_text' => '#ffffff',
 ];

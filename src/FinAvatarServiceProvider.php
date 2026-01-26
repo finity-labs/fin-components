@@ -1,12 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace FinityLabs\FinAvatar;
 
 use FinityLabs\FinAvatar\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
-
-use function Laravel\Prompts\select;
 
 class FinAvatarServiceProvider extends PackageServiceProvider
 {

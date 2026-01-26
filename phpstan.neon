@@ -1,0 +1,18 @@
+includes:
+    - ./vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - src
+        - config
+
+    # Level 9 is the highest level (0-9)
+    level: 5
+
+    ignoreErrors:
+        # Ignore common false positives if necessary
+        # - '#Unsafe usage of new static#'
+
+    excludePaths:
+        - ./build/*
+        - ./vendor/*

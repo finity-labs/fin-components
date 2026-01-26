@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace FinityLabs\FinAvatar\AvatarProviders;
 
 use Filament\AvatarProviders\Contracts;
@@ -15,10 +17,10 @@ class UiAvatarsProvider implements Contracts\AvatarProvider
     public function get(Model | Authenticatable $record): string
     {
         $name = Filament::getNameForDefaultAvatar($record);
-        
+
         // Normalize all parts to lowercase and remove dots
         $partsToRemove = collect(config('fin-avatar.ignored_parts', []))
-            ->map(fn($part) => Str::lower(rtrim($part, '.')))
+            ->map(fn ($part) => Str::lower(rtrim($part, '.')))
             ->all();
 
         $initials = str($name)
@@ -39,14 +41,14 @@ class UiAvatarsProvider implements Contracts\AvatarProvider
             // Get shade 600 or 500, default to Filament default
             $shade = $primary[600] ?? $primary[500] ?? FilamentColor::getColor('gray')[950] ?? Color::Gray[950];
         }
-        
+
         // Handle Tailwind "rgb" strings vs Hex
-        $bgCss = str_contains((string)$shade, ',') ? "rgb($shade)" : $shade;
+        $bgCss = str_contains((string) $shade, ',') ? "rgb($shade)" : $shade;
 
         // 4. Return URL
         return route('fin-avatar.render', [
             'initials' => $initials,
-            'bg' => $bgCss
+            'bg' => $bgCss,
         ]);
     }
 }

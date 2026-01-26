@@ -16,9 +16,18 @@
         "illuminate/support": "^11.28|^12.0",
         "spatie/laravel-package-tools": "^1.9"
     },
+    "require-dev": {
+        "laravel/pint": "^1.27",
+        "phpstan/phpstan": "^2.1",
+        "larastan/larastan": "^3.9",
+        "pestphp/pest": "^3.8",
+        "pestphp/pest-plugin-laravel": "^3.2",
+        "orchestra/testbench": "^10.9"
+    },
     "autoload": {
         "psr-4": {
-            "FinityLabs\\FinAvatar\\": "src/"
+            "FinityLabs\\FinAvatar\\": "src/",
+            "FinityLabs\\FinAvatar\\Tests\\": "tests/"
         }
     },
     "extra": {
@@ -26,6 +35,22 @@
             "providers": [
                 "FinityLabs\\FinAvatar\\FinAvatarServiceProvider"
             ]
+        }
+    },
+    "scripts": {
+        "format": "vendor/bin/pint -v",
+        "test:style": "vendor/bin/pint --test -v",
+        "analyse": "vendor/bin/phpstan analyse",
+        "test": "vendor/bin/pest",
+        "check-all": [
+            "@test:style",
+            "@analyse",
+            "@test"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
         }
     },
     "minimum-stability": "dev",

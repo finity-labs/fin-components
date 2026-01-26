@@ -15,12 +15,12 @@ class InstallCommand extends Command
 {
     /** @var string */
     protected $signature = 'fin-avatar:install {panel?}';
-    
+
     public function handle(): int
     {
         $panelId = $this->argument('panel') ?: select(
             label: 'Which Panel would you like to install for?',
-            options: collect(Filament::getPanels())->keys(),
+            options: collect(Filament::getPanels())->keys()->all(),
             required: true
         );
 
@@ -45,23 +45,25 @@ class InstallCommand extends Command
 
         if (! str_contains($content, 'use FinityLabs\FinAvatar\AvatarProviders\UiAvatarsProvider;')) {
             $lines = explode(PHP_EOL, $content);
-            
+
             $found = false;
-            for($i = 0; $i < count($lines); $i++) {
+            for ($i = 0; $i < count($lines); $i++) {
                 if (str_starts_with($lines[$i], 'use ')) {
                     $found = true;
-                } else if ($found) {
+                } elseif ($found) {
                     array_splice($lines, $i, 0, 'use FinityLabs\FinAvatar\AvatarProviders\UiAvatarsProvider;');
+
                     break;
                 }
             }
-            
+
             $found = false;
-            for($i = 0; $i < count($lines); $i++) {
+            for ($i = 0; $i < count($lines); $i++) {
                 if (str_contains($lines[$i], '->login()')) {
                     $found = true;
-                } else if ($found) {
+                } elseif ($found) {
                     array_splice($lines, $i, 0, '            ->defaultAvatarProvider(UiAvatarsProvider::class)');
+
                     break;
                 }
             }
@@ -70,7 +72,8 @@ class InstallCommand extends Command
 
             file_put_contents(
                 $panelPath,
-                $content);
+                $content
+            );
         }
 
         return Command::SUCCESS;
