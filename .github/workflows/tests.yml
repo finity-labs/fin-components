@@ -13,14 +13,13 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.2, 8.3]
-        laravel: [10.*, 11.*]
+        # Laravel 12 supports PHP 8.2+
+        php: [8.2, 8.3, 8.4]
+        # Only test Laravel 12
+        laravel: [12.*]
+        # Testbench 10 matches Laravel 12
+        testbench: [10.*]
         dependency-version: [prefer-stable]
-        include:
-          - laravel: 10.*
-            testbench: 8.*
-          - laravel: 11.*
-            testbench: 9.*
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
 
@@ -36,8 +35,9 @@ jobs:
           coverage: none
 
       - name: Install dependencies
+        # Simple command again! No "if" statements needed.
         run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
+          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update --dev
           composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction
 
       - name: Execute tests
