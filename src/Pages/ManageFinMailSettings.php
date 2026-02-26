@@ -7,6 +7,7 @@ namespace FinityLabs\FinMail\Pages;
 use BackedEnum;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -17,6 +18,7 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinMail\Enums\CleanupFrequency;
 use FinityLabs\FinMail\Enums\NavigationGroup;
 use FinityLabs\FinMail\Settings\AttachmentSettings;
 use FinityLabs\FinMail\Settings\BrandingSettings;
@@ -71,6 +73,8 @@ class ManageFinMailSettings extends SettingsPage
             'enabled' => $logging->enabled,
             'store_rendered_body' => $logging->store_rendered_body,
             'retention_days' => $logging->retention_days,
+            'cleanup_enabled' => $logging->cleanup_enabled,
+            'cleanup_frequency' => $logging->cleanup_frequency->value,
         ];
 
         $attachment = app(AttachmentSettings::class);
@@ -299,6 +303,22 @@ class ManageFinMailSettings extends SettingsPage
                             ->maxValue(3650)
                             ->helperText(__('fin-mail::fin-mail.settings.fields.retention_days_helper')),
                     ]),
+
+                Section::make(__('fin-mail::fin-mail.settings.sections.cleanup'))
+                    ->description(__('fin-mail::fin-mail.settings.sections.cleanup_description'))
+                    ->schema([
+                        Toggle::make('cleanup_enabled')
+                            ->label(__('fin-mail::fin-mail.settings.fields.cleanup_enabled'))
+                            ->helperText(__('fin-mail::fin-mail.settings.fields.cleanup_enabled_helper'))
+                            ->live(),
+
+                        Select::make('cleanup_frequency')
+                            ->label(__('fin-mail::fin-mail.settings.fields.cleanup_frequency'))
+                            ->options(CleanupFrequency::class)
+                            ->native(false)
+                            ->required()
+                            ->visible(fn (callable $get): bool => (bool) $get('cleanup_enabled')),
+                    ]),
             ]);
     }
 
@@ -357,6 +377,8 @@ class ManageFinMailSettings extends SettingsPage
         $logging->enabled = (bool) ($this->loggingData['enabled'] ?? true);
         $logging->store_rendered_body = (bool) ($this->loggingData['store_rendered_body'] ?? true);
         $logging->retention_days = isset($this->loggingData['retention_days']) ? (int) $this->loggingData['retention_days'] : null;
+        $logging->cleanup_enabled = (bool) ($this->loggingData['cleanup_enabled'] ?? false);
+        $logging->cleanup_frequency = CleanupFrequency::from((int) ($this->loggingData['cleanup_frequency'] ?? CleanupFrequency::Daily->value));
         $logging->save();
 
         // Save AttachmentSettings

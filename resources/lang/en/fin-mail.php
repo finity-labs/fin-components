@@ -336,6 +336,8 @@ return [
             'customer_service' => 'Customer Service',
             'logging' => 'Email Logging',
             'logging_description' => 'Control how sent emails are recorded in the database.',
+            'cleanup' => 'Scheduled Cleanup',
+            'cleanup_description' => 'Automatically delete old sent email records on a schedule.',
             'attachment_rules' => 'Attachment Rules',
             'attachment_rules_description' => 'Configure limits for file attachments in composed emails.',
         ],
@@ -374,6 +376,9 @@ return [
             'store_rendered_body_helper' => 'Save the final HTML of each sent email. Required for resend and preview features.',
             'retention_days' => 'Retention (days)',
             'retention_days_helper' => 'Auto-delete sent email records after this many days. Leave empty to keep forever.',
+            'cleanup_enabled' => 'Enable Scheduled Cleanup',
+            'cleanup_enabled_helper' => 'Automatically run the cleanup command on a schedule.',
+            'cleanup_frequency' => 'Cleanup Frequency',
             'max_file_size' => 'Max File Size (MB)',
             'allowed_extensions' => 'Allowed File Extensions',
             'allowed_extensions_placeholder' => 'Add extension (e.g., pdf)',
@@ -393,6 +398,12 @@ return [
             2 => 'Queued',
             3 => 'Sent',
             4 => 'Failed',
+        ],
+
+        'cleanup_frequency' => [
+            1 => 'Daily',
+            2 => 'Weekly',
+            3 => 'Monthly',
         ],
 
         'template_category' => [

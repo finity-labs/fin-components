@@ -80,20 +80,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Scheduling
-    |--------------------------------------------------------------------------
-    |
-    | When enabled, the plugin will automatically register the cleanup command
-    | in Laravel's scheduler. No manual Kernel/console.php configuration needed.
-    |
-    */
-    'schedule' => [
-        'cleanup_enabled' => false,
-        'cleanup_frequency' => 'daily', // daily, weekly, monthly
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Token Replacement
     |--------------------------------------------------------------------------
     |

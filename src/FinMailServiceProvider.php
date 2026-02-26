@@ -83,23 +83,19 @@ class FinMailServiceProvider extends PackageServiceProvider
 
     protected function registerScheduledCommands(): void
     {
-        if (! config('fin-mail.schedule.cleanup_enabled')) {
+        $logging = app(Settings\LoggingSettings::class);
+
+        if (! $logging->cleanup_enabled) {
             return;
         }
 
         $this->app->afterResolving(
             \Illuminate\Console\Scheduling\Schedule::class,
-            function (\Illuminate\Console\Scheduling\Schedule $schedule): void {
-                $frequency = config('fin-mail.schedule.cleanup_frequency', 'daily');
-
+            function (\Illuminate\Console\Scheduling\Schedule $schedule) use ($logging): void {
                 $event = $schedule->command('fin-mail:cleanup')
                     ->description('Clean up old sent email records');
 
-                match ($frequency) {
-                    'weekly' => $event->weekly(),
-                    'monthly' => $event->monthly(),
-                    default => $event->daily(),
-                };
+                $event->{$logging->cleanup_frequency->cronMethod()}();
             }
         );
     }

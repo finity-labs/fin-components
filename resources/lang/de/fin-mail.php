@@ -336,6 +336,8 @@ return [
             'customer_service' => 'Kundenservice',
             'logging' => 'E-Mail-Protokollierung',
             'logging_description' => 'Steuern Sie, wie gesendete E-Mails in der Datenbank aufgezeichnet werden.',
+            'cleanup' => 'Geplante Bereinigung',
+            'cleanup_description' => 'Alte gesendete E-Mail-Einträge automatisch nach Zeitplan löschen.',
             'attachment_rules' => 'Anhang-Regeln',
             'attachment_rules_description' => 'Beschränkungen für Dateianhänge in verfassten E-Mails konfigurieren.',
         ],
@@ -374,6 +376,9 @@ return [
             'store_rendered_body_helper' => 'Das finale HTML jeder gesendeten E-Mail speichern. Erforderlich für erneutes Senden und Vorschau.',
             'retention_days' => 'Aufbewahrung (Tage)',
             'retention_days_helper' => 'Gesendete E-Mail-Einträge nach dieser Anzahl von Tagen automatisch löschen. Leer lassen, um sie für immer aufzubewahren.',
+            'cleanup_enabled' => 'Geplante Bereinigung aktivieren',
+            'cleanup_enabled_helper' => 'Den Bereinigungsbefehl automatisch nach Zeitplan ausführen.',
+            'cleanup_frequency' => 'Bereinigungshäufigkeit',
             'max_file_size' => 'Max. Dateigröße (MB)',
             'allowed_extensions' => 'Erlaubte Dateierweiterungen',
             'allowed_extensions_placeholder' => 'Erweiterung hinzufügen (z.B. pdf)',
@@ -393,6 +398,12 @@ return [
             2 => 'In Warteschlange',
             3 => 'Gesendet',
             4 => 'Fehlgeschlagen',
+        ],
+
+        'cleanup_frequency' => [
+            1 => 'Täglich',
+            2 => 'Wöchentlich',
+            3 => 'Monatlich',
         ],
 
         'template_category' => [

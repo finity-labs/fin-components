@@ -336,6 +336,8 @@ return [
             'customer_service' => 'Ügyfélszolgálat',
             'logging' => 'E-mail naplózás',
             'logging_description' => 'Az elküldött e-mailek adatbázisban történő rögzítésének vezérlése.',
+            'cleanup' => 'Ütemezett tisztítás',
+            'cleanup_description' => 'Régi elküldött e-mail bejegyzések automatikus törlése ütemezetten.',
             'attachment_rules' => 'Melléklet szabályok',
             'attachment_rules_description' => 'Fájlmellékletek korlátainak beállítása a szerkesztett e-mailekhez.',
         ],
@@ -374,6 +376,9 @@ return [
             'store_rendered_body_helper' => 'Minden elküldött e-mail végleges HTML-jének mentése. Szükséges az újraküldés és előnézet funkciókhoz.',
             'retention_days' => 'Megőrzés (napok)',
             'retention_days_helper' => 'Elküldött e-mail bejegyzések automatikus törlése ennyi nap után. Hagyja üresen a végleges megőrzéshez.',
+            'cleanup_enabled' => 'Ütemezett tisztítás engedélyezése',
+            'cleanup_enabled_helper' => 'A tisztítás parancs automatikus futtatása ütemezetten.',
+            'cleanup_frequency' => 'Tisztítás gyakorisága',
             'max_file_size' => 'Max. fájlméret (MB)',
             'allowed_extensions' => 'Engedélyezett kiterjesztések',
             'allowed_extensions_placeholder' => 'Kiterjesztés hozzáadása (pl. pdf)',
@@ -393,6 +398,12 @@ return [
             2 => 'Várakozik',
             3 => 'Elküldve',
             4 => 'Sikertelen',
+        ],
+
+        'cleanup_frequency' => [
+            1 => 'Naponta',
+            2 => 'Hetente',
+            3 => 'Havonta',
         ],
 
         'template_category' => [
