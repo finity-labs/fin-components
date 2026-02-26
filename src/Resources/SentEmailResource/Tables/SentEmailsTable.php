@@ -7,6 +7,7 @@ namespace FinityLabs\FinMail\Resources\SentEmailResource\Tables;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -84,7 +85,7 @@ class SentEmailsTable
                     ->modalContent(fn ($record) => view('fin-mail::components.sent-email-detail', [
                         'email' => $record,
                     ]))
-                    ->modalWidth('5xl')
+                    ->modalWidth(Width::FiveExtraLarge)
                     ->modalSubmitAction(false),
 
                 Action::make('resend')

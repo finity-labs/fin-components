@@ -6,6 +6,7 @@ namespace FinityLabs\FinMail\Actions;
 
 use Closure;
 use Filament\Actions\Action;
+use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -47,7 +48,7 @@ class SendEmailAction extends Action
             ->icon('heroicon-o-paper-airplane')
             ->modal()
             ->modalHeading(__('fin-mail::fin-mail.send_action.modal_heading'))
-            ->modalWidth('5xl')
+            ->modalWidth(Width::FiveExtraLarge)
             ->modalSubmitActionLabel(__('fin-mail::fin-mail.send_action.submit'))
             ->form(fn (?Model $record): array => $this->getComposeForm($record))
             ->action(fn (array $data, ?Model $record): mixed => $this->sendEmail($data, $record))

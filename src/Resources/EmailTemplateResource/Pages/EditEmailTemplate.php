@@ -9,6 +9,7 @@ use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Enums\Width;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\EmailTemplateResource;
 use FinityLabs\FinMail\Settings\MailSettings;
 
@@ -91,7 +92,7 @@ class EditEmailTemplate extends EditRecord
                 ->modalContent(fn () => view('fin-mail::components.email-preview', [
                     'html' => $this->record->body,
                 ]))
-                ->modalWidth('4xl')
+                ->modalWidth(Width::FourExtraLarge)
                 ->modalSubmitAction(false),
 
             Action::make('compose')
@@ -107,7 +108,7 @@ class EditEmailTemplate extends EditRecord
                 ->modalContent(fn () => view('fin-mail::components.version-history', [
                     'versions' => $this->record->versions()->with('createdBy')->latest('version')->limit(20)->get(),
                 ]))
-                ->modalWidth('3xl')
+                ->modalWidth(Width::ThreeExtraLarge)
                 ->modalSubmitAction(false)
                 ->visible(fn (): bool => (bool) config('fin-mail.versioning.enabled')),
 

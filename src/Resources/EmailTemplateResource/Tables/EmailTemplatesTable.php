@@ -13,6 +13,7 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -86,7 +87,7 @@ class EmailTemplatesTable
                         ->modalContent(fn ($record) => view('fin-mail::components.email-preview', [
                             'html' => $record->body,
                         ]))
-                        ->modalWidth('4xl')
+                        ->modalWidth(Width::FourExtraLarge)
                         ->modalSubmitAction(false),
 
                     Action::make('send_test')

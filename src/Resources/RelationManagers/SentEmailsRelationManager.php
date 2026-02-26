@@ -7,6 +7,7 @@ namespace FinityLabs\FinMail\Resources\RelationManagers;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -84,7 +85,7 @@ class SentEmailsRelationManager extends RelationManager
                     ->modalContent(fn ($record) => view('fin-mail::components.email-preview', [
                         'html' => $record->rendered_body,
                     ]))
-                    ->modalWidth('4xl')
+                    ->modalWidth(Width::FourExtraLarge)
                     ->modalSubmitAction(false)
                     ->visible(fn ($record): bool => (bool) $record->rendered_body),
 
