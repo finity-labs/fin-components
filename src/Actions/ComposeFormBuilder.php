@@ -16,7 +16,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use FinityLabs\FinMail\Contracts\EditorContract;
 use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Settings\AttachmentSettings;
-use FinityLabs\FinMail\Settings\MailSettings;
+use FinityLabs\FinMail\Settings\GeneralSettings;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -65,7 +65,7 @@ class ComposeFormBuilder
         $rendered = $template?->render($models) ?? ['subject' => '', 'body' => '', 'preheader' => ''];
         $recipient = $this->resolveRecipient();
 
-        $mailSettings = app(MailSettings::class);
+        $mailSettings = app(GeneralSettings::class);
 
         $senders = collect($mailSettings->additional_senders)
             ->prepend(['address' => $mailSettings->default_from_address, 'name' => $mailSettings->default_from_name])

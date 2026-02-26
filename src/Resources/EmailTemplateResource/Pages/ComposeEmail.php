@@ -14,7 +14,7 @@ use FinityLabs\FinMail\Actions\EmailSender;
 use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\EmailTemplateResource;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\Schemas\ComposeEmailForm;
-use FinityLabs\FinMail\Settings\MailSettings;
+use FinityLabs\FinMail\Settings\GeneralSettings;
 
 /**
  * Full-page compose screen.
@@ -44,7 +44,7 @@ class ComposeEmail extends Page
 
         $this->form->fill([
             'template_key' => $record->key,
-            'from' => $record->from['address'] ?? app(MailSettings::class)->default_from_address,
+            'from' => $record->from['address'] ?? app(GeneralSettings::class)->default_from_address,
             'to' => [],
             'cc' => [],
             'bcc' => [],

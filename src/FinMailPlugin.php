@@ -7,7 +7,6 @@ namespace FinityLabs\FinMail;
 use Closure;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
-use FinityLabs\FinMail\Pages\ManageFinMailSettings;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\EmailTemplateResource;
 use FinityLabs\FinMail\Resources\EmailThemeResource\EmailThemeResource;
 use FinityLabs\FinMail\Resources\SentEmailResource\SentEmailResource;
@@ -50,10 +49,8 @@ class FinMailPlugin implements Plugin
         }
 
         $panel
-            ->resources($resources)
-            ->pages([
-                ManageFinMailSettings::class,
-            ]);
+            ->discoverClusters(in: __DIR__.'/Clusters', for: 'FinityLabs\\FinMail\\Clusters')
+            ->resources($resources);
     }
 
     public function boot(Panel $panel): void

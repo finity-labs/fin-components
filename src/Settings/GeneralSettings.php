@@ -6,7 +6,7 @@ namespace FinityLabs\FinMail\Settings;
 
 use Spatie\LaravelSettings\Settings;
 
-class MailSettings extends Settings
+class GeneralSettings extends Settings
 {
     public string $default_from_address;
 
@@ -36,7 +36,7 @@ class MailSettings extends Settings
             'additional_senders' => [],
             'default_locale' => config('app.locale', 'en'),
             'languages' => [
-                'en' => ['display' => 'English', 'flag-icon' => 'gb'],
+                ['code' => 'en', 'display' => 'English', 'flag-icon' => 'gb'],
             ],
             'categories' => [
                 'transactional' => 'Transactional',

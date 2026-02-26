@@ -4,10 +4,8 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinMail;
 
-use Carbon\Carbon;
 use FinityLabs\FinMail\Contracts\EditorContract;
 use FinityLabs\FinMail\Editors\DefaultEditor;
-use Illuminate\Support\Str;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -30,7 +28,7 @@ class FinMailServiceProvider extends PackageServiceProvider
                 '../settings/create_attachment_settings',
                 '../settings/create_branding_settings',
                 '../settings/create_logging_settings',
-                '../settings/create_mail_settings',
+                '../settings/create_general_settings',
             ])
             ->hasCommands([
                 Commands\InstallCommand::class,

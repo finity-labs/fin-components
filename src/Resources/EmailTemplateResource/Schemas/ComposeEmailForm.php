@@ -9,7 +9,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -17,7 +16,7 @@ use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinMail\Contracts\EditorContract;
 use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Settings\AttachmentSettings;
-use FinityLabs\FinMail\Settings\MailSettings;
+use FinityLabs\FinMail\Settings\GeneralSettings;
 
 class ComposeEmailForm
 {
@@ -25,7 +24,7 @@ class ComposeEmailForm
     {
         $editor = app(EditorContract::class);
 
-        $mailSettings = app(MailSettings::class);
+        $mailSettings = app(GeneralSettings::class);
 
         $senders = collect($mailSettings->additional_senders)
             ->prepend(['address' => $mailSettings->default_from_address, 'name' => $mailSettings->default_from_name])
@@ -85,9 +84,9 @@ class ComposeEmailForm
                             ]),
                     ]),
 
-            Group::make()
-                ->columnSpan(['lg' => 1])
-                ->schema([
+                Group::make()
+                    ->columnSpan(['lg' => 1])
+                    ->schema([
                         Section::make(__('fin-mail::fin-mail.compose.sections.attachments'))
                             ->icon(Heroicon::OutlinedPaperClip)
                             ->schema([
@@ -116,7 +115,7 @@ class ComposeEmailForm
                                             ->all();
                                     }),
                             ]),
-                ]),
-        ])->statePath('data');
+                    ]),
+            ])->statePath('data');
     }
 }

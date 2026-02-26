@@ -7,8 +7,8 @@ namespace FinityLabs\FinMail\Commands;
 use FinityLabs\FinMail\Commands\Concerns\CanRegisterPlugin;
 use FinityLabs\FinMail\Commands\Concerns\DiscoversPanelProviders;
 use FinityLabs\FinMail\Enums\CleanupFrequency;
+use FinityLabs\FinMail\Settings\GeneralSettings;
 use FinityLabs\FinMail\Settings\LoggingSettings;
-use FinityLabs\FinMail\Settings\MailSettings;
 use Illuminate\Console\Command;
 
 use function Laravel\Prompts\multiselect;
@@ -128,17 +128,18 @@ class InstallCommand extends Command
 
         $languages = [];
         foreach ($selected as $code) {
-            $languages[$code] = self::LOCALE_MAP[$code]
-                ?? ['display' => strtoupper($code), 'flag-icon' => $code];
+            $meta = self::LOCALE_MAP[$code] ?? ['display' => strtoupper($code), 'flag-icon' => $code];
+            $languages[] = ['code' => $code, ...$meta];
         }
 
         try {
-            $mailSettings = app(MailSettings::class);
+            $mailSettings = app(GeneralSettings::class);
             $mailSettings->default_locale = config('app.locale', 'en');
             $mailSettings->languages = $languages;
             $mailSettings->save();
 
-            $this->info('  Locales configured: '.implode(', ', array_keys($languages)));
+            $codes = array_column($languages, 'code');
+            $this->info('  Locales configured: '.implode(', ', $codes));
         } catch (\Throwable) {
             $this->components->warn('Could not save locale settings. Configure them manually in the admin panel.');
         }

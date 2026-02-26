@@ -32,7 +32,7 @@ class UninstallCommand extends Command
         'create_attachment_settings.php',
         'create_branding_settings.php',
         'create_logging_settings.php',
-        'create_mail_settings.php',
+        'create_general_settings.php',
     ];
 
     protected $signature = 'fin-mail:uninstall';

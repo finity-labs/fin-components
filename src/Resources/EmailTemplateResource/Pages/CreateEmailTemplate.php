@@ -9,7 +9,7 @@ use Filament\Actions\ActionGroup;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\EmailTemplateResource;
-use FinityLabs\FinMail\Settings\MailSettings;
+use FinityLabs\FinMail\Settings\GeneralSettings;
 
 class CreateEmailTemplate extends CreateRecord
 {
@@ -19,7 +19,7 @@ class CreateEmailTemplate extends CreateRecord
 
     public function mount(): void
     {
-        $this->activeLocale = app(MailSettings::class)->default_locale;
+        $this->activeLocale = app(GeneralSettings::class)->default_locale;
 
         parent::mount();
     }
@@ -37,17 +37,17 @@ class CreateEmailTemplate extends CreateRecord
 
     protected function getHeaderActions(): array
     {
-        $languages = app(MailSettings::class)->languages;
+        $languages = app(GeneralSettings::class)->languages;
 
         return [
             ActionGroup::make(
                 collect($languages)
                     ->map(
-                        fn (array $lang, string $code) => Action::make("locale_{$code}")
+                        fn (array $lang) => Action::make("locale_{$lang['code']}")
                             ->label($lang['display'])
-                            ->color($this->activeLocale === $code ? 'primary' : 'gray')
-                            ->action(function () use ($code): void {
-                                $this->activeLocale = $code;
+                            ->color($this->activeLocale === $lang['code'] ? 'primary' : 'gray')
+                            ->action(function () use ($lang): void {
+                                $this->activeLocale = $lang['code'];
                             })
                     )->values()->all()
             )

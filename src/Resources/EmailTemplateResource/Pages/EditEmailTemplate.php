@@ -12,7 +12,7 @@ use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\EmailTemplateResource;
-use FinityLabs\FinMail\Settings\MailSettings;
+use FinityLabs\FinMail\Settings\GeneralSettings;
 
 class EditEmailTemplate extends EditRecord
 {
@@ -22,7 +22,7 @@ class EditEmailTemplate extends EditRecord
 
     public function mount(int|string $record): void
     {
-        $this->activeLocale = app(MailSettings::class)->default_locale;
+        $this->activeLocale = app(GeneralSettings::class)->default_locale;
 
         parent::mount($record);
     }
@@ -69,16 +69,16 @@ class EditEmailTemplate extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        $languages = app(MailSettings::class)->languages;
+        $languages = app(GeneralSettings::class)->languages;
 
         return [
             ActionGroup::make(
                 collect($languages)
                     ->map(
-                        fn (array $lang, string $code) => Action::make("locale_{$code}")
+                        fn (array $lang) => Action::make("locale_{$lang['code']}")
                             ->label($lang['display'])
-                            ->color($this->activeLocale === $code ? 'primary' : 'gray')
-                            ->action(fn () => $this->switchLocale($code))
+                            ->color($this->activeLocale === $lang['code'] ? 'primary' : 'gray')
+                            ->action(fn () => $this->switchLocale($lang['code']))
                     )->values()->all()
             )
                 ->label(fn (): string => __('fin-mail::fin-mail.template.language_label', ['locale' => strtoupper($this->activeLocale)]))

@@ -7,7 +7,7 @@ namespace FinityLabs\FinMail\Database\Seeders;
 use FinityLabs\FinMail\Enums\TemplateCategory;
 use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Models\EmailTheme;
-use FinityLabs\FinMail\Settings\MailSettings;
+use FinityLabs\FinMail\Settings\GeneralSettings;
 use Illuminate\Database\Seeder;
 
 class EmailTemplateSeeder extends Seeder
@@ -69,9 +69,9 @@ class EmailTemplateSeeder extends Seeder
     protected function getConfiguredLocales(): array
     {
         try {
-            $languages = app(MailSettings::class)->languages;
+            $languages = app(GeneralSettings::class)->languages;
 
-            return array_keys($languages);
+            return array_column($languages, 'code');
         } catch (\Throwable) {
             return [app()->getLocale()];
         }

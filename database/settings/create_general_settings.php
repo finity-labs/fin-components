@@ -13,7 +13,7 @@ return new class extends SettingsMigration
         $this->migrator->add('fin-mail.additional_senders', []);
         $this->migrator->add('fin-mail.default_locale', config('app.locale', 'en'));
         $this->migrator->add('fin-mail.languages', [
-            'en' => ['display' => 'English', 'flag-icon' => 'gb'],
+            ['code' => 'en', 'display' => 'English', 'flag-icon' => 'gb'],
         ]);
         $this->migrator->add('fin-mail.categories', [
             'transactional' => 'Transactional',

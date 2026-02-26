@@ -17,7 +17,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinMail\Contracts\EditorContract;
 use FinityLabs\FinMail\Enums\TemplateCategory;
-use FinityLabs\FinMail\Settings\MailSettings;
+use FinityLabs\FinMail\Settings\GeneralSettings;
 
 class EmailTemplateForm
 {
@@ -94,11 +94,11 @@ class EmailTemplateForm
                                         TextInput::make('from.address')
                                             ->label(__('fin-mail::fin-mail.template.fields.from_address'))
                                             ->email()
-                                            ->placeholder(fn (): string => app(MailSettings::class)->default_from_address),
+                                            ->placeholder(fn (): string => app(GeneralSettings::class)->default_from_address),
 
                                         TextInput::make('from.name')
                                             ->label(__('fin-mail::fin-mail.template.fields.from_name'))
-                                            ->placeholder(fn (): string => app(MailSettings::class)->default_from_name),
+                                            ->placeholder(fn (): string => app(GeneralSettings::class)->default_from_name),
                                     ]),
                                 ])
                                 ->collapsed(),

@@ -13,8 +13,8 @@ use FinityLabs\FinMail\Events\EmailSent;
 use FinityLabs\FinMail\Mail\TemplateMail;
 use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Models\SentEmail;
+use FinityLabs\FinMail\Settings\GeneralSettings;
 use FinityLabs\FinMail\Settings\LoggingSettings;
-use FinityLabs\FinMail\Settings\MailSettings;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -124,7 +124,7 @@ class EmailSender
             return;
         }
 
-        $mailSettings = app(MailSettings::class);
+        $mailSettings = app(GeneralSettings::class);
         $templateKey = $this->data['template_key'] ?? $this->templateKey;
 
         $this->sentEmailLog = SentEmail::create([
@@ -150,7 +150,7 @@ class EmailSender
     protected function applyFromOverride(TemplateMail $mail): void
     {
         $from = $this->data['from'] ?? null;
-        $mailSettings = app(MailSettings::class);
+        $mailSettings = app(GeneralSettings::class);
 
         if ($from && $from !== $mailSettings->default_from_address) {
             $senders = collect($mailSettings->additional_senders)

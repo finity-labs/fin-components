@@ -8,7 +8,7 @@ use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Models\EmailTheme;
 use FinityLabs\FinMail\Models\SentEmail;
 use FinityLabs\FinMail\Settings\BrandingSettings;
-use FinityLabs\FinMail\Settings\MailSettings;
+use FinityLabs\FinMail\Settings\GeneralSettings;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -135,7 +135,7 @@ class TemplateMail extends Mailable implements ShouldQueue
     {
         $rendered = $this->getRendered();
 
-        $mailSettings = app(MailSettings::class);
+        $mailSettings = app(GeneralSettings::class);
 
         $from = $this->overrideFrom
             ?? $this->emailTemplate->from
