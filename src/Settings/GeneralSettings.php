@@ -20,6 +20,24 @@ class GeneralSettings extends Settings
 
     public array $categories;
 
+    /**
+     * Get categories as key => label options array.
+     *
+     * Handles both stored formats:
+     * - Sequential: [['key' => 'transactional', 'label' => 'Transactional'], ...]
+     * - Associative (legacy): ['transactional' => 'Transactional', ...]
+     *
+     * @return array<string, string>
+     */
+    public function getCategoryOptions(): array
+    {
+        if (isset($this->categories[0]) && is_array($this->categories[0])) {
+            return collect($this->categories)->pluck('label', 'key')->all();
+        }
+
+        return $this->categories;
+    }
+
     public static function group(): string
     {
         return 'fin-mail';

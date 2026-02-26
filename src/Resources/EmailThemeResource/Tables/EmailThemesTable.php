@@ -47,7 +47,7 @@ class EmailThemesTable
                     ->sortable(),
 
                 TextColumn::make('updated_at')
-                    ->dateTime('M d, Y')
+                    ->dateTime()
                     ->sortable()
                     ->toggleable(),
             ])

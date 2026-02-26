@@ -45,9 +45,7 @@ class EmailTemplateForm
                                     ->maxLength(255),
 
                                 Select::make('category')
-                                    ->options(fn (): array => collect(app(GeneralSettings::class)->categories)
-                                        ->pluck('label', 'key')
-                                        ->all())
+                                    ->options(fn (): array => app(GeneralSettings::class)->getCategoryOptions())
                                     ->default('transactional')
                                     ->native(false)
                                     ->required(),

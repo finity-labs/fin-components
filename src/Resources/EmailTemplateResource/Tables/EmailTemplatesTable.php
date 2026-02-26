@@ -47,8 +47,7 @@ class EmailTemplatesTable
 
                 TextColumn::make('category')
                     ->badge()
-                    ->formatStateUsing(fn (string $state): string => collect(app(GeneralSettings::class)->categories)
-                        ->firstWhere('key', $state)['label'] ?? $state),
+                    ->formatStateUsing(fn (string $state): string => app(GeneralSettings::class)->getCategoryOptions()[$state] ?? $state),
 
                 TextColumn::make('subject')
                     ->limit(40)
@@ -64,15 +63,13 @@ class EmailTemplatesTable
                     ->sortable(),
 
                 TextColumn::make('updated_at')
-                    ->dateTime('M d, Y')
+                    ->dateTime()
                     ->sortable()
                     ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('category')
-                    ->options(fn (): array => collect(app(GeneralSettings::class)->categories)
-                        ->pluck('label', 'key')
-                        ->all()),
+                    ->options(fn (): array => app(GeneralSettings::class)->getCategoryOptions()),
 
                 TernaryFilter::make('is_active')
                     ->label(__('fin-mail::fin-mail.template.columns.active')),
