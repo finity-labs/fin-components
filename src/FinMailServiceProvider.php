@@ -18,6 +18,7 @@ class FinMailServiceProvider extends PackageServiceProvider
         $package
             ->name(static::$name)
             ->hasConfigFile()
+            ->hasTranslations()
             ->hasViews('fin-mail')
             ->hasMigrations([
                 'create_email_themes_table',

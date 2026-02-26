@@ -7,6 +7,7 @@ namespace FinityLabs\FinMail\Resources\SentEmailResource;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
+use FinityLabs\FinMail\Enums\NavigationGroup;
 use FinityLabs\FinMail\Models\SentEmail;
 use FinityLabs\FinMail\Resources\SentEmailResource\Tables\SentEmailsTable;
 use UnitEnum;
@@ -17,13 +18,16 @@ class SentEmailResource extends Resource
 
     protected static ?string $slug = 'sent-emails';
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-inbox-stack';
+    protected static string|UnitEnum|null $navigationGroup = NavigationGroup::Email;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Email';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-inbox-stack';
 
     protected static ?int $navigationSort = 3;
 
-    protected static ?string $navigationLabel = 'Sent Emails';
+    public static function getNavigationLabel(): string
+    {
+        return __('fin-mail::fin-mail.navigation.sent-emails');
+    }
 
     public static function canCreate(): bool
     {

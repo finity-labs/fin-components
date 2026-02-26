@@ -39,7 +39,7 @@ class EmailTemplatesTable
                     ->searchable(),
 
                 TextColumn::make('translations')
-                    ->label('Locales')
+                    ->label(__('fin-mail::fin-mail.template.columns.locales'))
                     ->badge()
                     ->getStateUsing(fn ($record): array => $record->getTranslatedLocales('name')),
 
@@ -52,11 +52,11 @@ class EmailTemplatesTable
 
                 IconColumn::make('is_active')
                     ->boolean()
-                    ->label('Active'),
+                    ->label(__('fin-mail::fin-mail.template.columns.active')),
 
                 TextColumn::make('sent_emails_count')
                     ->counts('sentEmails')
-                    ->label('Sent')
+                    ->label(__('fin-mail::fin-mail.template.columns.sent'))
                     ->sortable(),
 
                 TextColumn::make('updated_at')
@@ -69,17 +69,17 @@ class EmailTemplatesTable
                     ->options(TemplateCategory::class),
 
                 TernaryFilter::make('is_active')
-                    ->label('Active'),
+                    ->label(__('fin-mail::fin-mail.template.columns.active')),
             ])
             ->deferFilters()
             ->recordAction(null)
-            ->actions([
+            ->recordActions([
                 ActionGroup::make([
                     ViewAction::make(),
                     EditAction::make(),
 
                     Action::make('preview')
-                        ->label('Preview')
+                        ->label(__('fin-mail::fin-mail.template.actions.preview'))
                         ->icon('heroicon-o-eye')
                         ->modal()
                         ->modalHeading(fn ($record): string => "Preview: {$record->name}")
@@ -90,12 +90,12 @@ class EmailTemplatesTable
                         ->modalSubmitAction(false),
 
                     Action::make('send_test')
-                        ->label('Send Test')
+                        ->label(__('fin-mail::fin-mail.template.actions.send_test'))
                         ->icon('heroicon-o-paper-airplane')
                         ->modal()
-                        ->form([
+                        ->schema([
                             TextInput::make('test_email')
-                                ->label('Send to')
+                                ->label(__('fin-mail::fin-mail.template.actions.send_test_field'))
                                 ->email()
                                 ->required()
                                 ->default(fn (): ?string => auth()->user()?->email),
@@ -110,13 +110,13 @@ class EmailTemplatesTable
                                 Mail::to($data['test_email'])->send($mail);
 
                                 Notification::make()
-                                    ->title('Test email sent!')
-                                    ->body("Sent to {$data['test_email']}")
+                                    ->title(__('fin-mail::fin-mail.template.notifications.test_sent'))
+                                    ->body(__('fin-mail::fin-mail.template.notifications.test_sent_body', ['email' => $data['test_email']]))
                                     ->success()
                                     ->send();
                             } catch (\Throwable $e) {
                                 Notification::make()
-                                    ->title('Failed to send test email')
+                                    ->title(__('fin-mail::fin-mail.template.notifications.test_failed'))
                                     ->body($e->getMessage())
                                     ->danger()
                                     ->send();
@@ -124,14 +124,14 @@ class EmailTemplatesTable
                         }),
 
                     Action::make('compose')
-                        ->label('Compose Email')
+                        ->label(__('fin-mail::fin-mail.template.actions.compose'))
                         ->icon('heroicon-o-pencil-square')
                         ->url(fn ($record): string => EmailTemplateResource::getUrl('compose', ['record' => $record])),
 
                     DeleteAction::make(),
                 ]),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),

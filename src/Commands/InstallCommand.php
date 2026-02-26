@@ -26,12 +26,14 @@ class InstallCommand extends Command
         $this->info('Installing FinMail plugin...');
         $this->newLine();
 
-        $this->comment('Publishing configuration...');
-        $this->callSilently('vendor:publish', [
-            '--tag' => 'fin-mail-config',
-            '--force' => $this->option('force'),
-        ]);
-        $this->info('  Config published to config/fin-mail.php');
+        if ($this->confirm('Publish configuration file?', false)) {
+            $this->comment('Publishing configuration...');
+            $this->callSilently('vendor:publish', [
+                '--tag' => 'fin-mail-config',
+                '--force' => $this->option('force'),
+            ]);
+            $this->info('  Config published to config/fin-mail.php');
+        }
 
         $this->comment('Publishing migrations...');
         $this->callSilently('vendor:publish', [
@@ -54,6 +56,13 @@ class InstallCommand extends Command
                 '--class' => \FinityLabs\FinMail\Database\Seeders\EmailTemplateSeeder::class,
             ]);
             $this->info('  Default templates seeded (5 templates + 1 theme)');
+        }
+
+        if ($this->confirm('Publish translation files for customization?', false)) {
+            $this->callSilently('vendor:publish', [
+                '--tag' => 'fin-mail-translations',
+            ]);
+            $this->info('  Translations published to lang/vendor/fin-mail/');
         }
 
         if ($this->confirm('Publish email template views for customization?', false)) {

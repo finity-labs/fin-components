@@ -26,24 +26,24 @@ class EmailThemesTable
                     ->sortable(),
 
                 ColorColumn::make('colors.primary')
-                    ->label('Primary'),
+                    ->label(__('fin-mail::fin-mail.theme.columns.primary')),
 
                 ColorColumn::make('colors.background')
-                    ->label('Background'),
+                    ->label(__('fin-mail::fin-mail.theme.columns.background')),
 
                 ColorColumn::make('colors.text')
-                    ->label('Text'),
+                    ->label(__('fin-mail::fin-mail.theme.columns.text')),
 
                 ColorColumn::make('colors.button_bg')
-                    ->label('Button'),
+                    ->label(__('fin-mail::fin-mail.theme.columns.button')),
 
                 IconColumn::make('is_default')
                     ->boolean()
-                    ->label('Default'),
+                    ->label(__('fin-mail::fin-mail.theme.columns.default')),
 
                 TextColumn::make('templates_count')
                     ->counts('templates')
-                    ->label('Templates')
+                    ->label(__('fin-mail::fin-mail.theme.columns.templates'))
                     ->sortable(),
 
                 TextColumn::make('updated_at')
@@ -53,12 +53,12 @@ class EmailThemesTable
             ])
             ->deferFilters()
             ->recordAction(null)
-            ->actions([
+            ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
                 ReplicateAction::make()
                     ->beforeReplicaSaved(function ($replica): void {
-                        $replica->name = $replica->name.' (Copy)';
+                        $replica->name = $replica->name.' '.__('fin-mail::fin-mail.theme.replicate_suffix');
                         $replica->is_default = false;
                     }),
                 DeleteAction::make()
@@ -66,7 +66,7 @@ class EmailThemesTable
                         $record->templates()->update(['email_theme_id' => null]);
                     }),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),

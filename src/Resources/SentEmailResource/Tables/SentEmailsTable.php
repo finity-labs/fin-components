@@ -28,32 +28,32 @@ class SentEmailsTable
                     ->limit(50),
 
                 TextColumn::make('recipients_display')
-                    ->label('To')
+                    ->label(__('fin-mail::fin-mail.sent.columns.to'))
                     ->limit(40)
                     ->searchable(
                         query: fn ($query, string $search) => $query->whereJsonContains('to', $search)
                     ),
 
                 TextColumn::make('template.name')
-                    ->label('Template')
+                    ->label(__('fin-mail::fin-mail.sent.columns.template'))
                     ->badge()
                     ->color('gray')
-                    ->placeholder('Custom'),
+                    ->placeholder(__('fin-mail::fin-mail.sent.columns.template_placeholder')),
 
                 TextColumn::make('status')
                     ->badge(),
 
                 TextColumn::make('sender.name')
-                    ->label('Sent By')
-                    ->placeholder('System'),
+                    ->label(__('fin-mail::fin-mail.sent.columns.sent_by'))
+                    ->placeholder(__('fin-mail::fin-mail.sent.columns.sent_by_placeholder')),
 
                 TextColumn::make('sendable_type')
-                    ->label('Related To')
+                    ->label(__('fin-mail::fin-mail.sent.columns.related_to'))
                     ->formatStateUsing(fn (?string $state): string => $state ? class_basename($state) : '—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('sent_at')
-                    ->label('Sent')
+                    ->label(__('fin-mail::fin-mail.sent.columns.sent_at'))
                     ->dateTime('M d, Y H:i')
                     ->sortable(),
             ])
@@ -66,8 +66,8 @@ class SentEmailsTable
 
                 Filter::make('sent_at')
                     ->form([
-                        DatePicker::make('from')->label('From'),
-                        DatePicker::make('until')->label('Until'),
+                        DatePicker::make('from')->label(__('fin-mail::fin-mail.sent.filters.from')),
+                        DatePicker::make('until')->label(__('fin-mail::fin-mail.sent.filters.until')),
                     ])
                     ->query(
                         fn ($query, array $data) => $query
@@ -75,9 +75,9 @@ class SentEmailsTable
                             ->when($data['until'], fn ($q, $date) => $q->whereDate('sent_at', '<=', $date))
                     ),
             ])
-            ->actions([
+            ->recordActions([
                 Action::make('view')
-                    ->label('View')
+                    ->label(__('fin-mail::fin-mail.sent.actions.view'))
                     ->icon('heroicon-o-eye')
                     ->modal()
                     ->modalHeading(fn ($record): string => $record->subject)
@@ -88,20 +88,20 @@ class SentEmailsTable
                     ->modalSubmitAction(false),
 
                 Action::make('resend')
-                    ->label('Resend')
+                    ->label(__('fin-mail::fin-mail.sent.actions.resend'))
                     ->icon('heroicon-o-arrow-path')
                     ->requiresConfirmation()
-                    ->modalDescription('This will send a new copy of the email to the original recipients.')
+                    ->modalDescription(__('fin-mail::fin-mail.sent.actions.resend_description'))
                     ->action(function ($record): void {
                         try {
                             if (! $record->rendered_body || ! $record->email_template_id) {
-                                throw new \RuntimeException('Cannot resend: no rendered body stored. Enable logging.store_rendered_body in settings.');
+                                throw new \RuntimeException(__('fin-mail::fin-mail.sent.errors.no_rendered_body'));
                             }
 
                             $template = $record->template;
 
                             if (! $template) {
-                                throw new \RuntimeException('Original template no longer exists.');
+                                throw new \RuntimeException(__('fin-mail::fin-mail.sent.errors.no_template'));
                             }
 
                             $mail = TemplateMail::make($template->key)
@@ -137,12 +137,12 @@ class SentEmailsTable
                             $message->send($mail);
 
                             Notification::make()
-                                ->title('Email resent successfully')
+                                ->title(__('fin-mail::fin-mail.sent.notifications.resent'))
                                 ->success()
                                 ->send();
                         } catch (\Throwable $e) {
                             Notification::make()
-                                ->title('Failed to resend email')
+                                ->title(__('fin-mail::fin-mail.sent.notifications.resend_failed'))
                                 ->body($e->getMessage())
                                 ->danger()
                                 ->send();

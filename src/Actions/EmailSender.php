@@ -93,8 +93,8 @@ class EmailSender
             }
 
             Notification::make()
-                ->title('Email sent successfully')
-                ->body('Sent to: '.implode(', ', $this->data['to']))
+                ->title(__('fin-mail::fin-mail.send_action.notifications.sent'))
+                ->body(__('fin-mail::fin-mail.send_action.notifications.sent_body', ['recipients' => implode(', ', $this->data['to'])]))
                 ->success()
                 ->send();
 
@@ -107,7 +107,7 @@ class EmailSender
             }
 
             Notification::make()
-                ->title('Failed to send email')
+                ->title(__('fin-mail::fin-mail.send_action.notifications.failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();

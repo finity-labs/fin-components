@@ -8,6 +8,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use FinityLabs\FinMail\Enums\NavigationGroup;
 use FinityLabs\FinMail\Models\EmailTheme;
 use FinityLabs\FinMail\Resources\EmailThemeResource\Schemas\EmailThemeForm;
 use FinityLabs\FinMail\Resources\EmailThemeResource\Tables\EmailThemesTable;
@@ -19,13 +20,16 @@ class EmailThemeResource extends Resource
 
     protected static ?string $slug = 'email-themes';
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-paint-brush';
+    protected static string|UnitEnum|null $navigationGroup = NavigationGroup::Email;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Email';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-paint-brush';
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $navigationLabel = 'Themes';
+    public static function getNavigationLabel(): string
+    {
+        return __('fin-mail::fin-mail.navigation.themes');
+    }
 
     public static function form(Schema $form): Schema
     {

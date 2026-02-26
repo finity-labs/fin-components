@@ -79,15 +79,15 @@ class EditEmailTemplate extends EditRecord
                             ->action(fn () => $this->switchLocale($code))
                     )->values()->all()
             )
-                ->label(fn (): string => 'Language: '.strtoupper($this->activeLocale))
+                ->label(fn (): string => __('fin-mail::fin-mail.template.language_label', ['locale' => strtoupper($this->activeLocale)]))
                 ->icon('heroicon-o-language')
                 ->button(),
 
             Action::make('preview')
-                ->label('Preview')
+                ->label(__('fin-mail::fin-mail.template.actions.preview'))
                 ->icon('heroicon-o-eye')
                 ->modal()
-                ->modalHeading(fn (): string => "Preview: {$this->record->name}")
+                ->modalHeading(fn (): string => __('fin-mail::fin-mail.template.actions.preview').": {$this->record->name}")
                 ->modalContent(fn () => view('fin-mail::components.email-preview', [
                     'html' => $this->record->body,
                 ]))
@@ -95,15 +95,15 @@ class EditEmailTemplate extends EditRecord
                 ->modalSubmitAction(false),
 
             Action::make('compose')
-                ->label('Compose Email')
+                ->label(__('fin-mail::fin-mail.template.actions.compose'))
                 ->icon('heroicon-o-paper-airplane')
                 ->url(fn (): string => static::getResource()::getUrl('compose', ['record' => $this->record])),
 
             Action::make('version_history')
-                ->label('Version History')
+                ->label(__('fin-mail::fin-mail.template.actions.version_history'))
                 ->icon('heroicon-o-clock')
                 ->modal()
-                ->modalHeading('Version History')
+                ->modalHeading(__('fin-mail::fin-mail.template.actions.version_history'))
                 ->modalContent(fn () => view('fin-mail::components.version-history', [
                     'versions' => $this->record->versions()->with('createdBy')->latest('version')->limit(20)->get(),
                 ]))
@@ -125,10 +125,10 @@ class EditEmailTemplate extends EditRecord
     protected function getSavedNotification(): ?Notification
     {
         $notification = Notification::make()
-            ->title('Template saved');
+            ->title(__('fin-mail::fin-mail.template.notifications.saved'));
 
         if (config('fin-mail.versioning.enabled')) {
-            $notification->body('A version snapshot was saved automatically.');
+            $notification->body(__('fin-mail::fin-mail.template.notifications.saved_body'));
         }
 
         return $notification->success();

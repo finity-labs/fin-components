@@ -7,11 +7,11 @@ namespace FinityLabs\FinMail\Resources\EmailTemplateResource\Pages;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\Page;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -35,7 +35,7 @@ class ComposeEmail extends Page
 
     protected string $view = 'fin-mail::pages.compose-email';
 
-    protected static ?string $title = 'Compose Email';
+    protected static ?string $title = null;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-paper-airplane';
 
@@ -74,35 +74,35 @@ class ComposeEmail extends Page
 
         return $form->schema([
 
-            Section::make('Recipients')
+            Section::make(__('fin-mail::fin-mail.compose.sections.recipients'))
                 ->icon('heroicon-o-user-group')
                 ->schema([
                     Select::make('from')
-                        ->label('From')
+                        ->label(__('fin-mail::fin-mail.compose.fields.from'))
                         ->options($senders)
                         ->native(false)
                         ->required(),
 
                     TagsInput::make('to')
-                        ->label('To')
-                        ->placeholder('Enter email addresses')
+                        ->label(__('fin-mail::fin-mail.compose.fields.to'))
+                        ->placeholder(__('fin-mail::fin-mail.compose.fields.to_placeholder'))
                         ->required()
                         ->nestedRecursiveRules(['email']),
 
                     TagsInput::make('cc')
-                        ->label('CC')
-                        ->placeholder('CC addresses')
+                        ->label(__('fin-mail::fin-mail.compose.fields.cc'))
+                        ->placeholder(__('fin-mail::fin-mail.compose.fields.cc_placeholder'))
                         ->nestedRecursiveRules(['email']),
 
                     TagsInput::make('bcc')
-                        ->label('BCC')
-                        ->placeholder('BCC addresses')
+                        ->label(__('fin-mail::fin-mail.compose.fields.bcc'))
+                        ->placeholder(__('fin-mail::fin-mail.compose.fields.bcc_placeholder'))
                         ->nestedRecursiveRules(['email']),
                 ])
                 ->columns(2)
                 ->collapsible(),
 
-            Section::make('Email Content')
+            Section::make(__('fin-mail::fin-mail.compose.sections.content'))
                 ->icon('heroicon-o-document-text')
                 ->schema([
                     TextInput::make('subject')
@@ -112,18 +112,18 @@ class ComposeEmail extends Page
 
                     TextInput::make('preheader')
                         ->maxLength(255)
-                        ->helperText('Preview text shown in email clients before opening')
+                        ->helperText(__('fin-mail::fin-mail.compose.fields.preheader_helper'))
                         ->columnSpanFull(),
 
                     $editor->make('body')
                         ->required(),
                 ]),
 
-            Section::make('Attachments')
+            Section::make(__('fin-mail::fin-mail.compose.sections.attachments'))
                 ->icon('heroicon-o-paper-clip')
                 ->schema([
                     FileUpload::make('attachments')
-                        ->label('Attach Files')
+                        ->label(__('fin-mail::fin-mail.compose.fields.attach_files'))
                         ->multiple()
                         ->disk(config('fin-mail.attachments_disk', 'local'))
                         ->directory('email-attachments')
@@ -133,14 +133,14 @@ class ComposeEmail extends Page
                 ->collapsible()
                 ->collapsed(),
 
-            Section::make('Available Tokens')
+            Section::make(__('fin-mail::fin-mail.compose.sections.tokens'))
                 ->icon('heroicon-o-code-bracket')
                 ->schema([
-                    Placeholder::make('tokens_info')
-                        ->content(function (): string {
+                    TextEntry::make('tokens_info')
+                        ->state(function (): string {
                             $tokens = $this->record->token_schema ?? [];
                             if (empty($tokens)) {
-                                return 'No tokens documented for this template. Tokens like {{ user.name }} will be replaced when sent via the API/code.';
+                                return __('fin-mail::fin-mail.compose.fields.no_tokens');
                             }
 
                             return collect($tokens)
@@ -180,14 +180,14 @@ class ComposeEmail extends Page
 
     public function getTitle(): string
     {
-        return "Compose: {$this->record->name}";
+        return __('fin-mail::fin-mail.compose.title_with_name', ['name' => $this->record->name]);
     }
 
     protected function getHeaderActions(): array
     {
         return [
             Action::make('back')
-                ->label('Back to Templates')
+                ->label(__('fin-mail::fin-mail.template.actions.back_to_templates'))
                 ->icon('heroicon-o-arrow-left')
                 ->url(static::getResource()::getUrl('index'))
                 ->color('gray'),
@@ -201,16 +201,16 @@ class ComposeEmail extends Page
     {
         return [
             Action::make('send')
-                ->label('Send Email')
+                ->label(__('fin-mail::fin-mail.compose.actions.send'))
                 ->icon('heroicon-o-paper-airplane')
                 ->action('send')
                 ->color('primary')
                 ->requiresConfirmation()
-                ->modalHeading('Confirm Send')
-                ->modalDescription('Are you sure you want to send this email?'),
+                ->modalHeading(__('fin-mail::fin-mail.compose.confirm.heading'))
+                ->modalDescription(__('fin-mail::fin-mail.compose.confirm.description')),
 
             Action::make('preview')
-                ->label('Preview')
+                ->label(__('fin-mail::fin-mail.compose.actions.preview'))
                 ->icon('heroicon-o-eye')
                 ->action('preview')
                 ->color('gray'),

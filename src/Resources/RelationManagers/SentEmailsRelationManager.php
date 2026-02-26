@@ -32,9 +32,12 @@ class SentEmailsRelationManager extends RelationManager
 {
     protected static string $relationship = 'sentEmails';
 
-    protected static ?string $title = 'Sent Emails';
-
     protected static ?string $icon = 'heroicon-o-envelope';
+
+    public static function getTitle($ownerRecord, string $pageClass): string
+    {
+        return __('fin-mail::fin-mail.relation.title');
+    }
 
     public function table(Table $table): Table
     {
@@ -45,11 +48,11 @@ class SentEmailsRelationManager extends RelationManager
                     ->limit(50),
 
                 TextColumn::make('recipients_display')
-                    ->label('To')
+                    ->label(__('fin-mail::fin-mail.relation.columns.to'))
                     ->limit(40),
 
                 TextColumn::make('template.name')
-                    ->label('Template')
+                    ->label(__('fin-mail::fin-mail.relation.columns.template'))
                     ->badge()
                     ->color('gray')
                     ->placeholder('—'),
@@ -58,11 +61,11 @@ class SentEmailsRelationManager extends RelationManager
                     ->badge(),
 
                 TextColumn::make('sender.name')
-                    ->label('Sent By')
-                    ->placeholder('System'),
+                    ->label(__('fin-mail::fin-mail.relation.columns.sent_by'))
+                    ->placeholder(__('fin-mail::fin-mail.relation.columns.sent_by_placeholder')),
 
                 TextColumn::make('sent_at')
-                    ->label('Sent')
+                    ->label(__('fin-mail::fin-mail.relation.columns.sent_at'))
                     ->dateTime('M d, Y H:i')
                     ->sortable(),
             ])
@@ -72,9 +75,9 @@ class SentEmailsRelationManager extends RelationManager
                 SelectFilter::make('status')
                     ->options(EmailStatus::class),
             ])
-            ->actions([
+            ->recordActions([
                 Action::make('view_body')
-                    ->label('View')
+                    ->label(__('fin-mail::fin-mail.relation.actions.view'))
                     ->icon('heroicon-o-eye')
                     ->modal()
                     ->modalHeading(fn ($record): string => $record->subject)
@@ -86,19 +89,19 @@ class SentEmailsRelationManager extends RelationManager
                     ->visible(fn ($record): bool => (bool) $record->rendered_body),
 
                 Action::make('resend')
-                    ->label('Resend')
+                    ->label(__('fin-mail::fin-mail.relation.actions.resend'))
                     ->icon('heroicon-o-arrow-path')
                     ->requiresConfirmation()
-                    ->modalDescription('Are you sure you want to resend this email?')
+                    ->modalDescription(__('fin-mail::fin-mail.relation.actions.resend_confirm'))
                     ->action(function ($record): void {
                         try {
                             if (! $record->rendered_body || ! $record->email_template_id) {
-                                throw new \RuntimeException('Cannot resend: no rendered body or template stored.');
+                                throw new \RuntimeException(__('fin-mail::fin-mail.relation.errors.no_body'));
                             }
 
                             $template = $record->template;
                             if (! $template) {
-                                throw new \RuntimeException('Original template no longer exists.');
+                                throw new \RuntimeException(__('fin-mail::fin-mail.relation.errors.no_template'));
                             }
 
                             $mail = TemplateMail::make($template->key)
@@ -133,20 +136,20 @@ class SentEmailsRelationManager extends RelationManager
                             $message->send($mail);
 
                             Notification::make()
-                                ->title('Email resent successfully')
+                                ->title(__('fin-mail::fin-mail.relation.notifications.resent'))
                                 ->success()
                                 ->send();
                         } catch (\Throwable $e) {
                             Notification::make()
-                                ->title('Failed to resend')
+                                ->title(__('fin-mail::fin-mail.relation.notifications.resend_failed'))
                                 ->body($e->getMessage())
                                 ->danger()
                                 ->send();
                         }
                     }),
             ])
-            ->emptyStateHeading('No emails sent')
-            ->emptyStateDescription('Emails sent for this record will appear here.')
+            ->emptyStateHeading(__('fin-mail::fin-mail.relation.empty.heading'))
+            ->emptyStateDescription(__('fin-mail::fin-mail.relation.empty.description'))
             ->emptyStateIcon('heroicon-o-envelope');
     }
 }

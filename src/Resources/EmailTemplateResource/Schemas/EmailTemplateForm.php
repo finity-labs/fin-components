@@ -29,7 +29,7 @@ class EmailTemplateForm
             Tabs::make('Template')
                 ->tabs([
 
-                    Tab::make('Content')
+                    Tab::make(__('fin-mail::fin-mail.template.tabs.content'))
                         ->icon('heroicon-o-document-text')
                         ->schema([
                             TextInput::make('name')
@@ -41,7 +41,7 @@ class EmailTemplateForm
                                 TextInput::make('key')
                                     ->required()
                                     ->unique(ignoreRecord: true)
-                                    ->helperText('Unique key used in code: e.g., "invoice-sent"')
+                                    ->helperText(__('fin-mail::fin-mail.template.fields.key_helper'))
                                     ->maxLength(255),
 
                                 Select::make('category')
@@ -54,75 +54,75 @@ class EmailTemplateForm
                             TextInput::make('subject')
                                 ->required()
                                 ->maxLength(255)
-                                ->helperText('Supports tokens: {{ user.name }}, {{ config.app.name }}')
+                                ->helperText(__('fin-mail::fin-mail.template.fields.subject_helper'))
                                 ->columnSpanFull(),
 
                             TextInput::make('preheader')
                                 ->maxLength(255)
-                                ->helperText('Preview text shown in email clients')
+                                ->helperText(__('fin-mail::fin-mail.template.fields.preheader_helper'))
                                 ->columnSpanFull(),
 
                             $editor->make('body')
                                 ->required(),
                         ]),
 
-                    Tab::make('Settings')
+                    Tab::make(__('fin-mail::fin-mail.template.tabs.settings'))
                         ->icon('heroicon-o-cog-6-tooth')
                         ->schema([
                             Grid::make(2)->schema([
                                 Select::make('email_theme_id')
-                                    ->label('Theme')
+                                    ->label(__('fin-mail::fin-mail.template.fields.theme'))
                                     ->relationship('theme', 'name')
-                                    ->placeholder('Default theme')
+                                    ->placeholder(__('fin-mail::fin-mail.template.fields.theme_placeholder'))
                                     ->native(false)
                                     ->preload(),
 
                                 Toggle::make('is_active')
-                                    ->label('Active')
+                                    ->label(__('fin-mail::fin-mail.template.fields.is_active'))
                                     ->default(true)
-                                    ->helperText('Inactive templates cannot be used for sending'),
+                                    ->helperText(__('fin-mail::fin-mail.template.fields.is_active_helper')),
                             ]),
 
                             TagsInput::make('tags')
-                                ->placeholder('Add tags for organization'),
+                                ->placeholder(__('fin-mail::fin-mail.template.fields.tags_placeholder')),
 
-                            Section::make('Custom Sender')
-                                ->description('Override the default from address for this template')
+                            Section::make(__('fin-mail::fin-mail.template.sections.custom_sender'))
+                                ->description(__('fin-mail::fin-mail.template.sections.custom_sender_description'))
                                 ->schema([
                                     Grid::make(2)->schema([
                                         TextInput::make('from.address')
-                                            ->label('From Email')
+                                            ->label(__('fin-mail::fin-mail.template.fields.from_address'))
                                             ->email()
                                             ->placeholder(fn (): string => app(MailSettings::class)->default_from_address),
 
                                         TextInput::make('from.name')
-                                            ->label('From Name')
+                                            ->label(__('fin-mail::fin-mail.template.fields.from_name'))
                                             ->placeholder(fn (): string => app(MailSettings::class)->default_from_name),
                                     ]),
                                 ])
                                 ->collapsed(),
                         ]),
 
-                    Tab::make('Tokens')
+                    Tab::make(__('fin-mail::fin-mail.template.tabs.tokens'))
                         ->icon('heroicon-o-code-bracket')
                         ->schema([
                             Repeater::make('token_schema')
-                                ->label('Available Tokens')
-                                ->helperText('Document the tokens available for this template. This helps editors know what variables they can use.')
+                                ->label(__('fin-mail::fin-mail.template.tokens.label'))
+                                ->helperText(__('fin-mail::fin-mail.template.tokens.helper'))
                                 ->schema([
                                     TextInput::make('token')
-                                        ->placeholder('user.name')
+                                        ->placeholder(__('fin-mail::fin-mail.template.tokens.token_placeholder'))
                                         ->required(),
                                     TextInput::make('description')
-                                        ->placeholder('The full name of the recipient')
+                                        ->placeholder(__('fin-mail::fin-mail.template.tokens.description_placeholder'))
                                         ->required(),
                                     TextInput::make('example')
-                                        ->placeholder('John Doe'),
+                                        ->placeholder(__('fin-mail::fin-mail.template.tokens.example_placeholder')),
                                 ])
                                 ->columns(3)
                                 ->defaultItems(0)
                                 ->collapsible()
-                                ->itemLabel(fn (array $state): ?string => $state['token'] ?? 'New Token'),
+                                ->itemLabel(fn (array $state): ?string => $state['token'] ?? __('fin-mail::fin-mail.template.tokens.new_item')),
                         ]),
                 ])
                 ->columnSpanFull(),

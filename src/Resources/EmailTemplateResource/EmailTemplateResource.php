@@ -8,6 +8,7 @@ use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use FinityLabs\FinMail\Enums\NavigationGroup;
 use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\Schemas\EmailTemplateForm;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\Tables\EmailTemplatesTable;
@@ -19,15 +20,15 @@ class EmailTemplateResource extends Resource
 
     protected static ?string $slug = 'email-templates';
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
+    protected static string|UnitEnum|null $navigationGroup = NavigationGroup::Email;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Email';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-envelope';
 
     protected static ?int $navigationSort = 1;
 
     public static function getNavigationLabel(): string
     {
-        return 'Templates';
+        return __('fin-mail::fin-mail.navigation.templates');
     }
 
     public static function form(Schema $form): Schema

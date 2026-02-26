@@ -16,6 +16,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
+use FinityLabs\FinMail\Enums\NavigationGroup;
 use FinityLabs\FinMail\Settings\AttachmentSettings;
 use FinityLabs\FinMail\Settings\BrandingSettings;
 use FinityLabs\FinMail\Settings\LoggingSettings;
@@ -26,15 +27,21 @@ class ManageFinMailSettings extends SettingsPage
 {
     protected static string $settings = MailSettings::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string|UnitEnum|null $navigationGroup = NavigationGroup::Email;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Email';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected static ?int $navigationSort = 10;
 
-    protected static ?string $title = 'Email Settings';
+    public static function getNavigationLabel(): string
+    {
+        return __('fin-mail::fin-mail.navigation.settings');
+    }
 
-    protected static ?string $navigationLabel = 'Settings';
+    public function getTitle(): string
+    {
+        return __('fin-mail::fin-mail.settings.title');
+    }
 
     public ?array $brandingData = [];
 
@@ -88,91 +95,91 @@ class ManageFinMailSettings extends SettingsPage
 
     protected function mailTab(): Tab
     {
-        return Tab::make('General')
+        return Tab::make(__('fin-mail::fin-mail.settings.tabs.general'))
             ->icon('heroicon-o-envelope')
             ->schema([
-                Section::make('Default Sender')
-                    ->description('The default "From" address for all emails sent by the plugin.')
+                Section::make(__('fin-mail::fin-mail.settings.sections.default_sender'))
+                    ->description(__('fin-mail::fin-mail.settings.sections.default_sender_description'))
                     ->schema([
                         TextInput::make('default_from_address')
-                            ->label('From Email')
+                            ->label(__('fin-mail::fin-mail.settings.fields.from_email'))
                             ->email()
                             ->required()
                             ->maxLength(255),
 
                         TextInput::make('default_from_name')
-                            ->label('From Name')
+                            ->label(__('fin-mail::fin-mail.settings.fields.from_name'))
                             ->required()
                             ->maxLength(255),
                     ])
                     ->columns(2),
 
-                Section::make('Additional Senders')
-                    ->description('Extra "From" addresses users can choose when composing emails.')
+                Section::make(__('fin-mail::fin-mail.settings.sections.additional_senders'))
+                    ->description(__('fin-mail::fin-mail.settings.sections.additional_senders_description'))
                     ->schema([
                         Repeater::make('additional_senders')
                             ->label('')
                             ->schema([
                                 TextInput::make('address')
-                                    ->label('Email')
+                                    ->label(__('fin-mail::fin-mail.settings.fields.sender_email'))
                                     ->email()
                                     ->required()
                                     ->maxLength(255),
                                 TextInput::make('name')
-                                    ->label('Display Name')
+                                    ->label(__('fin-mail::fin-mail.settings.fields.sender_name'))
                                     ->required()
                                     ->maxLength(255),
                             ])
                             ->columns(2)
                             ->defaultItems(0)
                             ->collapsible()
-                            ->itemLabel(fn (array $state): ?string => $state['name'] ?? $state['address'] ?? 'New Sender'),
+                            ->itemLabel(fn (array $state): ?string => $state['name'] ?? $state['address'] ?? __('fin-mail::fin-mail.settings.fields.sender_new')),
                     ]),
 
-                Section::make('Localization')
+                Section::make(__('fin-mail::fin-mail.settings.sections.localization'))
                     ->schema([
                         TextInput::make('default_locale')
-                            ->label('Default Locale')
+                            ->label(__('fin-mail::fin-mail.settings.fields.default_locale'))
                             ->required()
                             ->maxLength(10)
-                            ->helperText('The default language for new templates (e.g., en, hu, de).'),
+                            ->helperText(__('fin-mail::fin-mail.settings.fields.default_locale_helper')),
 
                         Repeater::make('languages')
-                            ->label('Available Languages')
+                            ->label(__('fin-mail::fin-mail.settings.fields.languages'))
                             ->schema([
                                 TextInput::make('code')
-                                    ->label('Code')
+                                    ->label(__('fin-mail::fin-mail.settings.fields.language_code'))
                                     ->required()
                                     ->maxLength(10)
                                     ->placeholder('en'),
                                 TextInput::make('display')
-                                    ->label('Display Name')
+                                    ->label(__('fin-mail::fin-mail.settings.fields.language_display'))
                                     ->required()
                                     ->maxLength(50)
                                     ->placeholder('English'),
                                 TextInput::make('flag-icon')
-                                    ->label('Flag Icon')
+                                    ->label(__('fin-mail::fin-mail.settings.fields.language_flag'))
                                     ->maxLength(10)
                                     ->placeholder('gb'),
                             ])
                             ->columns(3)
                             ->defaultItems(1)
                             ->collapsible()
-                            ->itemLabel(fn (array $state): ?string => $state['display'] ?? $state['code'] ?? 'New Language'),
+                            ->itemLabel(fn (array $state): ?string => $state['display'] ?? $state['code'] ?? __('fin-mail::fin-mail.settings.fields.language_new')),
                     ]),
 
-                Section::make('Template Categories')
+                Section::make(__('fin-mail::fin-mail.settings.sections.categories'))
                     ->schema([
                         Repeater::make('categories')
                             ->label('')
                             ->schema([
                                 TextInput::make('key')
-                                    ->label('Key')
+                                    ->label(__('fin-mail::fin-mail.settings.fields.category_key'))
                                     ->required()
                                     ->maxLength(50)
                                     ->placeholder('transactional'),
                                 TextInput::make('label')
-                                    ->label('Label')
+                                    ->label(__('fin-mail::fin-mail.settings.fields.category_label'))
                                     ->required()
                                     ->maxLength(100)
                                     ->placeholder('Transactional'),
@@ -180,42 +187,42 @@ class ManageFinMailSettings extends SettingsPage
                             ->columns(2)
                             ->defaultItems(0)
                             ->collapsible()
-                            ->itemLabel(fn (array $state): ?string => $state['label'] ?? $state['key'] ?? 'New Category'),
+                            ->itemLabel(fn (array $state): ?string => $state['label'] ?? $state['key'] ?? __('fin-mail::fin-mail.settings.fields.category_new')),
                     ]),
             ]);
     }
 
     protected function brandingTab(): Tab
     {
-        return Tab::make('Branding')
+        return Tab::make(__('fin-mail::fin-mail.settings.tabs.branding'))
             ->icon('heroicon-o-paint-brush')
             ->statePath('brandingData')
             ->schema([
-                Section::make('Logo')
+                Section::make(__('fin-mail::fin-mail.settings.sections.logo'))
                     ->schema([
                         TextInput::make('logo')
-                            ->label('Logo URL or Path')
+                            ->label(__('fin-mail::fin-mail.settings.fields.logo_url'))
                             ->maxLength(500)
-                            ->placeholder('https://example.com/logo.png')
-                            ->helperText('Absolute URL or path to your email logo.'),
+                            ->placeholder(__('fin-mail::fin-mail.settings.fields.logo_url_placeholder'))
+                            ->helperText(__('fin-mail::fin-mail.settings.fields.logo_url_helper')),
 
                         Grid::make(3)->schema([
                             TextInput::make('logo_width')
-                                ->label('Width (px)')
+                                ->label(__('fin-mail::fin-mail.settings.fields.logo_width'))
                                 ->numeric()
                                 ->required()
                                 ->minValue(10)
                                 ->maxValue(800),
 
                             TextInput::make('logo_height')
-                                ->label('Height (px)')
+                                ->label(__('fin-mail::fin-mail.settings.fields.logo_height'))
                                 ->numeric()
                                 ->required()
                                 ->minValue(10)
                                 ->maxValue(400),
 
                             TextInput::make('content_width')
-                                ->label('Content Width (px)')
+                                ->label(__('fin-mail::fin-mail.settings.fields.content_width'))
                                 ->numeric()
                                 ->required()
                                 ->minValue(300)
@@ -223,23 +230,23 @@ class ManageFinMailSettings extends SettingsPage
                         ]),
                     ]),
 
-                Section::make('Colors')
+                Section::make(__('fin-mail::fin-mail.settings.sections.colors'))
                     ->schema([
                         ColorPicker::make('primary_color')
-                            ->label('Primary Color'),
+                            ->label(__('fin-mail::fin-mail.settings.fields.primary_color')),
                     ]),
 
-                Section::make('Footer Links')
+                Section::make(__('fin-mail::fin-mail.settings.sections.footer_links'))
                     ->schema([
                         Repeater::make('footer_links')
                             ->label('')
                             ->schema([
                                 TextInput::make('name')
-                                    ->label('Label')
+                                    ->label(__('fin-mail::fin-mail.settings.fields.footer_link_label'))
                                     ->required()
                                     ->maxLength(100),
                                 TextInput::make('url')
-                                    ->label('URL')
+                                    ->label(__('fin-mail::fin-mail.settings.fields.footer_link_url'))
                                     ->url()
                                     ->required()
                                     ->maxLength(500),
@@ -247,18 +254,18 @@ class ManageFinMailSettings extends SettingsPage
                             ->columns(2)
                             ->defaultItems(0)
                             ->collapsible()
-                            ->itemLabel(fn (array $state): ?string => $state['name'] ?? 'New Link'),
+                            ->itemLabel(fn (array $state): ?string => $state['name'] ?? __('fin-mail::fin-mail.settings.fields.footer_link_new')),
                     ]),
 
-                Section::make('Customer Service')
+                Section::make(__('fin-mail::fin-mail.settings.sections.customer_service'))
                     ->schema([
                         TextInput::make('customer_service_email')
-                            ->label('Support Email')
+                            ->label(__('fin-mail::fin-mail.settings.fields.support_email'))
                             ->email()
                             ->maxLength(255),
 
                         TextInput::make('customer_service_phone')
-                            ->label('Support Phone')
+                            ->label(__('fin-mail::fin-mail.settings.fields.support_phone'))
                             ->tel()
                             ->maxLength(50),
                     ])
@@ -268,52 +275,52 @@ class ManageFinMailSettings extends SettingsPage
 
     protected function loggingTab(): Tab
     {
-        return Tab::make('Logging')
+        return Tab::make(__('fin-mail::fin-mail.settings.tabs.logging'))
             ->icon('heroicon-o-document-magnifying-glass')
             ->statePath('loggingData')
             ->schema([
-                Section::make('Email Logging')
-                    ->description('Control how sent emails are recorded in the database.')
+                Section::make(__('fin-mail::fin-mail.settings.sections.logging'))
+                    ->description(__('fin-mail::fin-mail.settings.sections.logging_description'))
                     ->schema([
                         Toggle::make('enabled')
-                            ->label('Enable Logging')
-                            ->helperText('When disabled, no sent email records will be created.'),
+                            ->label(__('fin-mail::fin-mail.settings.fields.enable_logging'))
+                            ->helperText(__('fin-mail::fin-mail.settings.fields.enable_logging_helper')),
 
                         Toggle::make('store_rendered_body')
-                            ->label('Store Rendered Body')
-                            ->helperText('Save the final HTML of each sent email. Required for resend and preview features.'),
+                            ->label(__('fin-mail::fin-mail.settings.fields.store_rendered_body'))
+                            ->helperText(__('fin-mail::fin-mail.settings.fields.store_rendered_body_helper')),
 
                         TextInput::make('retention_days')
-                            ->label('Retention (days)')
+                            ->label(__('fin-mail::fin-mail.settings.fields.retention_days'))
                             ->numeric()
                             ->nullable()
                             ->minValue(1)
                             ->maxValue(3650)
-                            ->helperText('Auto-delete sent email records after this many days. Leave empty to keep forever.'),
+                            ->helperText(__('fin-mail::fin-mail.settings.fields.retention_days_helper')),
                     ]),
             ]);
     }
 
     protected function attachmentTab(): Tab
     {
-        return Tab::make('Attachments')
+        return Tab::make(__('fin-mail::fin-mail.settings.tabs.attachments'))
             ->icon('heroicon-o-paper-clip')
             ->statePath('attachmentData')
             ->schema([
-                Section::make('Attachment Rules')
-                    ->description('Configure limits for file attachments in composed emails.')
+                Section::make(__('fin-mail::fin-mail.settings.sections.attachment_rules'))
+                    ->description(__('fin-mail::fin-mail.settings.sections.attachment_rules_description'))
                     ->schema([
                         TextInput::make('max_size_mb')
-                            ->label('Max File Size (MB)')
+                            ->label(__('fin-mail::fin-mail.settings.fields.max_file_size'))
                             ->numeric()
                             ->required()
                             ->minValue(1)
                             ->maxValue(100),
 
                         TagsInput::make('allowed_types')
-                            ->label('Allowed File Extensions')
-                            ->placeholder('Add extension (e.g., pdf)')
-                            ->helperText('File extensions allowed for upload.'),
+                            ->label(__('fin-mail::fin-mail.settings.fields.allowed_extensions'))
+                            ->placeholder(__('fin-mail::fin-mail.settings.fields.allowed_extensions_placeholder'))
+                            ->helperText(__('fin-mail::fin-mail.settings.fields.allowed_extensions_helper')),
                     ]),
             ]);
     }

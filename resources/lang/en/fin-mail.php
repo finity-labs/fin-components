@@ -1,0 +1,406 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Navigation
+    |--------------------------------------------------------------------------
+    */
+
+    'navigation' => [
+        'group' => 'Email',
+        'templates' => 'Templates',
+        'themes' => 'Themes',
+        'sent-emails' => 'Sent Emails',
+        'settings' => 'Settings',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email Template Resource
+    |--------------------------------------------------------------------------
+    */
+
+    'template' => [
+        'tabs' => [
+            'content' => 'Content',
+            'settings' => 'Settings',
+            'tokens' => 'Tokens',
+        ],
+
+        'fields' => [
+            'name' => 'Name',
+            'key' => 'Key',
+            'key_helper' => 'Unique key used in code: e.g., "invoice-sent"',
+            'category' => 'Category',
+            'subject' => 'Subject',
+            'subject_helper' => 'Supports tokens: {{ user.name }}, {{ config.app.name }}',
+            'preheader' => 'Preheader',
+            'preheader_helper' => 'Preview text shown in email clients',
+            'body' => 'Body',
+            'theme' => 'Theme',
+            'theme_placeholder' => 'Default theme',
+            'is_active' => 'Active',
+            'is_active_helper' => 'Inactive templates cannot be used for sending',
+            'tags' => 'Tags',
+            'tags_placeholder' => 'Add tags for organization',
+            'from_address' => 'From Email',
+            'from_name' => 'From Name',
+        ],
+
+        'sections' => [
+            'custom_sender' => 'Custom Sender',
+            'custom_sender_description' => 'Override the default from address for this template',
+        ],
+
+        'tokens' => [
+            'label' => 'Available Tokens',
+            'helper' => 'Document the tokens available for this template. This helps editors know what variables they can use.',
+            'token_placeholder' => 'user.name',
+            'description_placeholder' => 'The full name of the recipient',
+            'example_placeholder' => 'John Doe',
+            'new_item' => 'New Token',
+        ],
+
+        'columns' => [
+            'locales' => 'Locales',
+            'active' => 'Active',
+            'sent' => 'Sent',
+        ],
+
+        'actions' => [
+            'preview' => 'Preview',
+            'send_test' => 'Send Test',
+            'send_test_field' => 'Send to',
+            'compose' => 'Compose Email',
+            'version_history' => 'Version History',
+            'back_to_templates' => 'Back to Templates',
+        ],
+
+        'notifications' => [
+            'test_sent' => 'Test email sent!',
+            'test_sent_body' => 'Sent to :email',
+            'test_failed' => 'Failed to send test email',
+            'saved' => 'Template saved',
+            'saved_body' => 'A version snapshot was saved automatically.',
+        ],
+
+        'language_label' => 'Language: :locale',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Compose Email Page
+    |--------------------------------------------------------------------------
+    */
+
+    'compose' => [
+        'title' => 'Compose Email',
+        'title_with_name' => 'Compose: :name',
+
+        'sections' => [
+            'recipients' => 'Recipients',
+            'content' => 'Email Content',
+            'attachments' => 'Attachments',
+            'tokens' => 'Available Tokens',
+        ],
+
+        'fields' => [
+            'from' => 'From',
+            'to' => 'To',
+            'cc' => 'CC',
+            'bcc' => 'BCC',
+            'to_placeholder' => 'Enter email addresses',
+            'cc_placeholder' => 'CC addresses',
+            'bcc_placeholder' => 'BCC addresses',
+            'attach_files' => 'Attach Files',
+            'preheader_helper' => 'Preview text shown in email clients before opening',
+            'no_tokens' => 'No tokens documented for this template. Tokens like {{ user.name }} will be replaced when sent via the API/code.',
+        ],
+
+        'actions' => [
+            'send' => 'Send Email',
+            'preview' => 'Preview',
+        ],
+
+        'confirm' => [
+            'heading' => 'Confirm Send',
+            'description' => 'Are you sure you want to send this email?',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Compose Form Builder (shared action form)
+    |--------------------------------------------------------------------------
+    */
+
+    'compose_form' => [
+        'sections' => [
+            'recipients' => 'Recipients',
+            'content' => 'Content',
+            'attachments' => 'Attachments',
+        ],
+
+        'fields' => [
+            'from' => 'From',
+            'to' => 'To',
+            'cc' => 'CC',
+            'bcc' => 'BCC',
+            'template' => 'Template',
+            'subject' => 'Subject',
+            'to_placeholder' => 'Enter email addresses',
+            'cc_placeholder' => 'Enter CC addresses',
+            'bcc_placeholder' => 'Enter BCC addresses',
+            'auto_attached' => 'Auto-attached files',
+            'auto_attached_none' => 'None',
+            'additional_attachments' => 'Additional Attachments',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Send Email Actions
+    |--------------------------------------------------------------------------
+    */
+
+    'send_action' => [
+        'label' => 'Send Email',
+        'modal_heading' => 'Compose Email',
+        'submit' => 'Send',
+
+        'notifications' => [
+            'sent' => 'Email sent successfully',
+            'sent_body' => 'Sent to: :recipients',
+            'failed' => 'Failed to send email',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email Theme Resource
+    |--------------------------------------------------------------------------
+    */
+
+    'theme' => [
+        'sections' => [
+            'details' => 'Theme Details',
+            'background' => 'Background & Layout',
+            'background_description' => 'Main structural colors for the email layout.',
+            'typography' => 'Typography',
+            'typography_description' => 'Colors for text and headings.',
+            'buttons' => 'Buttons',
+            'buttons_description' => 'Call-to-action button styling.',
+            'footer' => 'Footer',
+            'footer_description' => 'Footer area styling.',
+            'preview' => 'Preview',
+        ],
+
+        'fields' => [
+            'name' => 'Name',
+            'is_default' => 'Default Theme',
+            'is_default_helper' => 'The default theme is applied to templates that don\'t specify one.',
+            'page_background' => 'Page Background',
+            'content_background' => 'Content Background',
+            'border' => 'Border',
+            'headings' => 'Headings',
+            'body_text' => 'Body Text',
+            'secondary_text' => 'Secondary Text',
+            'links' => 'Links',
+            'button_background' => 'Button Background',
+            'button_text' => 'Button Text',
+            'primary_accent' => 'Primary/Accent',
+            'footer_background' => 'Footer Background',
+            'footer_text' => 'Footer Text',
+        ],
+
+        'columns' => [
+            'primary' => 'Primary',
+            'background' => 'Background',
+            'text' => 'Text',
+            'button' => 'Button',
+            'default' => 'Default',
+            'templates' => 'Templates',
+        ],
+
+        'replicate_suffix' => '(Copy)',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sent Email Resource
+    |--------------------------------------------------------------------------
+    */
+
+    'sent' => [
+        'columns' => [
+            'to' => 'To',
+            'template' => 'Template',
+            'template_placeholder' => 'Custom',
+            'sent_by' => 'Sent By',
+            'sent_by_placeholder' => 'System',
+            'related_to' => 'Related To',
+            'sent_at' => 'Sent',
+        ],
+
+        'filters' => [
+            'from' => 'From',
+            'until' => 'Until',
+        ],
+
+        'actions' => [
+            'view' => 'View',
+            'resend' => 'Resend',
+            'resend_description' => 'This will send a new copy of the email to the original recipients.',
+        ],
+
+        'notifications' => [
+            'resent' => 'Email resent successfully',
+            'resend_failed' => 'Failed to resend email',
+        ],
+
+        'errors' => [
+            'no_rendered_body' => 'Cannot resend: no rendered body stored. Enable logging.store_rendered_body in settings.',
+            'no_template' => 'Original template no longer exists.',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sent Emails Relation Manager
+    |--------------------------------------------------------------------------
+    */
+
+    'relation' => [
+        'title' => 'Sent Emails',
+
+        'columns' => [
+            'to' => 'To',
+            'template' => 'Template',
+            'sent_by' => 'Sent By',
+            'sent_by_placeholder' => 'System',
+            'sent_at' => 'Sent',
+        ],
+
+        'actions' => [
+            'view' => 'View',
+            'resend' => 'Resend',
+            'resend_confirm' => 'Are you sure you want to resend this email?',
+        ],
+
+        'notifications' => [
+            'resent' => 'Email resent successfully',
+            'resend_failed' => 'Failed to resend',
+        ],
+
+        'empty' => [
+            'heading' => 'No emails sent',
+            'description' => 'Emails sent for this record will appear here.',
+        ],
+
+        'errors' => [
+            'no_body' => 'Cannot resend: no rendered body or template stored.',
+            'no_template' => 'Original template no longer exists.',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Settings Page
+    |--------------------------------------------------------------------------
+    */
+
+    'settings' => [
+        'title' => 'Email Settings',
+
+        'tabs' => [
+            'general' => 'General',
+            'branding' => 'Branding',
+            'logging' => 'Logging',
+            'attachments' => 'Attachments',
+        ],
+
+        'sections' => [
+            'default_sender' => 'Default Sender',
+            'default_sender_description' => 'The default "From" address for all emails sent by the plugin.',
+            'additional_senders' => 'Additional Senders',
+            'additional_senders_description' => 'Extra "From" addresses users can choose when composing emails.',
+            'localization' => 'Localization',
+            'categories' => 'Template Categories',
+            'logo' => 'Logo',
+            'colors' => 'Colors',
+            'footer_links' => 'Footer Links',
+            'customer_service' => 'Customer Service',
+            'logging' => 'Email Logging',
+            'logging_description' => 'Control how sent emails are recorded in the database.',
+            'attachment_rules' => 'Attachment Rules',
+            'attachment_rules_description' => 'Configure limits for file attachments in composed emails.',
+        ],
+
+        'fields' => [
+            'from_email' => 'From Email',
+            'from_name' => 'From Name',
+            'sender_email' => 'Email',
+            'sender_name' => 'Display Name',
+            'sender_new' => 'New Sender',
+            'default_locale' => 'Default Locale',
+            'default_locale_helper' => 'The default language for new templates (e.g., en, hu, de).',
+            'languages' => 'Available Languages',
+            'language_code' => 'Code',
+            'language_display' => 'Display Name',
+            'language_flag' => 'Flag Icon',
+            'language_new' => 'New Language',
+            'category_key' => 'Key',
+            'category_label' => 'Label',
+            'category_new' => 'New Category',
+            'logo_url' => 'Logo URL or Path',
+            'logo_url_placeholder' => 'https://example.com/logo.png',
+            'logo_url_helper' => 'Absolute URL or path to your email logo.',
+            'logo_width' => 'Width (px)',
+            'logo_height' => 'Height (px)',
+            'content_width' => 'Content Width (px)',
+            'primary_color' => 'Primary Color',
+            'footer_link_label' => 'Label',
+            'footer_link_url' => 'URL',
+            'footer_link_new' => 'New Link',
+            'support_email' => 'Support Email',
+            'support_phone' => 'Support Phone',
+            'enable_logging' => 'Enable Logging',
+            'enable_logging_helper' => 'When disabled, no sent email records will be created.',
+            'store_rendered_body' => 'Store Rendered Body',
+            'store_rendered_body_helper' => 'Save the final HTML of each sent email. Required for resend and preview features.',
+            'retention_days' => 'Retention (days)',
+            'retention_days_helper' => 'Auto-delete sent email records after this many days. Leave empty to keep forever.',
+            'max_file_size' => 'Max File Size (MB)',
+            'allowed_extensions' => 'Allowed File Extensions',
+            'allowed_extensions_placeholder' => 'Add extension (e.g., pdf)',
+            'allowed_extensions_helper' => 'File extensions allowed for upload.',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Enums
+    |--------------------------------------------------------------------------
+    */
+
+    'enums' => [
+        'email_status' => [
+            1 => 'Draft',
+            2 => 'Queued',
+            3 => 'Sent',
+            4 => 'Failed',
+        ],
+
+        'template_category' => [
+            1 => 'Transactional',
+            2 => 'Marketing',
+            3 => 'System',
+            4 => 'Notification',
+        ],
+    ],
+
+];

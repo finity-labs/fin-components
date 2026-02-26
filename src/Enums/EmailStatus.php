@@ -17,12 +17,7 @@ enum EmailStatus: int implements HasColor, HasIcon, HasLabel
 
     public function getLabel(): ?string
     {
-        return match ($this) {
-            self::Draft => 'Draft',
-            self::Queued => 'Queued',
-            self::Sent => 'Sent',
-            self::Failed => 'Failed',
-        };
+        return __('fin-mail::fin-mail.enums.email_status.'.$this->value);
     }
 
     public function getColor(): string|array|null

@@ -6,10 +6,10 @@ namespace FinityLabs\FinMail\Actions;
 
 use Closure;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Set;
@@ -76,41 +76,41 @@ class ComposeFormBuilder
         $editor = app(EditorContract::class);
 
         return [
-            Section::make('Recipients')
+            Section::make(__('fin-mail::fin-mail.compose_form.sections.recipients'))
                 ->schema([
                     Select::make('from')
-                        ->label('From')
+                        ->label(__('fin-mail::fin-mail.compose_form.fields.from'))
                         ->options($senders)
                         ->default($mailSettings->default_from_address)
                         ->native(false)
                         ->required(),
 
                     TagsInput::make('to')
-                        ->label('To')
+                        ->label(__('fin-mail::fin-mail.compose_form.fields.to'))
                         ->default($recipient ? [$recipient] : [])
-                        ->placeholder('Enter email addresses')
+                        ->placeholder(__('fin-mail::fin-mail.compose_form.fields.to_placeholder'))
                         ->required()
                         ->nestedRecursiveRules(['email']),
 
                     TagsInput::make('cc')
-                        ->label('CC')
+                        ->label(__('fin-mail::fin-mail.compose_form.fields.cc'))
                         ->default($this->resolveCc() ?? [])
-                        ->placeholder('Enter CC addresses')
+                        ->placeholder(__('fin-mail::fin-mail.compose_form.fields.cc_placeholder'))
                         ->nestedRecursiveRules(['email']),
 
                     TagsInput::make('bcc')
-                        ->label('BCC')
+                        ->label(__('fin-mail::fin-mail.compose_form.fields.bcc'))
                         ->default($this->resolveBcc() ?? [])
-                        ->placeholder('Enter BCC addresses')
+                        ->placeholder(__('fin-mail::fin-mail.compose_form.fields.bcc_placeholder'))
                         ->nestedRecursiveRules(['email']),
                 ])
                 ->columns(2)
                 ->collapsible(),
 
-            Section::make('Content')
+            Section::make(__('fin-mail::fin-mail.compose_form.sections.content'))
                 ->schema([
                     Select::make('template_key')
-                        ->label('Template')
+                        ->label(__('fin-mail::fin-mail.compose_form.fields.template'))
                         ->options(
                             EmailTemplate::active()
                                 ->pluck('name', 'key')
@@ -136,7 +136,7 @@ class ComposeFormBuilder
                         }),
 
                     TextInput::make('subject')
-                        ->label('Subject')
+                        ->label(__('fin-mail::fin-mail.compose_form.fields.subject'))
                         ->default($rendered['subject'])
                         ->required()
                         ->maxLength(255)
@@ -147,14 +147,14 @@ class ComposeFormBuilder
                         ->required(),
                 ]),
 
-            Section::make('Attachments')
+            Section::make(__('fin-mail::fin-mail.compose_form.sections.attachments'))
                 ->schema([
-                    Placeholder::make('preset_attachments')
-                        ->label('Auto-attached files')
-                        ->content(function (): string {
+                    TextEntry::make('preset_attachments')
+                        ->label(__('fin-mail::fin-mail.compose_form.fields.auto_attached'))
+                        ->state(function (): string {
                             $attachments = $this->resolveAttachments();
                             if (empty($attachments)) {
-                                return 'None';
+                                return __('fin-mail::fin-mail.compose_form.fields.auto_attached_none');
                             }
 
                             return collect($attachments)->pluck('name')->implode(', ');
@@ -162,7 +162,7 @@ class ComposeFormBuilder
                         ->visible(fn (): bool => ! empty($this->resolveAttachments())),
 
                     FileUpload::make('additional_attachments')
-                        ->label('Additional Attachments')
+                        ->label(__('fin-mail::fin-mail.compose_form.fields.additional_attachments'))
                         ->multiple()
                         ->disk(config('fin-mail.attachments_disk', 'local'))
                         ->directory('email-attachments')

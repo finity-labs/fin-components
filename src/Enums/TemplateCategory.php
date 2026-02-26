@@ -16,12 +16,7 @@ enum TemplateCategory: int implements HasColor, HasLabel
 
     public function getLabel(): ?string
     {
-        return match ($this) {
-            self::Transactional => 'Transactional',
-            self::Marketing => 'Marketing',
-            self::System => 'System',
-            self::Notification => 'Notification',
-        };
+        return __('fin-mail::fin-mail.enums.template_category.'.$this->value);
     }
 
     public function getColor(): string|array|null

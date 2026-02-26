@@ -44,12 +44,12 @@ class SendEmailTableAction extends Action
         parent::setUp();
 
         $this
-            ->label('Send Email')
+            ->label(__('fin-mail::fin-mail.send_action.label'))
             ->icon('heroicon-o-paper-airplane')
             ->modal()
-            ->modalHeading('Compose Email')
+            ->modalHeading(__('fin-mail::fin-mail.send_action.modal_heading'))
             ->modalWidth('5xl')
-            ->modalSubmitActionLabel('Send')
+            ->modalSubmitActionLabel(__('fin-mail::fin-mail.send_action.submit'))
             ->form(fn (?Model $record): array => $this->getComposeForm($record))
             ->action(fn (array $data, ?Model $record): mixed => $this->sendEmail($data, $record))
             ->modalIcon('heroicon-o-envelope');

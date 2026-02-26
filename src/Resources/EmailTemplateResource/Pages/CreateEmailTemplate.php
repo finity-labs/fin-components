@@ -50,7 +50,7 @@ class CreateEmailTemplate extends CreateRecord
                             })
                     )->values()->all()
             )
-                ->label(fn (): string => 'Language: '.strtoupper($this->activeLocale))
+                ->label(fn (): string => __('fin-mail::fin-mail.template.language_label', ['locale' => strtoupper($this->activeLocale)]))
                 ->icon('heroicon-o-language')
                 ->button(),
         ];
