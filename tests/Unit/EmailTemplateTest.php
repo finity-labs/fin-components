@@ -1,0 +1,237 @@
+<?php
+
+declare(strict_types=1);
+
+use FinityLabs\FinMail\Enums\TemplateCategory;
+use FinityLabs\FinMail\Models\EmailTemplate;
+use FinityLabs\FinMail\Models\EmailTheme;
+
+beforeEach(function () {
+    config()->set('fin-mail.tokens.allowed_config_keys', ['app.name']);
+    config()->set('fin-mail.versioning.enabled', true);
+    config()->set('fin-mail.versioning.max_versions', 5);
+    config()->set('app.name', 'TestApp');
+});
+
+it('can create a template with translations', function () {
+    $template = EmailTemplate::create([
+        'key' => 'test-template',
+        'name' => ['en' => 'Test Template'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'Test Subject'],
+        'body' => ['en' => '<p>Hello {{ user.name }}</p>'],
+        'is_active' => true,
+    ]);
+
+    expect($template)->toBeInstanceOf(EmailTemplate::class)
+        ->and($template->key)->toBe('test-template')
+        ->and($template->is_active)->toBeTrue()
+        ->and($template->getTranslation('name', 'en'))->toBe('Test Template');
+});
+
+it('finds template by key', function () {
+    EmailTemplate::create([
+        'key' => 'welcome',
+        'name' => ['en' => 'Welcome'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'Welcome!'],
+        'body' => ['en' => 'Hello'],
+        'is_active' => true,
+    ]);
+
+    $found = EmailTemplate::findByKey('welcome');
+
+    expect($found)->not->toBeNull()
+        ->and($found->key)->toBe('welcome');
+});
+
+it('sets locale when finding by key with locale parameter', function () {
+    $template = EmailTemplate::create([
+        'key' => 'welcome',
+        'name' => ['en' => 'Welcome', 'hu' => 'Üdvözöljük'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'Welcome!', 'hu' => 'Üdvözöljük!'],
+        'body' => ['en' => 'Hello', 'hu' => 'Helló'],
+        'is_active' => true,
+    ]);
+
+    $found = EmailTemplate::findByKey('welcome', 'hu');
+
+    expect($found)->not->toBeNull()
+        ->and($found->name)->toBe('Üdvözöljük')
+        ->and($found->subject)->toBe('Üdvözöljük!');
+});
+
+it('does not find inactive templates', function () {
+    EmailTemplate::create([
+        'key' => 'disabled',
+        'name' => ['en' => 'Disabled'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'Test'],
+        'body' => ['en' => 'Test'],
+        'is_active' => false,
+    ]);
+
+    $found = EmailTemplate::findByKey('disabled');
+
+    expect($found)->toBeNull();
+});
+
+it('renders tokens in subject and body', function () {
+    $template = EmailTemplate::create([
+        'key' => 'invoice',
+        'name' => ['en' => 'Invoice'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'Invoice from {{ config.app.name }}'],
+        'body' => ['en' => '<p>Hello {{ customer.name }}</p>'],
+        'is_active' => true,
+    ]);
+
+    $customer = new class extends \Illuminate\Database\Eloquent\Model
+    {
+        protected $attributes = ['name' => 'Acme Corp'];
+    };
+
+    $rendered = $template->render(['customer' => $customer]);
+
+    expect($rendered['subject'])->toBe('Invoice from TestApp')
+        ->and($rendered['body'])->toBe('<p>Hello Acme Corp</p>');
+});
+
+it('renders with specific locale', function () {
+    $template = EmailTemplate::create([
+        'key' => 'greeting',
+        'name' => ['en' => 'Greeting', 'hu' => 'Üdvözlet'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'Hello {{ user.name }}', 'hu' => 'Szia {{ user.name }}'],
+        'body' => ['en' => '<p>Welcome</p>', 'hu' => '<p>Üdvözöljük</p>'],
+        'is_active' => true,
+    ]);
+
+    $user = new class extends \Illuminate\Database\Eloquent\Model
+    {
+        protected $attributes = ['name' => 'John'];
+    };
+
+    $rendered = $template->render(['user' => $user], 'hu');
+
+    expect($rendered['subject'])->toBe('Szia John')
+        ->and($rendered['body'])->toBe('<p>Üdvözöljük</p>');
+});
+
+it('stores multiple translations in one record', function () {
+    $template = EmailTemplate::create([
+        'key' => 'multi-lang',
+        'name' => ['en' => 'English Name', 'hu' => 'Magyar Név', 'de' => 'Deutscher Name'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'English Subject'],
+        'body' => ['en' => 'English Body'],
+        'is_active' => true,
+    ]);
+
+    expect($template->getTranslatedLocales())->toContain('en', 'hu', 'de')
+        ->and($template->getTranslation('name', 'hu'))->toBe('Magyar Név')
+        ->and($template->getTranslation('name', 'de'))->toBe('Deutscher Name');
+});
+
+it('saves version snapshots with all translations', function () {
+    $template = EmailTemplate::create([
+        'key' => 'versioned',
+        'name' => ['en' => 'Versioned'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'Original Subject', 'hu' => 'Eredeti Tárgy'],
+        'body' => ['en' => 'Original Body'],
+        'is_active' => true,
+    ]);
+
+    $version = $template->saveVersion();
+
+    expect($version->version)->toBe(1)
+        ->and($version->subject)->toBe(['en' => 'Original Subject', 'hu' => 'Eredeti Tárgy'])
+        ->and($version->body)->toBe(['en' => 'Original Body']);
+});
+
+it('increments version numbers', function () {
+    $template = EmailTemplate::create([
+        'key' => 'multi-version',
+        'name' => ['en' => 'Multi Version'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'V1'],
+        'body' => ['en' => 'V1'],
+        'is_active' => true,
+    ]);
+
+    $template->saveVersion();
+    $template->setTranslation('subject', 'en', 'V2');
+    $template->save();
+    $template->saveVersion();
+
+    expect($template->versions()->count())->toBe(2)
+        ->and($template->versions()->max('version'))->toBe(2);
+});
+
+it('enforces max version limit', function () {
+    $template = EmailTemplate::create([
+        'key' => 'max-version',
+        'name' => ['en' => 'Max'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'Test'],
+        'body' => ['en' => 'Test'],
+        'is_active' => true,
+    ]);
+
+    // Create 7 versions (max is 5)
+    for ($i = 0; $i < 7; $i++) {
+        $template->saveVersion();
+    }
+
+    expect($template->versions()->count())->toBe(5);
+});
+
+it('restores a previous version with all translations', function () {
+    $template = EmailTemplate::create([
+        'key' => 'restorable',
+        'name' => ['en' => 'Restorable'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'Original', 'hu' => 'Eredeti'],
+        'body' => ['en' => 'Original body'],
+        'is_active' => true,
+    ]);
+
+    $template->saveVersion();
+
+    $template->setTranslation('subject', 'en', 'Changed');
+    $template->setTranslation('subject', 'hu', 'Megváltozott');
+    $template->setTranslation('body', 'en', 'Changed body');
+    $template->save();
+
+    $result = $template->restoreVersion(1);
+
+    $fresh = $template->fresh();
+
+    expect($result)->toBeTrue()
+        ->and($fresh->getTranslation('subject', 'en'))->toBe('Original')
+        ->and($fresh->getTranslation('subject', 'hu'))->toBe('Eredeti')
+        ->and($fresh->getTranslation('body', 'en'))->toBe('Original body');
+});
+
+it('belongs to a theme', function () {
+    $theme = EmailTheme::create([
+        'name' => 'Default',
+        'colors' => EmailTheme::defaultColors(),
+        'is_default' => true,
+    ]);
+
+    $template = EmailTemplate::create([
+        'key' => 'themed',
+        'name' => ['en' => 'Themed'],
+        'category' => TemplateCategory::Transactional,
+        'subject' => ['en' => 'Test'],
+        'body' => ['en' => 'Test'],
+        'is_active' => true,
+        'email_theme_id' => $theme->id,
+    ]);
+
+    expect($template->theme)->toBeInstanceOf(EmailTheme::class)
+        ->and($template->theme->name)->toBe('Default');
+});
