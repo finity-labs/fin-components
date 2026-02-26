@@ -5,14 +5,34 @@ declare(strict_types=1);
 namespace FinityLabs\FinMail\Commands;
 
 use FinityLabs\FinMail\Commands\Concerns\CanRegisterPlugin;
+use FinityLabs\FinMail\Enums\CleanupFrequency;
+use FinityLabs\FinMail\Settings\LoggingSettings;
+use FinityLabs\FinMail\Settings\MailSettings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
+use function Laravel\Prompts\multiselect;
 use function Laravel\Prompts\select;
 
 class InstallCommand extends Command
 {
     use CanRegisterPlugin;
+
+    /** @var array<string, array{display: string, flag-icon: string}> */
+    private const LOCALE_MAP = [
+        'en' => ['display' => 'English', 'flag-icon' => 'gb'],
+        'de' => ['display' => 'Deutsch', 'flag-icon' => 'de'],
+        'hu' => ['display' => 'Magyar', 'flag-icon' => 'hu'],
+        'ro' => ['display' => 'Română', 'flag-icon' => 'ro'],
+        'fr' => ['display' => 'Français', 'flag-icon' => 'fr'],
+        'es' => ['display' => 'Español', 'flag-icon' => 'es'],
+        'it' => ['display' => 'Italiano', 'flag-icon' => 'it'],
+        'nl' => ['display' => 'Nederlands', 'flag-icon' => 'nl'],
+        'pl' => ['display' => 'Polski', 'flag-icon' => 'pl'],
+        'pt' => ['display' => 'Português', 'flag-icon' => 'pt'],
+        'cs' => ['display' => 'Čeština', 'flag-icon' => 'cz'],
+        'sk' => ['display' => 'Slovenčina', 'flag-icon' => 'sk'],
+    ];
 
     protected $signature = 'fin-mail:install
                             {--panel= : Panel ID to register the plugin in}
@@ -50,6 +70,8 @@ class InstallCommand extends Command
             $this->info('  Migrations complete');
         }
 
+        $this->configureLocales();
+
         if ($this->option('seed') || $this->confirm('Seed default email templates?', true)) {
             $this->comment('Seeding default templates...');
             $this->call('db:seed', [
@@ -85,6 +107,74 @@ class InstallCommand extends Command
         ]);
 
         return self::SUCCESS;
+    }
+
+    protected function configureLocales(): void
+    {
+        $detected = $this->detectLocales();
+
+        $options = [];
+        foreach ($detected as $code) {
+            $meta = self::LOCALE_MAP[$code] ?? ['display' => strtoupper($code), 'flag-icon' => $code];
+            $options[$code] = "{$meta['display']} ({$code})";
+        }
+
+        $this->comment('Detected locales: '.implode(', ', $detected));
+
+        $selected = multiselect(
+            label: 'Which locales should FinMail support for email templates?',
+            options: $options,
+            default: $detected,
+            required: true,
+        );
+
+        $languages = [];
+        foreach ($selected as $code) {
+            $languages[$code] = self::LOCALE_MAP[$code]
+                ?? ['display' => strtoupper($code), 'flag-icon' => $code];
+        }
+
+        try {
+            $mailSettings = app(MailSettings::class);
+            $mailSettings->default_locale = config('app.locale', 'en');
+            $mailSettings->languages = $languages;
+            $mailSettings->save();
+
+            $this->info('  Locales configured: '.implode(', ', array_keys($languages)));
+        } catch (\Throwable) {
+            $this->components->warn('Could not save locale settings. Configure them manually in the admin panel.');
+        }
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    protected function detectLocales(): array
+    {
+        $langPath = lang_path();
+
+        if (! is_dir($langPath)) {
+            return [config('app.locale', 'en')];
+        }
+
+        $directories = glob($langPath.'/*', GLOB_ONLYDIR);
+
+        if ($directories === false || empty($directories)) {
+            return [config('app.locale', 'en')];
+        }
+
+        $locales = [];
+
+        foreach ($directories as $dir) {
+            $locale = basename($dir);
+            if ($locale !== 'vendor') {
+                $locales[] = $locale;
+            }
+        }
+
+        sort($locales);
+
+        return empty($locales) ? [config('app.locale', 'en')] : $locales;
     }
 
     protected function registerInPanel(): void
@@ -126,48 +216,23 @@ class InstallCommand extends Command
         $frequency = select(
             label: 'How often should old sent emails be cleaned up?',
             options: [
-                'daily' => 'Daily',
-                'weekly' => 'Weekly',
-                'monthly' => 'Monthly',
+                '1' => 'Daily',
+                '2' => 'Weekly',
+                '3' => 'Monthly',
             ],
-            default: 'daily',
+            default: '1',
         );
 
-        $this->updateConfigValue('schedule.cleanup_enabled', true);
-        $this->updateConfigValue('schedule.cleanup_frequency', $frequency);
+        try {
+            $loggingSettings = app(LoggingSettings::class);
+            $loggingSettings->cleanup_enabled = true;
+            $loggingSettings->cleanup_frequency = CleanupFrequency::from((int) $frequency);
+            $loggingSettings->save();
 
-        $this->info("  Cleanup scheduled ({$frequency}). Retention period is configurable in FinMail settings.");
-    }
-
-    protected function updateConfigValue(string $key, mixed $value): void
-    {
-        $configPath = config_path('fin-mail.php');
-
-        if (! file_exists($configPath)) {
-            return;
-        }
-
-        $content = file_get_contents($configPath);
-
-        if ($content === false) {
-            return;
-        }
-
-        // Parse the dotted key (e.g., "schedule.cleanup_enabled" → find 'cleanup_enabled' inside 'schedule' array)
-        $parts = explode('.', $key);
-        $configKey = array_pop($parts);
-
-        $replacement = is_bool($value)
-            ? ($value ? 'true' : 'false')
-            : "'".$value."'";
-
-        // Match the key => value pattern (handles bool, string, int values)
-        $pattern = "/(['\"]".preg_quote($configKey, '/')."['\"]\\s*=>\\s*)([^,\\]\\n]+)/";
-
-        $updated = preg_replace($pattern, '${1}'.$replacement, $content, 1);
-
-        if ($updated !== null && $updated !== $content) {
-            file_put_contents($configPath, $updated);
+            $label = $loggingSettings->cleanup_frequency->getLabel();
+            $this->info("  Cleanup scheduled ({$label}). Retention period is configurable in FinMail settings.");
+        } catch (\Throwable) {
+            $this->components->warn('Could not save cleanup settings. Configure them manually in the admin panel.');
         }
     }
 
