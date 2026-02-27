@@ -58,6 +58,12 @@ class EmailTemplatesTable
                     ->boolean()
                     ->label(__('fin-mail::fin-mail.template.columns.active')),
 
+                IconColumn::make('is_locked')
+                    ->label(__('fin-mail::fin-mail.template.columns.locked'))
+                    ->icon(fn (bool $state): ?string => $state ? 'heroicon-s-lock-closed' : null)
+                    ->color(fn (bool $state): ?string => $state ? 'warning' : null)
+                    ->tooltip(fn (bool $state): ?string => $state ? __('fin-mail::fin-mail.template.tooltips.locked') : null),
+
                 TextColumn::make('sent_emails_count')
                     ->counts('sentEmails')
                     ->label(__('fin-mail::fin-mail.template.columns.sent'))
@@ -74,6 +80,9 @@ class EmailTemplatesTable
 
                 TernaryFilter::make('is_active')
                     ->label(__('fin-mail::fin-mail.template.columns.active')),
+
+                TernaryFilter::make('is_locked')
+                    ->label(__('fin-mail::fin-mail.template.columns.locked')),
             ])
             ->deferFilters()
             ->recordAction(null)
@@ -139,12 +148,28 @@ class EmailTemplatesTable
                         ->icon(Heroicon::OutlinedPencilSquare)
                         ->url(fn ($record): string => EmailTemplateResource::getUrl('compose', ['record' => $record])),
 
-                    DeleteAction::make(),
+                    DeleteAction::make()
+                        ->visible(fn ($record): bool => $record->isDeletable()),
                 ]),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->before(function (DeleteBulkAction $action, \Illuminate\Database\Eloquent\Collection $records): void {
+                            $lockedCount = $records->where('is_locked', true)->count();
+                            if ($lockedCount > 0) {
+                                Notification::make()
+                                    ->title(__('fin-mail::fin-mail.template.notifications.locked_skipped'))
+                                    ->body(__('fin-mail::fin-mail.template.notifications.locked_skipped_body', ['count' => $lockedCount]))
+                                    ->warning()
+                                    ->send();
+                            }
+                        })
+                        ->using(
+                            fn (\Illuminate\Database\Eloquent\Collection $records) => $records
+                                ->reject(fn ($record): bool => $record->is_locked)
+                                ->each(fn ($record) => $record->delete())
+                        ),
                 ]),
             ])
             ->defaultSort('updated_at', 'desc');

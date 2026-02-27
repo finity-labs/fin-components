@@ -68,6 +68,7 @@ return [
         'columns' => [
             'locales' => 'Sprachen',
             'active' => 'Aktiv',
+            'locked' => 'Gesperrt',
             'sent' => 'Gesendet',
         ],
 
@@ -87,6 +88,16 @@ return [
             'test_failed' => 'Test-E-Mail konnte nicht gesendet werden',
             'saved' => 'Vorlage gespeichert',
             'saved_body' => 'Ein Versions-Snapshot wurde automatisch gespeichert.',
+            'locked_skipped' => 'Gesperrte Vorlagen übersprungen',
+            'locked_skipped_body' => ':count gesperrte Vorlage(n) wurden übersprungen und nicht gelöscht.',
+        ],
+
+        'tooltips' => [
+            'locked' => 'Diese Vorlage ist gesperrt — Schlüssel und Kategorie sind schreibgeschützt, Löschung ist verhindert.',
+        ],
+
+        'notices' => [
+            'locked' => 'Diese Vorlage ist gesperrt. Die Felder Schlüssel und Kategorie können nicht geändert werden.',
         ],
 
         'language_label' => 'Sprache: :locale',

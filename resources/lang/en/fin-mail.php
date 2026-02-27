@@ -68,6 +68,7 @@ return [
         'columns' => [
             'locales' => 'Locales',
             'active' => 'Active',
+            'locked' => 'Locked',
             'sent' => 'Sent',
         ],
 
@@ -87,6 +88,16 @@ return [
             'test_failed' => 'Failed to send test email',
             'saved' => 'Template saved',
             'saved_body' => 'A version snapshot was saved automatically.',
+            'locked_skipped' => 'Locked templates skipped',
+            'locked_skipped_body' => ':count locked template(s) were skipped and not deleted.',
+        ],
+
+        'tooltips' => [
+            'locked' => 'This template is locked — key and category are read-only, deletion is prevented.',
+        ],
+
+        'notices' => [
+            'locked' => 'This template is locked. The key and category fields cannot be changed.',
         ],
 
         'language_label' => 'Language: :locale',

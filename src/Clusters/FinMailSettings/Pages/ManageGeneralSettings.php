@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FinityLabs\FinMail\Clusters\FinMailSettings\Pages;
 
 use BackedEnum;
+use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\SettingsPage;
@@ -116,7 +117,9 @@ class ManageGeneralSettings extends SettingsPage
                                 ->label(__('fin-mail::fin-mail.settings.fields.category_key'))
                                 ->required()
                                 ->maxLength(50)
-                                ->placeholder('transactional'),
+                                ->placeholder('transactional')
+                                ->disabled(fn (?string $state): bool => $state === 'system')
+                                ->dehydrated(true),
                             TextInput::make('label')
                                 ->label(__('fin-mail::fin-mail.settings.fields.category_label'))
                                 ->required()
@@ -126,7 +129,16 @@ class ManageGeneralSettings extends SettingsPage
                         ->columns(2)
                         ->defaultItems(0)
                         ->collapsible()
-                        ->itemLabel(fn (array $state): ?string => $state['label'] ?? $state['key'] ?? __('fin-mail::fin-mail.settings.fields.category_new')),
+                        ->itemLabel(fn (array $state): ?string => $state['label'] ?? $state['key'] ?? __('fin-mail::fin-mail.settings.fields.category_new'))
+                        ->deleteAction(
+                            fn (Action $action) => $action
+                                ->hidden(function (array $arguments, Repeater $component): bool {
+                                    $items = $component->getState();
+                                    $itemUuid = $arguments['item'] ?? null;
+
+                                    return $itemUuid && ($items[$itemUuid]['key'] ?? '') === 'system';
+                                })
+                        ),
                 ]),
         ]);
     }

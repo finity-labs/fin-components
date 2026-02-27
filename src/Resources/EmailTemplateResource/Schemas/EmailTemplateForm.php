@@ -9,6 +9,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -16,6 +17,7 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinMail\Contracts\EditorContract;
+use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Settings\GeneralSettings;
 
 class EmailTemplateForm
@@ -32,6 +34,14 @@ class EmailTemplateForm
                     Tab::make(__('fin-mail::fin-mail.template.tabs.content'))
                         ->icon(Heroicon::OutlinedDocumentText)
                         ->schema([
+                            TextEntry::make('locked_notice')
+                                ->label('')
+                                ->icon('heroicon-s-lock-closed')
+                                ->iconColor('warning')
+                                ->state(__('fin-mail::fin-mail.template.notices.locked'))
+                                ->visible(fn (?EmailTemplate $record): bool => (bool) $record?->is_locked)
+                                ->columnSpanFull(),
+
                             TextInput::make('name')
                                 ->required()
                                 ->maxLength(255)
@@ -42,13 +52,17 @@ class EmailTemplateForm
                                     ->required()
                                     ->unique(ignoreRecord: true)
                                     ->helperText(__('fin-mail::fin-mail.template.fields.key_helper'))
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->disabled(fn (?EmailTemplate $record): bool => (bool) $record?->is_locked)
+                                    ->dehydrated(true),
 
                                 Select::make('category')
                                     ->options(fn (): array => app(GeneralSettings::class)->getCategoryOptions())
                                     ->default('transactional')
                                     ->native(false)
-                                    ->required(),
+                                    ->required()
+                                    ->disabled(fn (?EmailTemplate $record): bool => (bool) $record?->is_locked)
+                                    ->dehydrated(true),
                             ]),
 
                             TextInput::make('subject')

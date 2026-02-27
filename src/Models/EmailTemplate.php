@@ -33,6 +33,7 @@ class EmailTemplate extends Model
         'email_theme_id',
         'token_schema',
         'is_active',
+        'is_locked',
     ];
 
     /*
@@ -50,8 +51,22 @@ class EmailTemplate extends Model
             'from' => 'array',
             'tags' => 'array',
             'is_active' => 'boolean',
+            'is_locked' => 'boolean',
             'token_schema' => 'array',
         ];
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Boot
+    |--------------------------------------------------------------------------
+    */
+
+    protected static function booted(): void
+    {
+        static::deleting(function (EmailTemplate $template): bool {
+            return ! $template->is_locked;
+        });
     }
 
     /*
@@ -96,11 +111,21 @@ class EmailTemplate extends Model
         return $query->where('key', $key);
     }
 
+    public function scopeLocked(Builder $query): Builder
+    {
+        return $query->where('is_locked', true);
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Helpers
     |--------------------------------------------------------------------------
     */
+
+    public function isDeletable(): bool
+    {
+        return ! $this->is_locked;
+    }
 
     /**
      * Find a template by its key, optionally setting the locale for translation resolution.

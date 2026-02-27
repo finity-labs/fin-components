@@ -113,7 +113,8 @@ class EditEmailTemplate extends EditRecord
                 ->modalSubmitAction(false)
                 ->visible(fn (): bool => (bool) config('fin-mail.versioning.enabled')),
 
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->visible(fn (): bool => $this->record->isDeletable()),
         ];
     }
 

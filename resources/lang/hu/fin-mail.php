@@ -68,6 +68,7 @@ return [
         'columns' => [
             'locales' => 'Nyelvek',
             'active' => 'Aktív',
+            'locked' => 'Zárolt',
             'sent' => 'Elküldve',
         ],
 
@@ -87,6 +88,16 @@ return [
             'test_failed' => 'Nem sikerült elküldeni a teszt e-mailt',
             'saved' => 'Sablon mentve',
             'saved_body' => 'A verzió pillanatkép automatikusan mentésre került.',
+            'locked_skipped' => 'Zárolt sablonok kihagyva',
+            'locked_skipped_body' => ':count zárolt sablon lett kihagyva és nem törölve.',
+        ],
+
+        'tooltips' => [
+            'locked' => 'Ez a sablon zárolt — a kulcs és a kategória csak olvasható, a törlés tiltott.',
+        ],
+
+        'notices' => [
+            'locked' => 'Ez a sablon zárolt. A kulcs és kategória mezők nem módosíthatók.',
         ],
 
         'language_label' => 'Nyelv: :locale',

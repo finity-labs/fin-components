@@ -37,6 +37,7 @@ return new class extends Migration
 
             // State
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_locked')->default(false);
 
             $table->timestamps();
             $table->softDeletes();

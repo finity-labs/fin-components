@@ -57,6 +57,7 @@ class EmailTemplateSeeder extends Seeder
                 array_merge($filtered, [
                     'email_theme_id' => $theme?->id,
                     'is_active' => true,
+                    'is_locked' => $data['is_locked'] ?? false,
                 ])
             );
         }
@@ -97,6 +98,7 @@ class EmailTemplateSeeder extends Seeder
     {
         return [
             'key' => 'user-welcome',
+            'is_locked' => true,
             'name' => [
                 'en' => 'Welcome New User',
                 'de' => 'Neuen Benutzer begrüßen',
@@ -166,6 +168,7 @@ HTML,
     {
         return [
             'key' => 'user-verify-email',
+            'is_locked' => true,
             'name' => [
                 'en' => 'Verify Email Address',
                 'de' => 'E-Mail-Adresse bestätigen',
@@ -235,6 +238,7 @@ HTML,
     {
         return [
             'key' => 'user-password-reset',
+            'is_locked' => true,
             'name' => [
                 'en' => 'Password Reset Request',
                 'de' => 'Passwort zurücksetzen',
@@ -307,6 +311,7 @@ HTML,
     {
         return [
             'key' => 'user-password-changed',
+            'is_locked' => true,
             'name' => [
                 'en' => 'Password Changed Confirmation',
                 'de' => 'Passwort geändert',

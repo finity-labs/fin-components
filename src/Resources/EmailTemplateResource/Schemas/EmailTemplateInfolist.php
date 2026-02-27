@@ -61,6 +61,14 @@ class EmailTemplateInfolist
                                 ->label(__('fin-mail::fin-mail.template.fields.is_active'))
                                 ->boolean(),
 
+                            IconEntry::make('is_locked')
+                                ->label(__('fin-mail::fin-mail.template.columns.locked'))
+                                ->boolean()
+                                ->trueIcon('heroicon-s-lock-closed')
+                                ->falseIcon('heroicon-o-lock-open')
+                                ->trueColor('warning')
+                                ->falseColor('gray'),
+
                             TextEntry::make('tags')
                                 ->badge()
                                 ->placeholder('-')
