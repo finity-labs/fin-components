@@ -1,3 +1,7 @@
+# FinMail for Filament
+
+![finity-labs-fin-mail](https://github.com/user-attachments/assets/8f7651e6-ade0-4c25-941e-da470dc374fa)
+
 [![FILAMENT 4.x](https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square)](https://filamentphp.com/docs/4.x/panels/installation)
 [![FILAMENT 5.x](https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square)](https://filamentphp.com/docs/5.x/panels/installation)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/finity-labs/fin-mail.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-mail)
@@ -5,8 +9,6 @@
 [![Code Style](https://github.com/finity-labs/fin-mail/actions/workflows/style.yml/badge.svg)](https://github.com/finity-labs/fin-mail/actions/workflows/style.yml)
 [![Total Downloads](https://img.shields.io/packagist/dt/finity-labs/fin-mail.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-mail)
 [![License](https://img.shields.io/packagist/l/finity-labs/fin-mail.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-mail)
-
-# FinMail
 
 A powerful email template manager and composer for Filament. Build, manage, and send emails directly from your admin panel — with dynamic token replacement, multilingual templates, customizable themes, template versioning, email logging with status tracking, auth email overrides, and a reusable Send Email action that drops into any resource.
 
