@@ -11,6 +11,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ReplicateAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -96,6 +97,12 @@ class EmailTemplatesTable
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                ReplicateAction::make()
+                    ->beforeReplicaSaved(function ($replica): void {
+                        $replica->name = $replica->name.' '.__('fin-mail::fin-mail.template.replicate_suffix');
+                        $replica->key = $replica->key.'-copy-'.time();
+                        $replica->is_locked = false;
+                    }),
                 DeleteAction::make()
                     ->visible(fn ($record): bool => $record->isDeletable()),
 

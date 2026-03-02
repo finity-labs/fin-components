@@ -115,6 +115,8 @@ return [
         ],
 
         'language_label' => 'Sprache: :locale',
+
+        'replicate_suffix' => '(Kopie)',
     ],
 
     /*

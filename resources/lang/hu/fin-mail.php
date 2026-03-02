@@ -115,6 +115,8 @@ return [
         ],
 
         'language_label' => 'Nyelv: :locale',
+
+        'replicate_suffix' => '(Másolat)',
     ],
 
     /*
