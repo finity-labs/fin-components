@@ -193,11 +193,28 @@ class TemplateMail extends Mailable implements ShouldQueue
     }
 
     /**
-     * After sending, log the email if logging is enabled.
+     * Override send to update status after the email is actually delivered.
+     *
+     * This is called by the queue worker (or sync driver), so it runs
+     * after the message has been handed to the mail transport.
+     *
+     * @param  \Illuminate\Contracts\Mail\Factory|\Illuminate\Contracts\Mail\Mailer  $mailer
+     *
+     * @return \Illuminate\Mail\SentMessage|null
      */
-    public function sent(mixed $message): void
+    public function send($mailer)
     {
-        $this->sentEmailLog?->markAsSent();
+        try {
+            $result = parent::send($mailer);
+
+            $this->sentEmailLog?->markAsSent();
+
+            return $result;
+        } catch (\Throwable $e) {
+            $this->sentEmailLog?->markAsFailed($e->getMessage());
+
+            throw $e;
+        }
     }
 
     /*
