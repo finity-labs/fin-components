@@ -83,7 +83,10 @@ class ViewEmailTemplate extends ViewRecord
                 ->modal()
                 ->modalHeading(fn (): string => __('fin-mail::fin-mail.template.actions.preview').": {$this->record->name}")
                 ->modalContent(fn () => view('fin-mail::components.email-preview', [
-                    'html' => $this->record->body,
+                    'subject' => $this->record->getTranslation('subject', $this->activeLocale),
+                    'preheader' => $this->record->getTranslation('preheader', $this->activeLocale),
+                    'html' => $this->record->getTranslation('body', $this->activeLocale),
+                    'theme' => $this->record->theme?->resolvedColors(),
                 ]))
                 ->modalWidth(Width::FourExtraLarge)
                 ->modalSubmitAction(false),

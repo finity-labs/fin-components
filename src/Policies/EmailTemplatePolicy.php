@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinMail\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use FinityLabs\FinMail\Models\EmailTemplate;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Foundation\Auth\User as AuthUser;
 
 class EmailTemplatePolicy
 {
@@ -36,5 +36,4 @@ class EmailTemplatePolicy
     {
         return $authUser->can('Delete:EmailTemplate');
     }
-
 }

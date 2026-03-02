@@ -81,7 +81,19 @@
                                 @endforeach
                                 <br><br>
                             @endif
-                            &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.
+                            @if(($branding['customer_service_email'] ?? null) || ($branding['customer_service_phone'] ?? null))
+                                @if($branding['customer_service_email'] ?? null)
+                                    <a href="mailto:{{ $branding['customer_service_email'] }}" style="color: {{ $theme['link'] ?? '#4F46E5' }}; text-decoration: none;">{{ $branding['customer_service_email'] }}</a>
+                                @endif
+                                @if(($branding['customer_service_email'] ?? null) && ($branding['customer_service_phone'] ?? null))
+                                    &middot;
+                                @endif
+                                @if($branding['customer_service_phone'] ?? null)
+                                    <a href="tel:{{ $branding['customer_service_phone'] }}" style="color: {{ $theme['link'] ?? '#4F46E5' }}; text-decoration: none;">{{ $branding['customer_service_phone'] }}</a>
+                                @endif
+                                <br><br>
+                            @endif
+                            {!! __('fin-mail::fin-mail.email.copyright', ['year' => date('Y'), 'app' => config('app.name')]) !!}
                         </td>
                     </tr>
 

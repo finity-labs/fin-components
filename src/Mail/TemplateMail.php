@@ -220,6 +220,8 @@ class TemplateMail extends Mailable implements ShouldQueue
             'content_width' => $branding->content_width,
             'primary_color' => $branding->primary_color,
             'footer_links' => $branding->footer_links,
+            'customer_service_email' => $branding->customer_service_email,
+            'customer_service_phone' => $branding->customer_service_phone,
         ];
     }
 

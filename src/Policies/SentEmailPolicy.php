@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinMail\Policies;
 
-use Illuminate\Foundation\Auth\User as AuthUser;
 use FinityLabs\FinMail\Models\SentEmail;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Foundation\Auth\User as AuthUser;
 
 class SentEmailPolicy
 {
@@ -21,5 +21,4 @@ class SentEmailPolicy
     {
         return $authUser->can('View:SentEmail');
     }
-
 }

@@ -117,7 +117,10 @@ class ComposeEmail extends Page
                 ->modal()
                 ->modalHeading(__('fin-mail::fin-mail.template.actions.preview'))
                 ->modalContent(fn () => view('fin-mail::components.email-preview', [
+                    'subject' => $this->data['subject'] ?? '',
+                    'preheader' => $this->data['preheader'] ?? '',
                     'html' => $this->getPreviewHtml(),
+                    'theme' => $this->record->theme?->resolvedColors(),
                 ]))
                 ->modalWidth(Width::FourExtraLarge)
                 ->modalSubmitAction(false)

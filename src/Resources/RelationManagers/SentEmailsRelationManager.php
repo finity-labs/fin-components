@@ -87,7 +87,9 @@ class SentEmailsRelationManager extends RelationManager
                     ->modal()
                     ->modalHeading(fn ($record): string => $record->subject)
                     ->modalContent(fn ($record) => view('fin-mail::components.email-preview', [
+                        'subject' => $record->subject,
                         'html' => $record->rendered_body,
+                        'theme' => $record->template?->theme?->resolvedColors(),
                     ]))
                     ->modalWidth(Width::FourExtraLarge)
                     ->modalSubmitAction(false)

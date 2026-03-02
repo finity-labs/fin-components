@@ -106,7 +106,10 @@ class EmailTemplatesTable
                         ->modal()
                         ->modalHeading(fn ($record): string => "Preview: {$record->name}")
                         ->modalContent(fn ($record) => view('fin-mail::components.email-preview', [
+                            'subject' => $record->subject,
+                            'preheader' => $record->preheader,
                             'html' => $record->body,
+                            'theme' => $record->theme?->resolvedColors(),
                         ]))
                         ->modalWidth(Width::FourExtraLarge)
                         ->modalSubmitAction(false),
