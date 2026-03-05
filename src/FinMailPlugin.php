@@ -40,6 +40,8 @@ class FinMailPlugin implements Plugin
 
     protected string|UnitEnum|Closure|null $settingsNavigationGroup = NavigationGroup::Email;
 
+    protected string $policyNamespace = 'App\\Policies';
+
     public static function make(): static
     {
         return app(static::class);
@@ -104,6 +106,18 @@ class FinMailPlugin implements Plugin
         $this->themesEnabled = $enabled;
 
         return $this;
+    }
+
+    public function policyNamespace(string $namespace): static
+    {
+        $this->policyNamespace = $namespace;
+
+        return $this;
+    }
+
+    public function getPolicyNamespace(): string
+    {
+        return $this->policyNamespace;
     }
 
     public function navigationGroup(string|UnitEnum|Closure|null $group): static

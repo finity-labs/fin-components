@@ -112,6 +112,8 @@ class InstallCommand extends Command
             $this->info('  Config published to config/fin-mail.php');
         }
 
+        $this->ensureSettingsTableExists();
+
         $this->comment('Publishing migrations...');
         $this->callSilently('vendor:publish', [
             '--tag' => 'fin-mail-migrations',
@@ -168,6 +170,24 @@ class InstallCommand extends Command
         $this->table(['Next Steps', 'Details'], $nextSteps);
 
         return self::SUCCESS;
+    }
+
+    protected function ensureSettingsTableExists(): void
+    {
+        if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
+            return;
+        }
+
+        $this->comment('Publishing spatie/laravel-settings migration...');
+        $this->callSilently('vendor:publish', [
+            '--provider' => 'Spatie\LaravelSettings\LaravelSettingsServiceProvider',
+            '--tag' => 'migrations',
+        ]);
+        $this->info('  Settings migration published');
+
+        $this->comment('Running settings migration...');
+        $this->call('migrate');
+        $this->info('  Settings table created');
     }
 
     protected function configureLocales(): void
@@ -438,7 +458,7 @@ class InstallCommand extends Command
             PHP_BINARY, 'artisan', 'shield:generate',
             '--resource=EmailTemplateResource,EmailThemeResource,SentEmailResource',
             '--page=ManageAttachmentSettings,ManageAuthEmailSettings,ManageBrandingSettings,ManageGeneralSettings,ManageLoggingSettings',
-            '--option=permissions',
+            '--option=policies_and_permissions',
             '--ignore-existing-policies',
             '--no-interaction',
         ];
@@ -457,7 +477,7 @@ class InstallCommand extends Command
         } else {
             $this->components->warn('Could not generate Shield permissions automatically. Run manually:');
             $panelFlag = $this->panelId !== null ? " --panel={$this->panelId}" : '';
-            $this->line("  php artisan shield:generate{$panelFlag} --option=policies_and_permissions");
+            $this->line("  php artisan shield:generate{$panelFlag} --option=policies_and_permissions --ignore-existing-policies");
         }
     }
 

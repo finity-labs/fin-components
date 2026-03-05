@@ -56,8 +56,36 @@ class FinMailServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
+        $this->registerShieldPolicies();
         $this->registerAuthEmailOverrides();
         $this->registerScheduledCommands();
+    }
+
+    protected function registerShieldPolicies(): void
+    {
+        if (! class_exists(\BezhanSalleh\FilamentShield\FilamentShieldPlugin::class)) {
+            return;
+        }
+
+        try {
+            $namespace = FinMailPlugin::get()->getPolicyNamespace();
+        } catch (\Throwable) {
+            $namespace = 'App\\Policies';
+        }
+
+        $policyMap = [
+            Models\EmailTemplate::class => $namespace.'\\EmailTemplatePolicy',
+            Models\EmailTheme::class => $namespace.'\\EmailThemePolicy',
+            Models\SentEmail::class => $namespace.'\\SentEmailPolicy',
+        ];
+
+        $gate = \Illuminate\Support\Facades\Gate::getFacadeRoot();
+
+        foreach ($policyMap as $model => $policy) {
+            if (class_exists($policy)) {
+                $gate->policy($model, $policy);
+            }
+        }
     }
 
     protected function registerAuthEmailOverrides(): void

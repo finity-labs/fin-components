@@ -41,6 +41,11 @@ A powerful email template manager and composer for Filament. Build, manage, and 
 composer require finity-labs/fin-mail
 ```
 
+> **Dependency conflict?** If you see an error about `phpdocumentor/type-resolver`, it means your project has `phpdocumentor/reflection-docblock` 6.x which conflicts with `spatie/laravel-settings`. Fix it by allowing Composer to resolve all dependencies:
+> ```bash
+> composer require finity-labs/fin-mail phpdocumentor/reflection-docblock:^5.6 -W
+> ```
+
 ```bash
 php artisan fin-mail:install
 ```
@@ -84,6 +89,7 @@ FinMailPlugin::make()
     ->enableSentEmails()    // Show the Sent Emails resource (default: true)
     ->enableThemes()        // Show the Themes resource (default: true)
     ->deleteActionOnEditPage() // Show delete button on edit pages (default: false)
+    ->policyNamespace('App\\Policies') // Where Shield policies live (default: App\Policies)
 ```
 
 ### Navigation customization
@@ -235,20 +241,27 @@ All event properties are `readonly`. Events use `SerializesModels` so they are s
 
 ## Filament Shield Integration
 
-FinMail ships with built-in support for [Filament Shield](https://github.com/bezhanSalleh/filament-shield). Policy files are bundled with the plugin — no generation needed.
+FinMail ships with built-in support for [Filament Shield](https://github.com/bezhanSalleh/filament-shield). Shield is entirely optional — without it, all resources are accessible to any authenticated user.
 
 ### Automatic setup
 
 If Shield is installed, the `fin-mail:install` command will:
 1. Register FinMail resources in your `filament-shield.php` config
-2. Generate the permission entries in the database via `shield:generate`
+2. Generate policies and permission entries via `shield:generate`
+
+FinMail automatically maps Shield-generated policies (in `App\Policies` by default) to its models. If your policies live elsewhere, configure the namespace on the plugin:
+
+```php
+FinMailPlugin::make()
+    ->policyNamespace('App\\Policies\\Admin')
+```
 
 ### Manual setup
 
 If you prefer to set up Shield manually, or if the automatic setup didn't complete:
 
 ```bash
-php artisan shield:generate --panel=admin --option=permissions
+php artisan shield:generate --panel=admin --option=policies_and_permissions
 ```
 
 ### Supported permissions
