@@ -1,0 +1,14 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - src
+        - config
+        - database
+    level: 5
+    ignoreErrors:
+        - '#Unsafe usage of new static#'
+
+        # Shield facade is only called after class_exists guard
+        - '#BezhanSalleh\\FilamentShield\\#'
