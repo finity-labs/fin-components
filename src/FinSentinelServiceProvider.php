@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinSentinel;
 
+use FinityLabs\FinSentinel\Listeners\MessageLoggedListener;
+use FinityLabs\FinSentinel\Settings\ErrorChannelSettings;
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Facades\Event;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -89,8 +93,11 @@ class FinSentinelServiceProvider extends PackageServiceProvider
     private function bootSettingsSafe(): void
     {
         try {
-            // Phase 2+ will add settings-dependent boot logic here.
-            // No settings are read during boot in Phase 1.
+            $settings = app(ErrorChannelSettings::class);
+
+            if ($settings->error_enabled && ! empty($settings->error_recipients)) {
+                Event::listen(MessageLogged::class, MessageLoggedListener::class);
+            }
         } catch (\Throwable) {
             logger()->debug('fin-sentinel: settings table not available yet, skipping settings boot.');
         }
