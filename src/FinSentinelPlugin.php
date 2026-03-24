@@ -44,6 +44,7 @@ class FinSentinelPlugin implements Plugin
                 for: 'FinityLabs\\FinSentinel\\Clusters'
             )
             ->pages([
+                Pages\LogFileList::class,
                 Pages\LogFileViewer::class,
             ]);
     }
