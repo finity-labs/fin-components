@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinSentinel;
 
+use FinityLabs\FinSentinel\Events\SentinelDebug;
 use FinityLabs\FinSentinel\Listeners\MessageLoggedListener;
+use FinityLabs\FinSentinel\Listeners\SentinelDebugListener;
+use FinityLabs\FinSentinel\Services\DebugService;
+use FinityLabs\FinSentinel\Settings\DebugChannelSettings;
 use FinityLabs\FinSentinel\Settings\ErrorChannelSettings;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
@@ -34,6 +38,13 @@ class FinSentinelServiceProvider extends PackageServiceProvider
                 Commands\InstallCommand::class,
                 Commands\UninstallCommand::class,
             ]);
+    }
+
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->singleton('fin-sentinel.debug', fn () => new DebugService());
     }
 
     public function packageBooted(): void
@@ -98,6 +109,12 @@ class FinSentinelServiceProvider extends PackageServiceProvider
 
             if ($settings->error_enabled && ! empty($settings->error_recipients)) {
                 Event::listen(MessageLogged::class, MessageLoggedListener::class);
+            }
+
+            $debugSettings = app(DebugChannelSettings::class);
+
+            if ($debugSettings->debug_enabled && ! empty($debugSettings->debug_recipients)) {
+                Event::listen(SentinelDebug::class, SentinelDebugListener::class);
             }
         } catch (\Throwable) {
             logger()->debug('fin-sentinel: settings table not available yet, skipping settings boot.');

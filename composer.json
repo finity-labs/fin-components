@@ -45,7 +45,10 @@
         "laravel": {
             "providers": [
                 "FinityLabs\\FinSentinel\\FinSentinelServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "FinSentinel": "FinityLabs\\FinSentinel\\Facades\\FinSentinel"
+            }
         }
     },
     "config": {
