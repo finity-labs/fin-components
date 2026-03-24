@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace FinityLabs\FinSentinel\Clusters\FinSentinelSettings\Pages;
 
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Pages\SettingsPage;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinSentinel\Clusters\FinSentinelSettings\FinSentinelSettings;
+use FinityLabs\FinSentinel\Mail\DebugMail;
 use FinityLabs\FinSentinel\Settings\DebugChannelSettings;
 use FinityLabs\FinSentinel\Traits\HasPageShieldSupport;
+use Illuminate\Support\Facades\Mail;
 
 class ManageDebugChannelSettings extends SettingsPage
 {
@@ -37,6 +41,67 @@ class ManageDebugChannelSettings extends SettingsPage
     public function getTitle(): string
     {
         return 'Debug Channel Settings';
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('sendTestEmail')
+                ->label(__('fin-sentinel::fin-sentinel.test_email_send'))
+                ->icon('heroicon-o-paper-airplane')
+                ->color('primary')
+                ->action(function (): void {
+                    $settings = app(DebugChannelSettings::class);
+
+                    if (empty($settings->debug_recipients)) {
+                        Notification::make()
+                            ->title(__('fin-sentinel::fin-sentinel.test_email_no_recipients'))
+                            ->danger()
+                            ->send();
+
+                        return;
+                    }
+
+                    if (! $settings->debug_enabled) {
+                        Notification::make()
+                            ->title(__('fin-sentinel::fin-sentinel.test_email_channel_disabled'))
+                            ->warning()
+                            ->send();
+                    }
+
+                    try {
+                        $testMail = new DebugMail(
+                            formattedData: [
+                                'type' => 'array',
+                                'data' => [
+                                    'message' => 'This is a test debug email from FinSentinel',
+                                    'timestamp' => now()->toDateTimeString(),
+                                    'status' => 'working',
+                                ],
+                            ],
+                            callSite: ['file' => 'FinSentinel Settings Page', 'line' => 0],
+                            requestContext: DebugMail::buildRequestContext(),
+                            environmentContext: DebugMail::buildEnvironmentContext(),
+                            customSubject: '[TEST] Test Debug Notification',
+                        );
+
+                        Mail::to($settings->debug_recipients)->send($testMail);
+
+                        Notification::make()
+                            ->title(__('fin-sentinel::fin-sentinel.test_email_sent', [
+                                'count' => count($settings->debug_recipients),
+                            ]))
+                            ->success()
+                            ->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()
+                            ->title(__('fin-sentinel::fin-sentinel.test_email_failed'))
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+                    }
+                }),
+        ];
     }
 
     public function form(Schema $schema): Schema
