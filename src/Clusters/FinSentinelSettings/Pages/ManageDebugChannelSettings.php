@@ -78,6 +78,11 @@ class ManageDebugChannelSettings extends SettingsPage
 
             Section::make('Throttling')
                 ->schema([
+                    Toggle::make('debug_throttle_enabled')
+                        ->label('Enable throttling')
+                        ->helperText('When disabled, every debug call sends an email. When enabled, duplicate calls are throttled.')
+                        ->live(),
+
                     TextInput::make('debug_throttle_minutes')
                         ->label('Throttle rate')
                         ->helperText('Minimum minutes between duplicate debug emails.')
@@ -85,7 +90,8 @@ class ManageDebugChannelSettings extends SettingsPage
                         ->required()
                         ->minValue(1)
                         ->maxValue(1440)
-                        ->suffix('minutes'),
+                        ->suffix('minutes')
+                        ->visible(fn (callable $get): bool => (bool) $get('debug_throttle_enabled')),
                 ]),
         ]);
     }

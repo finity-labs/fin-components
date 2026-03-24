@@ -28,6 +28,7 @@ class FinSentinelServiceProvider extends PackageServiceProvider
                 '../settings/create_error_channel_settings',
                 '../settings/create_debug_channel_settings',
                 '../settings/add_throttle_toggles_to_error_channel_settings',
+                '../settings/add_throttle_enabled_to_debug_channel_settings',
             ])
             ->hasCommands([
                 Commands\InstallCommand::class,

@@ -12,6 +12,8 @@ class DebugChannelSettings extends Settings
 
     public bool $debug_enabled = false;
 
+    public bool $debug_throttle_enabled = false;
+
     public int $debug_throttle_minutes = 15;
 
     public static function group(): string

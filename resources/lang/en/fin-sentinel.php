@@ -11,4 +11,12 @@ return [
     'error_section_request' => 'Request Context',
     'error_section_user' => 'Authenticated User',
     'error_section_environment' => 'Environment',
+
+    'debug_subject' => ':app - Debug: :subject',
+    'debug_section_data' => 'Debug Data',
+    'debug_section_call_site' => 'Call Site',
+    'debug_section_request' => 'Request Context',
+    'debug_section_environment' => 'Environment',
+    'debug_console' => 'Console',
+    'debug_guest' => 'Guest',
 ];
