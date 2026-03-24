@@ -9,7 +9,7 @@ return new class extends SettingsMigration
     public function up(): void
     {
         $this->migrator->add('fin-sentinel.debug_recipients', []);
-        $this->migrator->add('fin-sentinel.debug_enabled', true);
+        $this->migrator->add('fin-sentinel.debug_enabled', false);
         $this->migrator->add('fin-sentinel.debug_throttle_minutes', 15);
     }
 };

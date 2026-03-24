@@ -10,7 +10,7 @@ class DebugChannelSettings extends Settings
 {
     public array $debug_recipients = [];
 
-    public bool $debug_enabled = true;
+    public bool $debug_enabled = false;
 
     public int $debug_throttle_minutes = 15;
 
