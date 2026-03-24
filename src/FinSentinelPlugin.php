@@ -38,10 +38,14 @@ class FinSentinelPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel->discoverClusters(
-            in: __DIR__.'/Clusters',
-            for: 'FinityLabs\\FinSentinel\\Clusters'
-        );
+        $panel
+            ->discoverClusters(
+                in: __DIR__.'/Clusters',
+                for: 'FinityLabs\\FinSentinel\\Clusters'
+            )
+            ->pages([
+                Pages\LogFileViewer::class,
+            ]);
     }
 
     public function boot(Panel $panel): void {}
