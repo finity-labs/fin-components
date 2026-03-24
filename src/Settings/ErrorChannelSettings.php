@@ -14,6 +14,10 @@ class ErrorChannelSettings extends Settings
 
     public int $error_throttle_minutes = 15;
 
+    public bool $error_throttle_exceptions = true;
+
+    public bool $error_throttle_log_messages = true;
+
     public array $ignored_exceptions = [
         \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
         \Illuminate\Validation\ValidationException::class,

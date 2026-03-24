@@ -96,6 +96,12 @@ class ManageErrorChannelSettings extends SettingsPage
                         ->minValue(1)
                         ->maxValue(1440)
                         ->suffix('minutes'),
+                    Toggle::make('error_throttle_exceptions')
+                        ->label('Throttle exceptions')
+                        ->helperText('When enabled, duplicate exceptions at the same file:line won\'t trigger emails within the throttle window.'),
+                    Toggle::make('error_throttle_log_messages')
+                        ->label('Throttle log messages')
+                        ->helperText('When enabled, identical error log messages won\'t trigger emails within the throttle window.'),
                 ]),
 
             Section::make('Ignored Exceptions')
