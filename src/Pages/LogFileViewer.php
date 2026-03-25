@@ -76,6 +76,11 @@ class LogFileViewer extends Page implements HasTable
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('refresh')
+                ->label(__('fin-sentinel::fin-sentinel.log_action_refresh'))
+                ->icon(Heroicon::OutlinedArrowPath)
+                ->color('gray')
+                ->action(fn () => $this->flushCachedTableRecords()),
             Action::make('email')
                 ->label(__('fin-sentinel::fin-sentinel.log_action_email'))
                 ->icon(Heroicon::OutlinedEnvelope)

@@ -62,17 +62,6 @@ class LogFileList extends Page implements HasTable
         return __('fin-sentinel::fin-sentinel.log_viewer_heading');
     }
 
-    protected function getHeaderActions(): array
-    {
-        return [
-            \Filament\Actions\Action::make('refresh')
-                ->label(__('fin-sentinel::fin-sentinel.log_action_refresh'))
-                ->icon(Heroicon::OutlinedArrowPath)
-                ->color('gray')
-                ->action(fn () => $this->flushCachedTableRecords()),
-        ];
-    }
-
     public function table(Table $table): Table
     {
         return $table

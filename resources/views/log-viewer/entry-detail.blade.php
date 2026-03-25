@@ -1,29 +1,38 @@
 <div class="space-y-6">
-    {{-- Level badge and timestamp --}}
-    <div class="flex items-center gap-3">
-        <x-filament::badge :color="$entry['level_color']">
-            {{ $entry['level'] }}
-        </x-filament::badge>
-        <span class="text-sm text-gray-500 dark:text-gray-400">
-            {{ $entry['timestamp'] }}
+    {{-- Header bar --}}
+    <div class="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-900">
+        <div class="flex items-center gap-3">
+            <x-filament::badge :color="$entry['level_color']" size="lg">
+                {{ $entry['level'] }}
+            </x-filament::badge>
+            <span class="font-mono text-sm text-gray-500 dark:text-gray-400">
+                {{ $entry['timestamp'] }}
+            </span>
+        </div>
+        <span class="text-xs text-gray-400 dark:text-gray-500">
+            {{ __('fin-sentinel::fin-sentinel.log_entry_line') }}: {{ $entry['start_line'] }}
         </span>
     </div>
 
-    {{-- Full message --}}
-    <div>
-        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {{ __('fin-sentinel::fin-sentinel.log_column_message') }}
-        </h4>
-        <div class="font-mono text-sm whitespace-pre-wrap break-words bg-gray-50 dark:bg-gray-900 rounded-lg p-4 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">{!! nl2br(e($entry['message'])) !!}</div>
+    {{-- Message --}}
+    <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="bg-gray-100 px-5 py-2 dark:bg-gray-800">
+            <span class="text-lg font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                {{ __('fin-sentinel::fin-sentinel.log_column_message') }}
+            </span>
+        </div>
+        <div class="p-4">
+            <div class="font-mono text-sm leading-relaxed whitespace-pre-wrap wrap-break-word text-gray-800 dark:text-gray-200">{!! nl2br(e($entry['message'])) !!}</div>
+        </div>
     </div>
 
     {{-- Stack trace --}}
     @if ($entry['has_stack_trace'])
-        <div>
-            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {{ __('fin-sentinel::fin-sentinel.error_section_trace') }}
-            </h4>
-            <div class="max-h-96 overflow-y-auto bg-gray-50 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="bg-gray-100 px-5 py-2 dark:bg-gray-800 flex items-center justify-between">
+                <span class="text-lg font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    {{ __('fin-sentinel::fin-sentinel.error_section_trace') }}
+                </span>
                 @php
                     $lines = explode("\n", $entry['stack_trace']);
                     $frames = [];
@@ -38,7 +47,6 @@
                         } elseif ($currentFrame !== null) {
                             $currentFrame['header'] .= "\n" . $line;
                         } else {
-                            // Non-frame lines at the start (e.g., exception message continuation)
                             $frames[] = ['header' => $line, 'isVendor' => false, 'context' => true];
                         }
                     }
@@ -46,68 +54,66 @@
                     if ($currentFrame !== null) {
                         $frames[] = $currentFrame;
                     }
-                @endphp
 
-                <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @foreach ($frames as $frame)
-                        @if (isset($frame['context']))
-                            <div class="px-4 py-2">
-                                <pre class="font-mono text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-all">{{ $frame['header'] }}</pre>
-                            </div>
-                        @else
-                            <div
-                                x-data="{ expanded: {{ $frame['isVendor'] ? 'false' : 'true' }} }"
-                                class="{{ $frame['isVendor'] ? 'opacity-60 hover:opacity-100 transition-opacity' : '' }}"
+                    $frameCount = count(array_filter($frames, fn ($f) => !isset($f['context'])));
+                @endphp
+                <span class="text-xs text-gray-400 dark:text-gray-500">
+                    {{ $frameCount }} {{ trans_choice('fin-sentinel::fin-sentinel.log_trace_frames', $frameCount) }}
+                </span>
+            </div>
+            <div class="max-h-128 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($frames as $frame)
+                    @if (isset($frame['context']))
+                        <div class="px-5 py-2 bg-amber-50 dark:bg-amber-950/30">
+                            <pre class="font-mono text-lg text-amber-800 dark:text-amber-200 whitespace-pre-wrap break-all">{{ $frame['header'] }}</pre>
+                        </div>
+                    @else
+                        <div
+                            x-data="{ expanded: {{ $frame['isVendor'] ? 'false' : 'true' }} }"
+                            class="{{ $frame['isVendor'] ? 'opacity-50 hover:opacity-100 transition-opacity' : '' }}"
+                        >
+                            <button
+                                type="button"
+                                @click="expanded = !expanded"
+                                class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors"
                             >
-                                <button
-                                    type="button"
-                                    @click="expanded = !expanded"
-                                    class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                                >
-                                    <div class="flex items-center gap-2">
-                                        <svg
-                                            class="h-4 w-4 text-gray-400 transition-transform duration-200 shrink-0"
-                                            :class="{ 'rotate-90': expanded }"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 20 20"
-                                            fill="currentColor"
-                                        >
-                                            <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
-                                        </svg>
-                                        @php
-                                            $headerText = $frame['header'];
-                                            // Highlight file paths and line numbers
-                                            $highlighted = preg_replace(
-                                                '/([\/\w\-\.]+\.php)(\((\d+)\))?/',
-                                                '<span class="text-blue-600 dark:text-blue-400">$1</span><span class="text-amber-600 dark:text-amber-400">$2</span>',
-                                                e($headerText)
-                                            );
-                                        @endphp
-                                        <pre class="font-mono text-xs whitespace-pre-wrap break-all flex-1">{!! $highlighted !!}</pre>
-                                    </div>
-                                </button>
-                                <div
-                                    x-show="expanded"
-                                    x-transition:enter="transition ease-out duration-200"
-                                    x-transition:enter-start="opacity-0 -translate-y-1"
-                                    x-transition:enter-end="opacity-100 translate-y-0"
-                                    x-transition:leave="transition ease-in duration-150"
-                                    x-transition:leave-start="opacity-100 translate-y-0"
-                                    x-transition:leave-end="opacity-0 -translate-y-1"
-                                    class="px-4 pb-2"
-                                >
-                                    <pre class="font-mono text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap break-all pl-6">{{ $frame['header'] }}</pre>
+                                <div class="flex items-start gap-2">
+                                    <svg
+                                        class="mt-0.5 h-3.5 w-3.5 text-gray-400 transition-transform duration-150 shrink-0"
+                                        :class="{ 'rotate-90': expanded }"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                                    </svg>
+                                    @php
+                                        $headerText = $frame['header'];
+                                        $highlighted = preg_replace(
+                                            '/([\/\w\-\.]+\.php)(\((\d+)\))?/',
+                                            '<span class="text-primary-600 dark:text-primary-400">$1</span><span class="text-amber-600 dark:text-amber-400">$2</span>',
+                                            e($headerText)
+                                        );
+                                    @endphp
+                                    <pre class="font-mono text-xs leading-relaxed whitespace-pre-wrap break-all flex-1">{!! $highlighted !!}</pre>
                                 </div>
+                            </button>
+                            <div
+                                x-show="expanded"
+                                x-collapse
+                                class="px-4 pb-2.5"
+                            >
+                                <pre class="font-mono text-xs text-gray-500 dark:text-gray-500 whitespace-pre-wrap break-all pl-5.5 leading-relaxed">{{ $frame['header'] }}</pre>
                             </div>
-                        @endif
-                    @endforeach
-                </div>
+                        </div>
+                    @endif
+                @endforeach
             </div>
         </div>
     @endif
 
-    {{-- Copy buttons --}}
-    <div class="flex gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+    {{-- Actions --}}
+    <div class="flex gap-2 pt-1">
         @if ($entry['has_stack_trace'])
             <div x-data="{ copied: false }">
                 <x-filament::button

@@ -151,6 +151,8 @@ return [
     'log_level_filter' => 'Log Level',
     'log_search_placeholder' => 'Search log entries...',
     'log_entry_detail' => 'Entry Detail',
+    'log_entry_line' => 'Line',
+    'log_trace_frames' => ':count frame|:count frames',
     'log_copy_trace' => 'Copy Stack Trace',
     'log_copy_entry' => 'Copy Full Entry',
     'log_copied' => 'Copied!',
