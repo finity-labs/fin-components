@@ -71,8 +71,8 @@ class MessageLoggedListener
         }
 
         $key = $exception instanceof \Throwable
-            ? 'fin-sentinel:throttle:' . md5($exception::class . $exception->getMessage() . $exception->getFile() . ':' . $exception->getLine())
-            : 'fin-sentinel:throttle:' . md5('log_error' . $event->message);
+            ? 'fin-sentinel:throttle:'.md5($exception::class.$exception->getMessage().$exception->getFile().':'.$exception->getLine())
+            : 'fin-sentinel:throttle:'.md5('log_error'.$event->message);
 
         if (Cache::has($key)) {
             return true;

@@ -3,15 +3,18 @@
 declare(strict_types=1);
 
 use FinityLabs\FinSentinel\FinSentinelServiceProvider;
+use FinityLabs\FinSentinel\Listeners\MessageLoggedListener;
 use FinityLabs\FinSentinel\Mail\ErrorMail;
 use FinityLabs\FinSentinel\Settings\ErrorChannelSettings;
 use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 beforeEach(function () {
     // Reset loop guard
-    $reflection = new \ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
+    $reflection = new ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
     $reflection->setAccessible(true);
     $reflection->setValue(null, false);
 
@@ -31,8 +34,8 @@ beforeEach(function () {
 it('sends ErrorMail when error-level log has exception context', function () {
     Mail::fake();
 
-    $listener = app(\FinityLabs\FinSentinel\Listeners\MessageLoggedListener::class);
-    $event = new MessageLogged('error', 'Something failed', ['exception' => new \RuntimeException('test')]);
+    $listener = app(MessageLoggedListener::class);
+    $event = new MessageLogged('error', 'Something failed', ['exception' => new RuntimeException('test')]);
 
     $listener->handle($event);
 
@@ -42,7 +45,7 @@ it('sends ErrorMail when error-level log has exception context', function () {
 it('does not send mail for non-error log levels', function () {
     Mail::fake();
 
-    $listener = app(\FinityLabs\FinSentinel\Listeners\MessageLoggedListener::class);
+    $listener = app(MessageLoggedListener::class);
 
     foreach (['info', 'warning', 'debug', 'notice'] as $level) {
         $event = new MessageLogged($level, 'Some message', []);
@@ -55,8 +58,8 @@ it('does not send mail for non-error log levels', function () {
 it('does not send mail for NotFoundHttpException', function () {
     Mail::fake();
 
-    $listener = app(\FinityLabs\FinSentinel\Listeners\MessageLoggedListener::class);
-    $exception = new \Symfony\Component\HttpKernel\Exception\NotFoundHttpException('Not found');
+    $listener = app(MessageLoggedListener::class);
+    $exception = new NotFoundHttpException('Not found');
     $event = new MessageLogged('error', 'Not found', ['exception' => $exception]);
 
     $listener->handle($event);
@@ -67,8 +70,8 @@ it('does not send mail for NotFoundHttpException', function () {
 it('does not send mail for ValidationException', function () {
     Mail::fake();
 
-    $listener = app(\FinityLabs\FinSentinel\Listeners\MessageLoggedListener::class);
-    $exception = \Illuminate\Validation\ValidationException::withMessages(['field' => 'required']);
+    $listener = app(MessageLoggedListener::class);
+    $exception = ValidationException::withMessages(['field' => 'required']);
     $event = new MessageLogged('error', 'Validation failed', ['exception' => $exception]);
 
     $listener->handle($event);
@@ -79,8 +82,8 @@ it('does not send mail for ValidationException', function () {
 it('throttles duplicate exceptions within the configured window', function () {
     Mail::fake();
 
-    $listener = app(\FinityLabs\FinSentinel\Listeners\MessageLoggedListener::class);
-    $exception = new \RuntimeException('duplicate error');
+    $listener = app(MessageLoggedListener::class);
+    $exception = new RuntimeException('duplicate error');
     $event = new MessageLogged('error', 'duplicate error', ['exception' => $exception]);
 
     $listener->handle($event);
@@ -96,8 +99,8 @@ it('does not throttle exceptions when error_throttle_exceptions is off', functio
 
     Mail::fake();
 
-    $listener = app(\FinityLabs\FinSentinel\Listeners\MessageLoggedListener::class);
-    $exception = new \RuntimeException('no throttle');
+    $listener = app(MessageLoggedListener::class);
+    $exception = new RuntimeException('no throttle');
     $event = new MessageLogged('error', 'no throttle', ['exception' => $exception]);
 
     $listener->handle($event);
@@ -109,7 +112,7 @@ it('does not throttle exceptions when error_throttle_exceptions is off', functio
 it('sends mail for plain error log messages without exception', function () {
     Mail::fake();
 
-    $listener = app(\FinityLabs\FinSentinel\Listeners\MessageLoggedListener::class);
+    $listener = app(MessageLoggedListener::class);
     $event = new MessageLogged('error', 'plain error message', []);
 
     $listener->handle($event);
@@ -121,12 +124,12 @@ it('does not send mail when loop guard is active', function () {
     Mail::fake();
 
     // Activate loop guard
-    $reflection = new \ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
+    $reflection = new ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
     $reflection->setAccessible(true);
     $reflection->setValue(null, true);
 
-    $listener = app(\FinityLabs\FinSentinel\Listeners\MessageLoggedListener::class);
-    $event = new MessageLogged('error', 'should be blocked', ['exception' => new \RuntimeException('blocked')]);
+    $listener = app(MessageLoggedListener::class);
+    $event = new MessageLogged('error', 'should be blocked', ['exception' => new RuntimeException('blocked')]);
 
     $listener->handle($event);
 
@@ -143,7 +146,7 @@ it('does not throttle plain log messages when error_throttle_log_messages is off
 
     Mail::fake();
 
-    $listener = app(\FinityLabs\FinSentinel\Listeners\MessageLoggedListener::class);
+    $listener = app(MessageLoggedListener::class);
     $event = new MessageLogged('error', 'repeated plain error', []);
 
     $listener->handle($event);

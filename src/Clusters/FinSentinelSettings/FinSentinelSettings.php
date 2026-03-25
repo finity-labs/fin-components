@@ -19,6 +19,11 @@ class FinSentinelSettings extends Cluster
 
     protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Start;
 
+    public static function canAccess(): bool
+    {
+        return FinSentinelPlugin::get()->userCanAccess();
+    }
+
     public static function getNavigationSort(): ?int
     {
         return (FinSentinelPlugin::get()->getNavigationSort() ?? 0) + 10;
@@ -26,7 +31,7 @@ class FinSentinelSettings extends Cluster
 
     public static function getNavigationGroup(): string|UnitEnum|null
     {
-        /** @var \FinityLabs\FinSentinel\FinSentinelPlugin $plugin */
+        /** @var FinSentinelPlugin $plugin */
         $plugin = filament('fin-sentinel');
 
         return $plugin->getNavigationGroup();

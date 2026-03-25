@@ -74,19 +74,20 @@ class SentinelDebugListener
         $data = $event->data;
 
         $dataHash = match (true) {
-            $data instanceof Model => $data::class . $data->getKey() . md5(json_encode($data->getAttributes())),
-            $data instanceof Collection => 'collection:' . $data->count() . md5($data->take(5)->toJson()),
+            $data instanceof Model => $data::class.$data->getKey().md5(json_encode($data->getAttributes())),
+            $data instanceof Collection => 'collection:'.$data->count().md5($data->take(5)->toJson()),
             is_array($data) => md5(json_encode($data, JSON_PARTIAL_OUTPUT_ON_ERROR)),
             default => md5((string) $data),
         };
 
-        return 'fin-sentinel:debug-throttle:' . md5(($event->subject ?? '') . $dataHash);
+        return 'fin-sentinel:debug-throttle:'.md5(($event->subject ?? '').$dataHash);
     }
 
     /**
      * Scrub sensitive values from the formatted data array.
      *
      * @param  array<string, mixed>  $formatted
+     *
      * @return array<string, mixed>
      */
     private function scrubFormattedData(array $formatted): array

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 
 beforeEach(function () {
-    $reflection = new \ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
+    $reflection = new ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
     $reflection->setAccessible(true);
     $reflection->setValue(null, false);
 
@@ -107,7 +107,7 @@ it('throttles when throttle is enabled', function () {
     $builder1->send();
 
     // Reset the loop guard between calls
-    $reflection = new \ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
+    $reflection = new ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
     $reflection->setAccessible(true);
     $reflection->setValue(null, false);
 

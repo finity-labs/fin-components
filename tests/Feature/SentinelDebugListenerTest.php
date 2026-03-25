@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Mail;
 
 beforeEach(function () {
     // Reset loop guard
-    $reflection = new \ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
+    $reflection = new ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
     $reflection->setAccessible(true);
     $reflection->setValue(null, false);
 
@@ -78,7 +78,7 @@ it('throttles duplicate events when throttle is enabled', function () {
     $listener->handle($event);
 
     // Reset the loop guard between calls
-    $reflection = new \ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
+    $reflection = new ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
     $reflection->setAccessible(true);
     $reflection->setValue(null, false);
 
@@ -96,7 +96,7 @@ it('does not throttle when throttle is disabled', function () {
     $listener->handle($event);
 
     // Reset the loop guard between calls
-    $reflection = new \ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
+    $reflection = new ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
     $reflection->setAccessible(true);
     $reflection->setValue(null, false);
 

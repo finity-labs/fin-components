@@ -64,7 +64,7 @@ class DebugMail extends Mailable
         }
 
         $user = auth()->check()
-            ? auth()->user()->name . ' (#' . auth()->user()->getKey() . ')'
+            ? auth()->user()->name.' (#'.auth()->user()->getKey().')'
             : __('fin-sentinel::fin-sentinel.debug_guest');
 
         return [
@@ -85,7 +85,7 @@ class DebugMail extends Mailable
             'app_env' => config('app.env'),
             'php_version' => PHP_VERSION,
             'laravel_version' => app()->version(),
-            'timestamp' => now()->toDateTimeString() . ' (' . config('app.timezone', 'UTC') . ')',
+            'timestamp' => now()->toDateTimeString().' ('.config('app.timezone', 'UTC').')',
         ];
     }
 }

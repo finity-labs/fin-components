@@ -7,7 +7,9 @@ namespace FinityLabs\FinSentinel\Commands;
 use FinityLabs\FinSentinel\Commands\Concerns\CanDeregisterPlugin;
 use FinityLabs\FinSentinel\Commands\Concerns\DiscoversPanelProviders;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\Console\Attribute\AsCommand;
 
 #[AsCommand(name: 'fin-sentinel:uninstall', description: 'Uninstall the Fin Sentinel plugin')]
@@ -120,8 +122,8 @@ class UninstallCommand extends Command
         }
 
         // Clean up settings entries from the settings table
-        if (\Illuminate\Support\Facades\Schema::hasTable('settings')) {
-            $deleted = \Illuminate\Support\Facades\DB::table('settings')
+        if (Schema::hasTable('settings')) {
+            $deleted = DB::table('settings')
                 ->where('group', 'like', 'fin-sentinel%')
                 ->delete();
 
@@ -137,13 +139,13 @@ class UninstallCommand extends Command
         }
 
         // Clean up migrations table entries
-        if (\Illuminate\Support\Facades\Schema::hasTable('migrations')) {
+        if (Schema::hasTable('migrations')) {
             $migrationNames = array_map(
                 fn (string $file) => pathinfo($file, PATHINFO_FILENAME),
                 self::SETTINGS_MIGRATION_FILES,
             );
 
-            \Illuminate\Support\Facades\DB::table('migrations')
+            DB::table('migrations')
                 ->where(function ($query) use ($migrationNames): void {
                     foreach ($migrationNames as $name) {
                         $query->orWhere('migration', 'like', "%{$name}");

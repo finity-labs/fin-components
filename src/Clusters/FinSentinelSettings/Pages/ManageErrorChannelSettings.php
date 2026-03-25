@@ -6,13 +6,13 @@ namespace FinityLabs\FinSentinel\Clusters\FinSentinelSettings\Pages;
 
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Schemas\Components\Callout;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\SettingsPage;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -21,7 +21,13 @@ use FinityLabs\FinSentinel\Clusters\FinSentinelSettings\FinSentinelSettings;
 use FinityLabs\FinSentinel\Mail\ErrorMail;
 use FinityLabs\FinSentinel\Settings\ErrorChannelSettings;
 use FinityLabs\FinSentinel\Traits\HasPageShieldSupport;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ManageErrorChannelSettings extends SettingsPage
 {
@@ -36,12 +42,12 @@ class ManageErrorChannelSettings extends SettingsPage
     protected static ?int $navigationSort = 1;
 
     public const KNOWN_EXCEPTIONS = [
-        \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class => 'NotFoundHttpException',
-        \Illuminate\Validation\ValidationException::class => 'ValidationException',
-        \Illuminate\Auth\AuthenticationException::class => 'AuthenticationException',
-        \Illuminate\Database\Eloquent\ModelNotFoundException::class => 'ModelNotFoundException',
-        \Illuminate\Session\TokenMismatchException::class => 'TokenMismatchException',
-        \Illuminate\Http\Exceptions\ThrottleRequestsException::class => 'ThrottleRequestsException',
+        NotFoundHttpException::class => 'NotFoundHttpException',
+        ValidationException::class => 'ValidationException',
+        AuthenticationException::class => 'AuthenticationException',
+        ModelNotFoundException::class => 'ModelNotFoundException',
+        TokenMismatchException::class => 'TokenMismatchException',
+        ThrottleRequestsException::class => 'ThrottleRequestsException',
     ];
 
     public static function getNavigationLabel(): string
@@ -83,7 +89,7 @@ class ManageErrorChannelSettings extends SettingsPage
                     try {
                         $exception = new \RuntimeException('[TEST] This is a test error notification from FinSentinel');
                         $testMail = new ErrorMail('[TEST] Test error notification', $exception);
-                        $testMail->subject('[TEST] ' . __('fin-sentinel::fin-sentinel.error_subject', ['app' => config('app.name')]));
+                        $testMail->subject('[TEST] '.__('fin-sentinel::fin-sentinel.error_subject', ['app' => config('app.name')]));
 
                         Mail::to($settings->error_recipients)->send($testMail);
 

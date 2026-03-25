@@ -81,7 +81,10 @@ public function panel(Panel $panel): Panel
 FinSentinelPlugin::make()
     ->navigationGroup('Monitoring')      // string, UnitEnum, Closure, or null
     ->navigationSort(10)                 // ?int
+    ->canAccess(fn () => auth()->user()?->is_admin)  // restrict access without Shield
 ```
+
+The `canAccess` closure controls who can see all Sentinel pages. When omitted, every authenticated panel user has access. When [Filament Shield](#filament-shield-integration) is installed, its page-level permissions take priority.
 
 ## Usage
 

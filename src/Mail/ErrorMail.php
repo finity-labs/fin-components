@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace FinityLabs\FinSentinel\Mail;
 
 use FinityLabs\FinSentinel\Services\DataScrubber;
+use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
-use Illuminate\Mail\Mailable;
 
 class ErrorMail extends Mailable
 {
@@ -147,8 +147,8 @@ class ErrorMail extends Mailable
             'app_debug' => config('app.debug'),
             'php_version' => PHP_VERSION,
             'laravel_version' => app()->version(),
-            'memory_peak' => round(memory_get_peak_usage(true) / 1024 / 1024, 2) . ' MB',
-            'timestamp' => now()->toDateTimeString() . ' (' . config('app.timezone', 'UTC') . ')',
+            'memory_peak' => round(memory_get_peak_usage(true) / 1024 / 1024, 2).' MB',
+            'timestamp' => now()->toDateTimeString().' ('.config('app.timezone', 'UTC').')',
         ];
     }
 }

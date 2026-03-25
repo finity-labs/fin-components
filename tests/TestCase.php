@@ -26,7 +26,7 @@ class TestCase extends Orchestra
             $table->unique(['group', 'name']);
         });
 
-        $this->loadMigrationsFrom(__DIR__ . '/../database/settings');
+        $this->loadMigrationsFrom(__DIR__.'/../database/settings');
     }
 
     protected function getPackageProviders($app): array

@@ -15,19 +15,22 @@ use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
-use FinityLabs\FinSentinel\Mail\LogFileMail;
-use Illuminate\Support\Facades\Mail;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use FinityLabs\FinSentinel\Enums\LogLevel;
+use FinityLabs\FinSentinel\Mail\LogFileMail;
 use FinityLabs\FinSentinel\Services\LogEntryParser;
+use FinityLabs\FinSentinel\Traits\HasPageShieldSupport;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\HtmlString;
 
 class LogFileViewer extends Page implements HasTable
 {
+    use HasPageShieldSupport;
     use InteractsWithTable;
 
     protected static ?string $slug = 'sentinel/logs/{file}';
@@ -43,7 +46,7 @@ class LogFileViewer extends Page implements HasTable
         $this->file = base64_decode(strtr($file, '-_', '+/'));
 
         $logsPath = storage_path('logs');
-        $fullPath = $logsPath . DIRECTORY_SEPARATOR . $this->file;
+        $fullPath = $logsPath.DIRECTORY_SEPARATOR.$this->file;
         $realPath = realpath($fullPath);
         $realLogsPath = realpath($logsPath);
 
@@ -167,7 +170,7 @@ class LogFileViewer extends Page implements HasTable
             return null;
         }
 
-        $fullPath = realpath($logsPath . DIRECTORY_SEPARATOR . $relativePath);
+        $fullPath = realpath($logsPath.DIRECTORY_SEPARATOR.$relativePath);
 
         if ($fullPath === false || ! str_starts_with($fullPath, $logsPath) || ! is_file($fullPath)) {
             return null;
@@ -232,7 +235,7 @@ class LogFileViewer extends Page implements HasTable
                 Action::make('viewEntry')
                     ->label('')
                     ->icon(Heroicon::OutlinedEye)
-                    ->modalHeading(fn (array $record): string => $record['level'] . ' - ' . $record['timestamp'])
+                    ->modalHeading(fn (array $record): string => $record['level'].' - '.$record['timestamp'])
                     ->modalWidth(Width::SevenExtraLarge)
                     ->slideOver()
                     ->modalSubmitAction(false)
@@ -241,7 +244,7 @@ class LogFileViewer extends Page implements HasTable
                             ->schema([
                                 TextEntry::make('message')
                                     ->hiddenLabel()
-                                    ->state(new \Illuminate\Support\HtmlString(nl2br(e($record['message']))))
+                                    ->state(new HtmlString(nl2br(e($record['message']))))
                                     ->html()
                                     ->fontFamily(FontFamily::Mono)
                                     ->size(TextSize::Small)
@@ -253,7 +256,7 @@ class LogFileViewer extends Page implements HasTable
                                 ->schema([
                                     TextEntry::make('stack_trace')
                                         ->hiddenLabel()
-                                        ->state(new \Illuminate\Support\HtmlString(nl2br(e($record['stack_trace']))))
+                                        ->state(new HtmlString(nl2br(e($record['stack_trace']))))
                                         ->html()
                                         ->fontFamily(FontFamily::Mono)
                                         ->size(TextSize::ExtraSmall)

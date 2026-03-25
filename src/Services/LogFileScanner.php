@@ -17,6 +17,7 @@ class LogFileScanner
      * Scan the logs directory for .log files and return metadata.
      *
      * @param  array<string, mixed>  $filters
+     *
      * @return Collection<int, array<string, mixed>>
      */
     public function scan(?string $search = null, array $filters = []): Collection

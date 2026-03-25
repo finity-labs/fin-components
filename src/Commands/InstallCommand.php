@@ -8,10 +8,11 @@ use FinityLabs\FinSentinel\Commands\Concerns\CanRegisterPlugin;
 use FinityLabs\FinSentinel\Commands\Concerns\DiscoversPanelProviders;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
-use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Process\Process;
 
 use function Laravel\Prompts\multiselect;
+
+use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Process\Process;
 
 #[AsCommand(name: 'fin-sentinel:install', description: 'Install the FinSentinel plugin')]
 class InstallCommand extends Command

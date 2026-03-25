@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinSentinel\Settings;
 
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Validation\ValidationException;
 use Spatie\LaravelSettings\Settings;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ErrorChannelSettings extends Settings
 {
@@ -19,9 +22,9 @@ class ErrorChannelSettings extends Settings
     public bool $error_throttle_log_messages = true;
 
     public array $ignored_exceptions = [
-        \Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
-        \Illuminate\Validation\ValidationException::class,
-        \Illuminate\Auth\AuthenticationException::class,
+        NotFoundHttpException::class,
+        ValidationException::class,
+        AuthenticationException::class,
     ];
 
     public static function group(): string

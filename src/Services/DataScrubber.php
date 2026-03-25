@@ -10,6 +10,7 @@ class DataScrubber
      * Scrub sensitive values from request parameters.
      *
      * @param  array<string, mixed>  $data
+     *
      * @return array<string, mixed>
      */
     public function scrubParams(array $data): array
@@ -24,6 +25,7 @@ class DataScrubber
      * Scrub sensitive values from HTTP headers.
      *
      * @param  array<string, mixed>  $headers
+     *
      * @return array<string, mixed>
      */
     public function scrubHeaders(array $headers): array
@@ -38,6 +40,7 @@ class DataScrubber
      * Scrub sensitive values from environment variables.
      *
      * @param  array<string, mixed>  $env
+     *
      * @return array<string, mixed>
      */
     public function scrubEnv(array $env): array
@@ -52,6 +55,7 @@ class DataScrubber
      * Scrub sensitive values from stack trace arguments.
      *
      * @param  array<string, mixed>  $args
+     *
      * @return array<string, mixed>
      */
     public function scrubTraceArgs(array $args): array
@@ -67,6 +71,7 @@ class DataScrubber
      *
      * @param  array<string, mixed>  $data
      * @param  string[]  $keys
+     *
      * @return array<string, mixed>
      */
     private function scrub(array $data, array $keys): array

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use FinityLabs\FinSentinel\Services\LogEntryParser;
 
 beforeEach(function () {
-    $this->tempDir = sys_get_temp_dir() . '/fin-sentinel-parser-' . uniqid();
+    $this->tempDir = sys_get_temp_dir().'/fin-sentinel-parser-'.uniqid();
     mkdir($this->tempDir, 0755, true);
 });
 
@@ -28,7 +28,7 @@ afterEach(function () {
 });
 
 it('parses standard log entries', function () {
-    file_put_contents($this->tempDir . '/test.log', implode("\n", [
+    file_put_contents($this->tempDir.'/test.log', implode("\n", [
         '[2026-01-15 10:30:00] production.ERROR: Something broke',
         '[2026-01-15 10:31:00] production.INFO: User logged in',
         '[2026-01-15 10:32:00] production.WARNING: Deprecated function called',
@@ -53,7 +53,7 @@ it('handles multi-line entries with stack traces', function () {
 [2026-01-15 10:31:00] production.INFO: User logged in
 LOG;
 
-    file_put_contents($this->tempDir . '/test.log', $logContent);
+    file_put_contents($this->tempDir.'/test.log', $logContent);
 
     $parser = new LogEntryParser($this->tempDir);
     $result = $parser->getEntries('test.log', sortDirection: 'asc');
@@ -71,7 +71,7 @@ it('paginates results', function () {
     for ($i = 0; $i < 10; $i++) {
         $lines[] = sprintf('[2026-01-15 10:%02d:00] production.INFO: Entry %d', $i, $i);
     }
-    file_put_contents($this->tempDir . '/test.log', implode("\n", $lines));
+    file_put_contents($this->tempDir.'/test.log', implode("\n", $lines));
 
     $parser = new LogEntryParser($this->tempDir);
     $result = $parser->getEntries('test.log', page: 1, perPage: 3);
@@ -81,7 +81,7 @@ it('paginates results', function () {
 });
 
 it('sorts desc by default', function () {
-    file_put_contents($this->tempDir . '/test.log', implode("\n", [
+    file_put_contents($this->tempDir.'/test.log', implode("\n", [
         '[2026-01-15 10:00:00] production.INFO: First entry',
         '[2026-01-15 10:01:00] production.INFO: Second entry',
         '[2026-01-15 10:02:00] production.INFO: Third entry',
@@ -96,7 +96,7 @@ it('sorts desc by default', function () {
 });
 
 it('sorts asc when requested', function () {
-    file_put_contents($this->tempDir . '/test.log', implode("\n", [
+    file_put_contents($this->tempDir.'/test.log', implode("\n", [
         '[2026-01-15 10:00:00] production.INFO: First entry',
         '[2026-01-15 10:01:00] production.INFO: Second entry',
         '[2026-01-15 10:02:00] production.INFO: Third entry',
@@ -111,7 +111,7 @@ it('sorts asc when requested', function () {
 });
 
 it('filters by level', function () {
-    file_put_contents($this->tempDir . '/test.log', implode("\n", [
+    file_put_contents($this->tempDir.'/test.log', implode("\n", [
         '[2026-01-15 10:00:00] production.ERROR: Error one',
         '[2026-01-15 10:01:00] production.INFO: Info entry',
         '[2026-01-15 10:02:00] production.ERROR: Error two',
@@ -130,7 +130,7 @@ it('filters by level', function () {
 });
 
 it('searches by text', function () {
-    file_put_contents($this->tempDir . '/test.log', implode("\n", [
+    file_put_contents($this->tempDir.'/test.log', implode("\n", [
         '[2026-01-15 10:00:00] production.INFO: Payment processed successfully',
         '[2026-01-15 10:01:00] production.INFO: User logged in',
         '[2026-01-15 10:02:00] production.ERROR: Payment gateway timeout',

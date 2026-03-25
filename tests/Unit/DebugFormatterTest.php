@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 use FinityLabs\FinSentinel\Services\DebugFormatter;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 
 beforeEach(function () {
-    $this->formatter = new DebugFormatter();
+    $this->formatter = new DebugFormatter;
 });
 
 it('formats a model with type, class, and attributes', function () {
     $model = new class extends Model
     {
         protected $guarded = [];
+
         protected $table = 'test_models';
     };
 
@@ -31,6 +31,7 @@ it('formats a model with loaded relations', function () {
     $related = new class extends Model
     {
         protected $guarded = [];
+
         protected $table = 'related';
     };
     $related->forceFill(['id' => 1, 'title' => 'Post']);
@@ -38,6 +39,7 @@ it('formats a model with loaded relations', function () {
     $model = new class extends Model
     {
         protected $guarded = [];
+
         protected $table = 'test_models';
     };
     $model->forceFill(['name' => 'John']);
@@ -96,6 +98,7 @@ it('formats a collection of models with recursive model formatting', function ()
     $model = new class extends Model
     {
         protected $guarded = [];
+
         protected $table = 'test_models';
     };
     $model->forceFill(['id' => 1, 'name' => 'First']);
@@ -103,6 +106,7 @@ it('formats a collection of models with recursive model formatting', function ()
     $model2 = new class extends Model
     {
         protected $guarded = [];
+
         protected $table = 'test_models';
     };
     $model2->forceFill(['id' => 2, 'name' => 'Second']);

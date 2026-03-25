@@ -5,14 +5,14 @@ declare(strict_types=1);
 use FinityLabs\FinSentinel\Services\LogFileScanner;
 
 beforeEach(function () {
-    $this->tempDir = sys_get_temp_dir() . '/fin-sentinel-scanner-' . uniqid();
+    $this->tempDir = sys_get_temp_dir().'/fin-sentinel-scanner-'.uniqid();
     mkdir($this->tempDir, 0755, true);
 
     // Override storage path so scanner reads from temp dir
     app()->useStoragePath($this->tempDir);
-    mkdir($this->tempDir . '/logs', 0755, true);
+    mkdir($this->tempDir.'/logs', 0755, true);
 
-    $this->logsDir = $this->tempDir . '/logs';
+    $this->logsDir = $this->tempDir.'/logs';
 });
 
 afterEach(function () {
@@ -34,8 +34,8 @@ afterEach(function () {
 });
 
 it('discovers log files', function () {
-    file_put_contents($this->logsDir . '/laravel.log', 'test content');
-    file_put_contents($this->logsDir . '/worker.log', 'test content');
+    file_put_contents($this->logsDir.'/laravel.log', 'test content');
+    file_put_contents($this->logsDir.'/worker.log', 'test content');
 
     $scanner = new LogFileScanner;
     $results = $scanner->scan();
@@ -48,7 +48,7 @@ it('discovers log files', function () {
 });
 
 it('returns metadata with required keys', function () {
-    file_put_contents($this->logsDir . '/laravel.log', 'some log content here');
+    file_put_contents($this->logsDir.'/laravel.log', 'some log content here');
 
     $scanner = new LogFileScanner;
     $results = $scanner->scan();
@@ -63,8 +63,8 @@ it('returns metadata with required keys', function () {
 });
 
 it('discovers files in subdirectories with subfolder set', function () {
-    mkdir($this->logsDir . '/daily', 0755, true);
-    file_put_contents($this->logsDir . '/daily/laravel-2026-01-15.log', 'daily log');
+    mkdir($this->logsDir.'/daily', 0755, true);
+    file_put_contents($this->logsDir.'/daily/laravel-2026-01-15.log', 'daily log');
 
     $scanner = new LogFileScanner;
     $results = $scanner->scan();
@@ -75,8 +75,8 @@ it('discovers files in subdirectories with subfolder set', function () {
 });
 
 it('filters by search term', function () {
-    file_put_contents($this->logsDir . '/laravel.log', 'content');
-    file_put_contents($this->logsDir . '/worker.log', 'content');
+    file_put_contents($this->logsDir.'/laravel.log', 'content');
+    file_put_contents($this->logsDir.'/worker.log', 'content');
 
     $scanner = new LogFileScanner;
     $results = $scanner->scan(search: 'worker');
@@ -86,9 +86,9 @@ it('filters by search term', function () {
 });
 
 it('filters by subfolder', function () {
-    file_put_contents($this->logsDir . '/laravel.log', 'root log');
-    mkdir($this->logsDir . '/daily', 0755, true);
-    file_put_contents($this->logsDir . '/daily/laravel-2026-01-15.log', 'daily log');
+    file_put_contents($this->logsDir.'/laravel.log', 'root log');
+    mkdir($this->logsDir.'/daily', 0755, true);
+    file_put_contents($this->logsDir.'/daily/laravel-2026-01-15.log', 'daily log');
 
     $scanner = new LogFileScanner;
     $results = $scanner->scan(filters: ['subfolder' => 'daily']);
@@ -98,8 +98,8 @@ it('filters by subfolder', function () {
 });
 
 it('skips non-log files', function () {
-    file_put_contents($this->logsDir . '/notes.txt', 'not a log');
-    file_put_contents($this->logsDir . '/laravel.log', 'a real log');
+    file_put_contents($this->logsDir.'/notes.txt', 'not a log');
+    file_put_contents($this->logsDir.'/laravel.log', 'a real log');
 
     $scanner = new LogFileScanner;
     $results = $scanner->scan();
@@ -109,7 +109,7 @@ it('skips non-log files', function () {
 });
 
 it('returns empty collection for missing directory', function () {
-    $nonexistent = sys_get_temp_dir() . '/fin-sentinel-nonexistent-' . uniqid();
+    $nonexistent = sys_get_temp_dir().'/fin-sentinel-nonexistent-'.uniqid();
     app()->useStoragePath($nonexistent);
 
     $scanner = new LogFileScanner;
@@ -119,11 +119,11 @@ it('returns empty collection for missing directory', function () {
 });
 
 it('sorts by last_modified descending', function () {
-    file_put_contents($this->logsDir . '/old.log', 'old content');
-    touch($this->logsDir . '/old.log', time() - 3600);
+    file_put_contents($this->logsDir.'/old.log', 'old content');
+    touch($this->logsDir.'/old.log', time() - 3600);
 
-    file_put_contents($this->logsDir . '/new.log', 'new content');
-    touch($this->logsDir . '/new.log', time());
+    file_put_contents($this->logsDir.'/new.log', 'new content');
+    touch($this->logsDir.'/new.log', time());
 
     $scanner = new LogFileScanner;
     $results = $scanner->scan();

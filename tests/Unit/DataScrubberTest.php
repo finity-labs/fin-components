@@ -5,7 +5,7 @@ declare(strict_types=1);
 use FinityLabs\FinSentinel\Services\DataScrubber;
 
 beforeEach(function () {
-    $this->scrubber = new DataScrubber();
+    $this->scrubber = new DataScrubber;
 });
 
 it('redacts matching keys in params', function () {

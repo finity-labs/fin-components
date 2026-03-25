@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinSentinel\Pages;
 
-use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Components\Text;
-use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use Filament\Actions\Action;
-use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Text;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -31,7 +30,7 @@ class LogFileList extends Page implements HasTable
     use HasPageShieldSupport;
     use InteractsWithTable;
 
-    protected static string | \BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
     protected static ?string $slug = 'sentinel/logs';
 
@@ -269,7 +268,7 @@ class LogFileList extends Page implements HasTable
             return null;
         }
 
-        $fullPath = realpath($logsPath . DIRECTORY_SEPARATOR . $relativePath);
+        $fullPath = realpath($logsPath.DIRECTORY_SEPARATOR.$relativePath);
 
         if ($fullPath === false || ! str_starts_with($fullPath, $logsPath)) {
             return null;

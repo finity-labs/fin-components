@@ -40,7 +40,7 @@ final readonly class LogEntry
         $text = $this->message;
 
         if ($this->hasStackTrace()) {
-            $text .= "\n" . $this->stackTrace;
+            $text .= "\n".$this->stackTrace;
         }
 
         return $text;

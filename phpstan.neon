@@ -8,7 +8,24 @@ parameters:
         - database
     level: 5
     ignoreErrors:
-        - '#Unsafe usage of new static#'
-
         # Shield facade is only called after class_exists guard
         - '#BezhanSalleh\\FilamentShield\\#'
+
+        # Host-app User model properties (name, email) are not on the base class
+        - '#Access to an undefined property Illuminate\\Foundation\\Auth\\User::\$#'
+
+        # Static access to private $handling property is intentional (loop guard)
+        - '#Unsafe access to private property.*through static::#'
+
+        # Plugin::get() returns Plugin contract, narrowed by caller
+        -
+            message: '#should return static.*but returns#'
+            path: src/FinSentinelPlugin.php
+
+        # Trace frame 'function' offset and args type mismatch
+        -
+            message: '#Offset .function. on array.*always exists#'
+            path: src/Mail/ErrorMail.php
+        -
+            message: '#Parameter.*scrubTraceArgs.*expects array<string, mixed>, list<mixed> given#'
+            path: src/Mail/ErrorMail.php

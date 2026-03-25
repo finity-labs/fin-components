@@ -19,10 +19,10 @@ it('uses the correct content view', function () {
 });
 
 it('extracts exception class, file, and line from Throwable', function () {
-    $exception = new \RuntimeException('test exception');
+    $exception = new RuntimeException('test exception');
     $mail = new ErrorMail('test exception', $exception);
 
-    expect($mail->exceptionClass)->toBe(\RuntimeException::class);
+    expect($mail->exceptionClass)->toBe(RuntimeException::class);
     expect($mail->exceptionFile)->toBe(__FILE__);
     expect($mail->exceptionLine)->toBeInt();
     expect($mail->stackTrace)->toBeArray()->not->toBeEmpty();

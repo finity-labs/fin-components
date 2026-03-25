@@ -6,12 +6,12 @@ namespace FinityLabs\FinSentinel\Clusters\FinSentinelSettings\Pages;
 
 use BackedEnum;
 use Filament\Actions\Action;
-use Filament\Schemas\Components\Callout;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\SettingsPage;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -150,9 +150,8 @@ class ManageDebugChannelSettings extends SettingsPage
                         ->minValue(1)
                         ->maxValue(1440)
                         ->suffix(__('fin-sentinel::fin-sentinel.minutes_suffix'))
-                        ->visible(fn (callable $get): bool => (bool) $get('debug_throttle_enabled'))
+                        ->visible(fn (callable $get): bool => (bool) $get('debug_throttle_enabled')),
                 ]),
         ]);
     }
-
 }

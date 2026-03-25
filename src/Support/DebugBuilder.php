@@ -155,17 +155,17 @@ class DebugBuilder
     {
         $context = [
             'sentinel_debug' => true,
-            'call_site' => $this->callSite['file'] . ':' . $this->callSite['line'],
+            'call_site' => $this->callSite['file'].':'.$this->callSite['line'],
         ];
 
         if ($this->data instanceof Model) {
-            $context['model'] = $this->data::class . ':' . $this->data->getKey();
+            $context['model'] = $this->data::class.':'.$this->data->getKey();
         } elseif ($this->data instanceof Collection) {
             $context['collection_count'] = $this->data->count();
         }
 
         Log::debug(
-            'Sentinel debug: ' . ($this->subject ?? class_basename($this->data ?? 'mixed')),
+            'Sentinel debug: '.($this->subject ?? class_basename($this->data ?? 'mixed')),
             $context,
         );
     }
@@ -196,13 +196,13 @@ class DebugBuilder
     private function buildThrottleKey(): string
     {
         $dataHash = match (true) {
-            $this->data instanceof Model => $this->data::class . $this->data->getKey() . md5(json_encode($this->data->getAttributes())),
-            $this->data instanceof Collection => 'collection:' . $this->data->count() . md5($this->data->take(5)->toJson()),
+            $this->data instanceof Model => $this->data::class.$this->data->getKey().md5(json_encode($this->data->getAttributes())),
+            $this->data instanceof Collection => 'collection:'.$this->data->count().md5($this->data->take(5)->toJson()),
             is_array($this->data) => md5(json_encode($this->data, JSON_PARTIAL_OUTPUT_ON_ERROR)),
             default => md5((string) $this->data),
         };
 
-        return 'fin-sentinel:debug-throttle:' . md5(($this->subject ?? '') . $dataHash);
+        return 'fin-sentinel:debug-throttle:'.md5(($this->subject ?? '').$dataHash);
     }
 
     /**
@@ -225,6 +225,7 @@ class DebugBuilder
      * Scrub sensitive values from the formatted data array.
      *
      * @param  array<string, mixed>  $formatted
+     *
      * @return array<string, mixed>
      */
     private function scrubFormattedData(array $formatted): array

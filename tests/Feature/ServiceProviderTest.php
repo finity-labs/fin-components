@@ -5,7 +5,7 @@ declare(strict_types=1);
 use FinityLabs\FinSentinel\FinSentinelServiceProvider;
 
 beforeEach(function () {
-    $reflection = new \ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
+    $reflection = new ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
     $reflection->setAccessible(true);
     $reflection->setValue(null, false);
 });
@@ -46,9 +46,9 @@ it('prevents recursive re-entry via nested guardedHandle calls', function () {
 it('resets isHandling to false even when callback throws an exception', function () {
     try {
         FinSentinelServiceProvider::guardedHandle(function () {
-            throw new \RuntimeException('test exception');
+            throw new RuntimeException('test exception');
         });
-    } catch (\RuntimeException) {
+    } catch (RuntimeException) {
         // expected
     }
 

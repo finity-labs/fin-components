@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinSentinel\Services;
 
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder as QueryBuilder;
-use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Support\Collection;
 
 class DebugFormatter

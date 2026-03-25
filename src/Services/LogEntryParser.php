@@ -161,6 +161,7 @@ class LogEntryParser
      * Build a map from each entry's start line to the next entry's start line (ascending order).
      *
      * @param  int[]  $ascIndex
+     *
      * @return array<int, int|null>
      */
     private function buildBoundaryMap(array $ascIndex): array
@@ -222,7 +223,7 @@ class LogEntryParser
 
     private function resolveAndValidatePath(string $relativePath): ?string
     {
-        $fullPath = $this->logsPath . DIRECTORY_SEPARATOR . $relativePath;
+        $fullPath = $this->logsPath.DIRECTORY_SEPARATOR.$relativePath;
         $realPath = realpath($fullPath);
 
         if ($realPath === false) {

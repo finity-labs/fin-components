@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 
 beforeEach(function () {
-    $reflection = new \ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
+    $reflection = new ReflectionProperty(FinSentinelServiceProvider::class, 'handling');
     $reflection->setAccessible(true);
     $reflection->setValue(null, false);
 
@@ -29,7 +29,7 @@ it('returns a DebugBuilder instance from debug()', function () {
     $result = FinSentinel::debug('test data');
 
     // Prevent destructor auto-queue from interfering
-    $reflection = new \ReflectionProperty(DebugBuilder::class, 'sent');
+    $reflection = new ReflectionProperty(DebugBuilder::class, 'sent');
     $reflection->setAccessible(true);
     $reflection->setValue($result, true);
 
