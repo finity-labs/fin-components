@@ -6,9 +6,13 @@ namespace FinityLabs\FinSentinel\Pages;
 
 use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
+use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\TextSize;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinSentinel\Mail\LogFileMail;
@@ -229,10 +233,36 @@ class LogFileViewer extends Page implements HasTable
                     ->label('')
                     ->icon(Heroicon::OutlinedEye)
                     ->modalHeading(fn (array $record): string => $record['level'] . ' - ' . $record['timestamp'])
-                    ->modalContent(fn (array $record) => view('fin-sentinel::log-viewer.entry-detail', ['entry' => $record]))
                     ->modalWidth(Width::SevenExtraLarge)
                     ->slideOver()
-                    ->modalSubmitAction(false),
+                    ->modalSubmitAction(false)
+                    ->schema(fn (array $record): array => [
+                        Section::make(__('fin-sentinel::fin-sentinel.log_column_message'))
+                            ->schema([
+                                TextEntry::make('message')
+                                    ->hiddenLabel()
+                                    ->state(new \Illuminate\Support\HtmlString(nl2br(e($record['message']))))
+                                    ->html()
+                                    ->fontFamily(FontFamily::Mono)
+                                    ->size(TextSize::Small)
+                                    ->copyable()
+                                    ->copyableState($record['message']),
+                            ]),
+                        ...($record['has_stack_trace'] ? [
+                            Section::make(__('fin-sentinel::fin-sentinel.error_section_trace'))
+                                ->schema([
+                                    TextEntry::make('stack_trace')
+                                        ->hiddenLabel()
+                                        ->state(new \Illuminate\Support\HtmlString(nl2br(e($record['stack_trace']))))
+                                        ->html()
+                                        ->fontFamily(FontFamily::Mono)
+                                        ->size(TextSize::ExtraSmall)
+                                        ->copyable()
+                                        ->copyableState($record['stack_trace']),
+                                ])
+                                ->collapsible(),
+                        ] : []),
+                    ]),
             ]);
     }
 }
