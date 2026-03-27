@@ -2,6 +2,7 @@
 
 <!-- ![finity-labs-fin-sentinel](banner-placeholder) -->
 
+[![FILAMENT 4.x](https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square)](https://filamentphp.com/docs/4.x/panels/installation)
 [![FILAMENT 5.x](https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square)](https://filamentphp.com/docs/5.x/panels/installation)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/finity-labs/fin-sentinel.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-sentinel)
 [![Tests](https://github.com/finity-labs/fin-sentinel/actions/workflows/tests.yml/badge.svg)](https://github.com/finity-labs/fin-sentinel/actions/workflows/tests.yml)
