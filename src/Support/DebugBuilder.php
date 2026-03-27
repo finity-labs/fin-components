@@ -165,7 +165,7 @@ class DebugBuilder
         }
 
         Log::debug(
-            'Sentinel debug: '.($this->subject ?? class_basename($this->data ?? 'mixed')),
+            'Sentinel debug: '.($this->subject ?? (is_object($this->data) ? class_basename($this->data) : get_debug_type($this->data))),
             $context,
         );
     }

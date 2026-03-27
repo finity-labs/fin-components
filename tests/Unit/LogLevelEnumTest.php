@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinSentinel\Enums\LogLevel;
 
 it('has all 8 log level cases with correct string values', function () {
@@ -26,43 +27,43 @@ it('has all 8 log level cases with correct string values', function () {
 });
 
 it('returns danger color for emergency, alert, critical, and error', function () {
-    expect(LogLevel::Emergency->color())->toBe('danger');
-    expect(LogLevel::Alert->color())->toBe('danger');
-    expect(LogLevel::Critical->color())->toBe('danger');
-    expect(LogLevel::Error->color())->toBe('danger');
+    expect(LogLevel::Emergency->getColor())->toBe('danger');
+    expect(LogLevel::Alert->getColor())->toBe('danger');
+    expect(LogLevel::Critical->getColor())->toBe('danger');
+    expect(LogLevel::Error->getColor())->toBe('danger');
 });
 
 it('returns warning color for warning level', function () {
-    expect(LogLevel::Warning->color())->toBe('warning');
+    expect(LogLevel::Warning->getColor())->toBe('warning');
 });
 
 it('returns info color for notice level', function () {
-    expect(LogLevel::Notice->color())->toBe('info');
+    expect(LogLevel::Notice->getColor())->toBe('info');
 });
 
 it('returns success color for info level', function () {
-    expect(LogLevel::Info->color())->toBe('success');
+    expect(LogLevel::Info->getColor())->toBe('success');
 });
 
 it('returns gray color for debug level', function () {
-    expect(LogLevel::Debug->color())->toBe('gray');
+    expect(LogLevel::Debug->getColor())->toBe('gray');
 });
 
-it('returns a heroicon string for each case', function () {
+it('returns a BackedEnum icon for each case', function () {
     foreach (LogLevel::cases() as $case) {
-        expect($case->icon())->toStartWith('heroicon-o-');
+        expect($case->getIcon())->toBeInstanceOf(BackedEnum::class);
     }
 });
 
 it('returns specific icons for each level', function () {
-    expect(LogLevel::Emergency->icon())->toBe('heroicon-o-fire');
-    expect(LogLevel::Alert->icon())->toBe('heroicon-o-bell-alert');
-    expect(LogLevel::Critical->icon())->toBe('heroicon-o-x-circle');
-    expect(LogLevel::Error->icon())->toBe('heroicon-o-exclamation-circle');
-    expect(LogLevel::Warning->icon())->toBe('heroicon-o-exclamation-triangle');
-    expect(LogLevel::Notice->icon())->toBe('heroicon-o-megaphone');
-    expect(LogLevel::Info->icon())->toBe('heroicon-o-information-circle');
-    expect(LogLevel::Debug->icon())->toBe('heroicon-o-bug-ant');
+    expect(LogLevel::Emergency->getIcon())->toBe(Heroicon::OutlinedFire);
+    expect(LogLevel::Alert->getIcon())->toBe(Heroicon::OutlinedBellAlert);
+    expect(LogLevel::Critical->getIcon())->toBe(Heroicon::OutlinedXCircle);
+    expect(LogLevel::Error->getIcon())->toBe(Heroicon::OutlinedExclamationCircle);
+    expect(LogLevel::Warning->getIcon())->toBe(Heroicon::OutlinedExclamationTriangle);
+    expect(LogLevel::Notice->getIcon())->toBe(Heroicon::OutlinedMegaphone);
+    expect(LogLevel::Info->getIcon())->toBe(Heroicon::OutlinedInformationCircle);
+    expect(LogLevel::Debug->getIcon())->toBe(Heroicon::OutlinedBugAnt);
 });
 
 it('returns null for invalid string via tryFrom', function () {

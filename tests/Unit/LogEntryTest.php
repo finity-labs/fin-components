@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinSentinel\Enums\LogLevel;
 use FinityLabs\FinSentinel\Support\LogEntry;
 
@@ -87,7 +88,7 @@ it('returns correct structure from toArray', function () {
         'environment' => 'production',
         'level' => 'ERROR',
         'level_color' => 'danger',
-        'level_icon' => 'heroicon-o-exclamation-circle',
+        'level_icon' => Heroicon::OutlinedExclamationCircle,
         'message' => "Error line 1\nError line 2\nError line 3\nError line 4",
         'stack_trace' => '#0 /app/index.php(10): main()',
         'preview' => "Error line 1\nError line 2\nError line 3",
