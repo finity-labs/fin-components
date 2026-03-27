@@ -162,6 +162,11 @@ return [
         'bulk_email_description' => 'Send the selected log files as individual email attachments to the specified recipient.',
         'bulk_email_files' => 'Selected Files',
 
+        'filter' => [
+            'date_from' => 'From',
+            'date_to' => 'To',
+        ],
+
         'column' => [
             'filename' => 'Filename',
             'size' => 'Size',

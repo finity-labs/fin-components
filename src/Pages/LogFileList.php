@@ -7,6 +7,7 @@ namespace FinityLabs\FinSentinel\Pages;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
@@ -16,6 +17,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use FinityLabs\FinSentinel\FinSentinelPlugin;
 use FinityLabs\FinSentinel\Mail\LogFileMail;
@@ -65,7 +68,23 @@ class LogFileList extends Page implements HasTable
     {
         return $table
             ->records(function (?string $search, ?string $sortColumn, ?string $sortDirection, int|string $page, int|string $recordsPerPage): LengthAwarePaginator {
-                $files = app(LogFileScanner::class)->scan($search);
+                $filterState = $this->tableFilters;
+
+                $subfolder = $filterState['subfolder']['value'] ?? null;
+                $filters = $subfolder ? ['subfolder' => $subfolder] : [];
+
+                $files = app(LogFileScanner::class)->scan($search, $filters);
+
+                $dateFrom = $filterState['date_range']['date_from'] ?? null;
+                $dateTo = $filterState['date_range']['date_to'] ?? null;
+
+                if ($dateFrom) {
+                    $files = $files->filter(fn (array $file): bool => $file['last_modified']->gte($dateFrom));
+                }
+
+                if ($dateTo) {
+                    $files = $files->filter(fn (array $file): bool => $file['last_modified']->lte($dateTo.' 23:59:59'));
+                }
 
                 $sortColumn ??= 'last_modified';
                 $sortDirection ??= 'desc';
@@ -84,6 +103,19 @@ class LogFileList extends Page implements HasTable
                 );
             })
             ->defaultSort('last_modified', 'desc')
+            ->filters([
+                SelectFilter::make('subfolder')
+                    ->label(__('fin-sentinel::fin-sentinel.logs.column.subfolder'))
+                    ->options(fn (): array => $this->getSubfolderOptions()),
+                Filter::make('date_range')
+                    ->schema([
+                        DatePicker::make('date_from')
+                            ->label(__('fin-sentinel::fin-sentinel.logs.filter.date_from')),
+                        DatePicker::make('date_to')
+                            ->label(__('fin-sentinel::fin-sentinel.logs.filter.date_to')),
+                    ])
+                    ->columns(2),
+            ])
             ->columns([
                 TextColumn::make('filename')
                     ->label(__('fin-sentinel::fin-sentinel.logs.column.filename'))
@@ -255,6 +287,20 @@ class LogFileList extends Page implements HasTable
                         ->deselectRecordsAfterCompletion(),
                 ]),
             ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function getSubfolderOptions(): array
+    {
+        return app(LogFileScanner::class)->scan()
+            ->pluck('subfolder')
+            ->filter()
+            ->unique()
+            ->sort()
+            ->mapWithKeys(fn (string $folder): array => [$folder => $folder])
+            ->all();
     }
 
     /**
