@@ -1,0 +1,208 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+
+    'navigation' => [
+        'settings' => 'Definições',
+        'error_channel' => 'Canal de erros',
+        'error_channel_title' => 'Definições do canal de erros',
+        'debug_channel' => 'Canal Debug',
+        'debug_channel_title' => 'Definições do canal Debug',
+        'system_logs' => 'Registos do sistema',
+        'log_files' => 'Ficheiros de registo',
+        'log_entries' => 'Entradas de registo',
+    ],
+
+    'enums' => [
+        'navigation_group' => [
+            'sentinel' => 'Sentinel',
+        ],
+        'log_level' => [
+            'EMERGENCY' => 'Emergência',
+            'ALERT' => 'Alerta',
+            'CRITICAL' => 'Crítico',
+            'ERROR' => 'Erro',
+            'WARNING' => 'Aviso',
+            'NOTICE' => 'Nota',
+            'INFO' => 'Info',
+            'DEBUG' => 'Debug',
+        ],
+    ],
+
+    'email' => [
+        'header' => [
+            'error' => 'Notificação de erro',
+            'debug' => 'Debug',
+            'log_file' => 'Ficheiro de registo',
+        ],
+        'footer' => 'Enviado por Fin-Sentinel',
+
+        'label' => [
+            'error_message' => 'Mensagem de erro',
+            'class' => 'Classe',
+            'file' => 'Ficheiro',
+            'context' => 'Contexto',
+            'command' => 'Comando',
+            'url' => 'URL',
+            'method' => 'Método',
+            'ip' => 'IP',
+            'params' => 'Parâmetros',
+            'headers' => 'Cabeçalhos',
+            'name' => 'Nome',
+            'email' => 'E-mail',
+            'id' => 'ID',
+            'user' => 'Utilizador',
+            'environment' => 'Ambiente',
+            'debug_mode' => 'Modo Debug',
+            'php_version' => 'Versão PHP',
+            'laravel_version' => 'Versão Laravel',
+            'laravel' => 'Laravel',
+            'peak_memory' => 'Memória máxima',
+            'enabled' => 'Ativado',
+            'disabled' => 'Desativado',
+            'relation' => 'Relação: :name',
+            'bindings' => 'Ligações:',
+            'trace_number' => '#',
+            'trace_location' => 'Localização',
+            'trace_call' => 'Chamada',
+        ],
+
+        'collection' => [
+            'count' => ':count elemento|:count elementos',
+            'more' => '... e mais :count elementos',
+        ],
+
+        'error' => [
+            'subject' => ':app - Ocorreu um erro',
+            'guest' => 'Visitante',
+            'console' => 'Consola',
+            'section_exception' => 'Detalhes da exceção',
+            'section_trace' => 'Stack Trace',
+            'section_request' => 'Contexto do pedido',
+            'section_user' => 'Utilizador autenticado',
+            'section_environment' => 'Ambiente',
+        ],
+
+        'debug' => [
+            'subject' => ':app - Debug: :subject',
+            'guest' => 'Visitante',
+            'console' => 'Consola',
+            'section_data' => 'Dados de Debug',
+            'section_call_site' => 'Local de chamada',
+            'section_request' => 'Contexto do pedido',
+            'section_environment' => 'Ambiente',
+        ],
+
+        'log_file' => [
+            'subject' => ':app - Ficheiro de registo: :file',
+            'bulk_subject' => ':app - :count ficheiros de registo anexados',
+            'body' => 'O ficheiro de registo <strong>:file</strong> de :app está em anexo.',
+            'body_text' => 'O ficheiro de registo :file de :app está em anexo.',
+        ],
+    ],
+
+    'settings' => [
+        'recipients' => 'Destinatários',
+        'throttling' => 'Limitação',
+        'email_address' => 'Endereço de e-mail',
+        'no_recipients_warning' => 'Nenhum destinatário configurado — as notificações não serão enviadas até que pelo menos um endereço de e-mail seja adicionado.',
+        'throttle_rate' => 'Taxa de limitação',
+        'minutes_suffix' => 'minutos',
+
+        'error' => [
+            'enabled' => 'Ativar notificações de erro',
+            'enabled_helper' => 'Quando desativado, não serão enviados e-mails de erro.',
+            'recipients_helper' => 'Adicione os endereços de e-mail que irão receber as notificações de erro.',
+            'throttle_helper' => 'Minutos mínimos entre e-mails de erro duplicados.',
+            'throttle_exceptions' => 'Limitar exceções',
+            'throttle_exceptions_helper' => 'Quando ativado, exceções duplicadas no mesmo ficheiro:linha não irão gerar e-mails na janela de limitação.',
+            'throttle_log_messages' => 'Limitar mensagens de registo',
+            'throttle_log_messages_helper' => 'Quando ativado, mensagens de erro idênticas não irão gerar e-mails na janela de limitação.',
+            'ignored_exceptions' => 'Exceções ignoradas',
+            'ignored_exceptions_description' => 'As exceções nesta lista não irão gerar notificações por e-mail.',
+            'ignored_exceptions_label' => 'Exceções ignoradas',
+            'other_custom' => 'Outro (personalizado)',
+            'exception_class' => 'Classe de exceção (FQCN)',
+            'class_not_exist' => 'Esta classe não existe.',
+            'custom_exception' => 'Exceção personalizada',
+            'select_exception' => 'Selecionar exceção',
+        ],
+
+        'debug' => [
+            'enabled' => 'Ativar canal Debug',
+            'enabled_helper' => 'Quando desativado, as chamadas a Sentinel::debug() serão silenciosamente ignoradas.',
+            'recipients_helper' => 'Adicione os endereços de e-mail que irão receber as notificações Debug.',
+            'throttle_enabled' => 'Ativar limitação',
+            'throttle_enabled_helper' => 'Quando desativado, cada chamada Debug envia um e-mail. Quando ativado, chamadas duplicadas são limitadas.',
+            'throttle_helper' => 'Minutos mínimos entre e-mails Debug duplicados.',
+        ],
+
+        'test_email' => [
+            'send' => 'Enviar e-mail de teste',
+            'sent' => 'E-mail de teste enviado para :count destinatário(s)',
+            'no_recipients' => 'Nenhum destinatário configurado. Adicione pelo menos um endereço de e-mail primeiro.',
+            'failed' => 'Falha ao enviar e-mail de teste',
+            'channel_disabled' => 'Este canal está atualmente desativado. O e-mail de teste será enviado na mesma.',
+        ],
+    ],
+
+    'logs' => [
+        'title' => 'Registos do sistema',
+        'heading' => 'Ficheiros de registo',
+        'entries_title' => 'Entradas de registo',
+        'back_to_list' => 'Voltar aos ficheiros de registo',
+        'no_entries' => 'Nenhuma entrada de registo encontrada',
+        'unsupported_format' => 'Este ficheiro não parece utilizar o formato de registo padrão do Laravel',
+        'search_placeholder' => 'Pesquisar entradas de registo...',
+        'level_filter' => 'Nível de registo',
+        'email_recipient' => 'E-mail do destinatário',
+        'email_description' => 'Enviar este ficheiro de registo como anexo de e-mail para o destinatário especificado.',
+        'bulk_email_description' => 'Enviar os ficheiros de registo selecionados como anexos individuais para o destinatário especificado.',
+        'bulk_email_files' => 'Ficheiros selecionados',
+
+        'filter' => [
+            'date_from' => 'De',
+            'date_to' => 'Até',
+        ],
+
+        'column' => [
+            'filename' => 'Nome do ficheiro',
+            'size' => 'Tamanho',
+            'modified' => 'Última modificação',
+            'subfolder' => 'Subpasta',
+            'level' => 'Nível',
+            'timestamp' => 'Data e hora',
+            'message' => 'Mensagem',
+        ],
+
+        'action' => [
+            'refresh' => 'Atualizar',
+            'view' => 'Ver',
+            'delete' => 'Eliminar',
+            'download' => 'Transferir',
+            'email' => 'Enviar por e-mail para',
+            'email_send' => 'Enviar',
+            'email_sent' => 'Ficheiro de registo enviado por e-mail com sucesso',
+            'bulk_email_sent' => ':count ficheiro(s) de registo enviado(s) por e-mail com sucesso',
+            'deleted' => 'Ficheiro de registo eliminado',
+            'bulk_deleted' => ':count ficheiro(s) de registo eliminado(s)',
+        ],
+
+        'confirm' => [
+            'delete' => 'Tem a certeza de que pretende eliminar este ficheiro de registo? Esta ação não pode ser revertida.',
+            'bulk_delete' => 'Tem a certeza de que pretende eliminar os ficheiros de registo selecionados? Esta ação não pode ser revertida.',
+        ],
+
+        'entry' => [
+            'detail' => 'Detalhe da entrada',
+            'line' => 'Linha',
+            'trace_frames' => ':count frame|:count frames',
+            'copy_trace' => 'Copiar Stack Trace',
+            'copy_entry' => 'Copiar entrada completa',
+            'copied' => 'Copiado!',
+        ],
+    ],
+
+];
