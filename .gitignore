@@ -7,6 +7,9 @@ phpunit.xml
 composer.lock
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
+*.swp
 
 # Planning and AI config
 .planning/

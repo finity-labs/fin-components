@@ -1,0 +1,57 @@
+{
+    "name": "finity-labs/fin-components",
+    "description": "Enhanced form components for Filament",
+    "keywords": ["filament", "laravel", "form-components"],
+    "homepage": "https://github.com/finity-labs/fin-components",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "FinityLabs",
+            "homepage": "https://github.com/finity-labs"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "filament/filament": "^4.0 || ^5.0",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "require-dev": {
+        "larastan/larastan": "^2.0 || ^3.0",
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^9.0 || ^10.0",
+        "pestphp/pest": "^3.0",
+        "pestphp/pest-plugin-laravel": "^2.0 || ^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "FinityLabs\\FinComponents\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FinityLabs\\FinComponents\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "analyse": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "FinityLabs\\FinComponents\\FinComponentsServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
