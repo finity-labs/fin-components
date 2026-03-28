@@ -1,6 +1,6 @@
 # FinSentinel for Filament
 
-<!-- ![finity-labs-fin-sentinel](banner-placeholder) -->
+![finity-labs-fin-sentinel](https://github.com/user-attachments/assets/4fe187d8-c5d2-4ef8-a8cd-164a98b305b1)
 
 [![FILAMENT 4.x](https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square)](https://filamentphp.com/docs/4.x/panels/installation)
 [![FILAMENT 5.x](https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square)](https://filamentphp.com/docs/5.x/panels/installation)
@@ -256,3 +256,51 @@ composer test
 ## License
 
 MIT
+
+## Screenshots
+
+<details>
+<summary><b>🔍 Log Browser & Viewer</b></summary>
+<br>
+
+**Log Browser Dashboard**
+Browse, download, email, or delete system logs directly from the panel.
+![log-files](https://github.com/user-attachments/assets/614c9038-7fab-484d-95b5-7cc1c749a456)
+
+**Detailed Log Viewer**
+Inspect individual log files and filter by log severity levels.
+![view-log-file](https://github.com/user-attachments/assets/9390d89c-1a56-4437-9d14-e23f36ca7dd2)
+
+**Email Log Files**
+Send specific `.log` files straight to your team.
+![email-log-files](https://github.com/user-attachments/assets/63a221b3-5421-4f07-9617-a3f2032112ad)
+
+</details>
+
+<details>
+<summary><b>⚙️ Channel Settings</b></summary>
+<br>
+
+**Error Channel Settings**
+Configure recipients, set throttling rates, and ignore specific exceptions.
+![error-channel-settings](https://github.com/user-attachments/assets/d5f79c74-6596-4707-abdf-99f1b3d390c4)
+
+**Debug Channel Settings**
+Manage your debug notifications with dedicated recipient lists.
+![debug-channel-settings](https://github.com/user-attachments/assets/dede5577-a8cd-4162-a373-c264c6b28f60)
+
+</details>
+
+<details>
+<summary><b>📧 Email Notifications</b></summary>
+<br>
+
+**Exception Alerts**
+Get instantly notified with a clean stack trace when things break.
+![exception-email-sample](https://github.com/user-attachments/assets/eb59ed99-90c2-42e3-a51d-3ed69b0ae698)
+
+**One-Liner Debug Emails**
+Trigger formatted debug emails containing environment details and custom payloads.
+![debug-email-sample](https://github.com/user-attachments/assets/ca845a13-3f1a-4be1-9b69-cab9e50639f3)
+
+</details>
