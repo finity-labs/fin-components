@@ -10,7 +10,5 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
-
-# Planning and AI config
 .planning/
 .claude/
