@@ -38,29 +38,7 @@
                         ])>
                             @foreach ($columns as $column)
                                 <td class="fi-ta-cell px-3 py-4 text-sm text-gray-950 sm:first-of-type:ps-6 sm:last-of-type:pe-6 dark:text-white">
-                                    @php
-                                        $value = $field->resolveColumnValue($record, $column->getName());
-                                    @endphp
-
-                                    @if ($value instanceof \Illuminate\Support\HtmlString)
-                                        {!! $value !!}
-                                    @elseif (is_array($value))
-                                        {{ implode(', ', $value) }}
-                                    @elseif (is_bool($value))
-                                        @if ($value)
-                                            <x-filament::icon
-                                                icon="heroicon-o-check-circle"
-                                                class="fi-ta-icon-item h-5 w-5 text-success-500 dark:text-success-400"
-                                            />
-                                        @else
-                                            <x-filament::icon
-                                                icon="heroicon-o-x-circle"
-                                                class="fi-ta-icon-item h-5 w-5 text-danger-500 dark:text-danger-400"
-                                            />
-                                        @endif
-                                    @else
-                                        {{ $value ?? '—' }}
-                                    @endif
+                                    {!! $field->renderColumn($column, $record) !!}
                                 </td>
                             @endforeach
 

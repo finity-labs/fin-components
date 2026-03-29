@@ -130,4 +130,22 @@ trait HasTableDisplay
     {
         return data_get($record, $name);
     }
+
+    /**
+     * Render a column cell for a given record using Filament's column pipeline.
+     * This runs the full rendering: badges, colors, icons, formatStateUsing, etc.
+     */
+    public function renderColumn(Column $column, Model $record): string
+    {
+        $clone = clone $column;
+        $clone->record($record);
+
+        if (method_exists($clone, 'toEmbeddedHtml')) {
+            return $clone->toEmbeddedHtml();
+        }
+
+        $value = data_get($record, $clone->getName());
+
+        return e($value ?? '—');
+    }
 }
