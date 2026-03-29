@@ -1,0 +1,70 @@
+# FinComponents
+
+A Filament component library that bundles enhanced form components under a single package. Install once, get all components.
+
+![Filament v4/v5](https://img.shields.io/badge/Filament-v4%20%7C%20v5-e9b228)
+![PHP 8.2+](https://img.shields.io/badge/PHP-8.2%2B-777bb4)
+![License: MIT](https://img.shields.io/badge/License-MIT-green)
+
+## Requirements
+
+- PHP 8.2+
+- Filament v4 or v5
+
+## Installation
+
+```bash
+composer require finity-labs/fin-components
+```
+
+The package auto-registers its service provider via Laravel package discovery.
+
+### Tailwind @source directive
+
+If you're using a custom Filament theme, add the plugin views to your theme's CSS file so Tailwind picks up the classes:
+
+```css
+@source '../../../../vendor/finity-labs/fin-components/resources/**/*.blade.php';
+```
+
+You only need this when your app uses a custom theme. If you're on Filament's default theme, skip this step.
+
+### Publishing translations
+
+```bash
+php artisan vendor:publish --tag="fin-components-translations"
+```
+
+41 locales are included out of the box, matching Filament's own language coverage.
+
+## Components
+
+### ModalTableSelect
+
+A drop-in replacement for Filament's native `ModalTableSelect` that actually shows what you've selected. It supports five display modes: badges (default), table, infolist, form, and selection-only. The mode resolves automatically based on what you configure -- set table columns and it uses table mode, set an infolist schema and it uses infolist mode, configure nothing and it falls back to standard badges.
+
+```php
+use FinityLabs\FinComponents\Components\ModalTableSelect\ModalTableSelect;
+use Filament\Tables\Columns\TextColumn;
+
+ModalTableSelect::make('categories')
+    ->relationship('categories', 'name')
+    ->multiple()
+    ->tableConfiguration(CategoriesTable::class)
+    ->tableColumns([
+        TextColumn::make('name'),
+        TextColumn::make('slug'),
+    ])
+```
+
+See [ModalTableSelect documentation](docs/modal-table-select.md) for all display modes and configuration options.
+
+## Compatibility
+
+| Package | Filament | PHP |
+|---------|----------|-----|
+| 1.x | 4.x / 5.x | 8.2+ |
+
+## License
+
+MIT
