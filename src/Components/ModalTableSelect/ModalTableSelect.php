@@ -41,11 +41,11 @@ class ModalTableSelect extends FilamentModalTableSelect
             return DisplayMode::SelectionOnly;
         }
 
-        if ($this->isMultiple()) {
-            if ($this->hasTableColumns()) {
-                return DisplayMode::Table;
-            }
+        if ($this->hasTableColumns()) {
+            return DisplayMode::Table;
+        }
 
+        if ($this->isMultiple()) {
             return DisplayMode::Badges;
         }
 

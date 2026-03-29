@@ -38,6 +38,15 @@ it('resolves to Badges when multiple but no tableColumns', function () {
     expect($field->getDisplayMode())->toBe(DisplayMode::Badges);
 });
 
+it('resolves to Table when single with tableColumns configured', function () {
+    $field = ModalTableSelect::make('posts')
+        ->tableColumns([
+            TextColumn::make('title'),
+        ]);
+
+    expect($field->getDisplayMode())->toBe(DisplayMode::Table);
+});
+
 it('resolves to Infolist when single with infolistSchema configured', function () {
     $field = ModalTableSelect::make('posts')
         ->infolistSchema([
