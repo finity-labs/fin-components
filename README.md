@@ -35,7 +35,7 @@ You only need this when your app uses a custom theme. If you're on Filament's de
 php artisan vendor:publish --tag="fin-components-translations"
 ```
 
-41 locales are included out of the box, matching Filament's own language coverage.
+English translations are included out of the box. You can publish and customize them, or add translations for other locales.
 
 ## Components
 
