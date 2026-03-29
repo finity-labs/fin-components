@@ -5,33 +5,32 @@ declare(strict_types=1);
 namespace FinityLabs\FinComponents\Components\ModalTableSelect\Concerns;
 
 use Closure;
-use Filament\Infolists\Components\Component as InfolistComponent;
+use Filament\Schemas\Components\Component as InfolistComponent;
 use Illuminate\Database\Eloquent\Model;
 
 trait HasInfolistDisplay
 {
     /** @var array<InfolistComponent>|Closure|null */
-    protected array | Closure | null $infolistSchema = null;
+    protected array|Closure|null $infolistSchema = null;
 
-    /** @var int|Closure */
-    protected int | Closure $infolistColumns = 1;
+    protected int|Closure $infolistColumns = 1;
 
     /** @var array<string>|Closure|null */
-    protected array | Closure | null $infolistEagerLoad = null;
+    protected array|Closure|null $infolistEagerLoad = null;
 
     /**
      * Define the infolist schema for displaying a single selected record.
      *
      * @param  array<InfolistComponent>|Closure  $schema
      */
-    public function infolistSchema(array | Closure $schema): static
+    public function infolistSchema(array|Closure $schema): static
     {
         $this->infolistSchema = $schema;
 
         return $this;
     }
 
-    public function infolistColumns(int | Closure $columns): static
+    public function infolistColumns(int|Closure $columns): static
     {
         $this->infolistColumns = $columns;
 
@@ -41,7 +40,7 @@ trait HasInfolistDisplay
     /**
      * @param  array<string>|Closure  $relationships
      */
-    public function infolistEagerLoad(array | Closure $relationships): static
+    public function infolistEagerLoad(array|Closure $relationships): static
     {
         $this->infolistEagerLoad = $relationships;
 

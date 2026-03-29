@@ -5,18 +5,17 @@ declare(strict_types=1);
 namespace FinityLabs\FinComponents\Components\ModalTableSelect\Concerns;
 
 use Closure;
-use Filament\Forms\Components\Component as FormComponent;
+use Filament\Schemas\Components\Component as FormComponent;
 
 trait HasFormDisplay
 {
     /** @var array<FormComponent>|Closure|null */
-    protected array | Closure | null $formSchema = null;
+    protected array|Closure|null $formSchema = null;
 
-    /** @var int|Closure */
-    protected int | Closure $formColumns = 1;
+    protected int|Closure $formColumns = 1;
 
     /** @var array<string>|Closure|null */
-    protected array | Closure | null $formEagerLoad = null;
+    protected array|Closure|null $formEagerLoad = null;
 
     /**
      * Define the form schema for displaying a single selected record.
@@ -24,14 +23,14 @@ trait HasFormDisplay
      *
      * @param  array<FormComponent>|Closure  $schema
      */
-    public function formSchema(array | Closure $schema): static
+    public function formSchema(array|Closure $schema): static
     {
         $this->formSchema = $schema;
 
         return $this;
     }
 
-    public function formColumns(int | Closure $columns): static
+    public function formColumns(int|Closure $columns): static
     {
         $this->formColumns = $columns;
 
@@ -41,7 +40,7 @@ trait HasFormDisplay
     /**
      * @param  array<string>|Closure  $relationships
      */
-    public function formEagerLoad(array | Closure $relationships): static
+    public function formEagerLoad(array|Closure $relationships): static
     {
         $this->formEagerLoad = $relationships;
 
