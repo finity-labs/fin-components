@@ -8,11 +8,11 @@ use Closure;
 
 trait HasSelectionOnlyMode
 {
-    protected bool | Closure $isSelectionOnly = false;
+    protected bool|Closure $isSelectionOnly = false;
 
-    protected bool | Closure $hasSelectionSummary = false;
+    protected bool|Closure $hasSelectionSummary = false;
 
-    protected string | Closure | null $selectionSummaryLabel = null;
+    protected string|Closure|null $selectionSummaryLabel = null;
 
     /**
      * Enable selection-only mode.
@@ -22,7 +22,7 @@ trait HasSelectionOnlyMode
      * selected items. Other form components can read the selected
      * IDs via `$get('fieldName')` and react accordingly.
      */
-    public function selectionOnly(bool | Closure $condition = true): static
+    public function selectionOnly(bool|Closure $condition = true): static
     {
         $this->isSelectionOnly = $condition;
 
@@ -35,7 +35,7 @@ trait HasSelectionOnlyMode
      *
      * Has no effect when selectionOnly is not enabled.
      */
-    public function selectionSummary(bool | Closure $condition = true): static
+    public function selectionSummary(bool|Closure $condition = true): static
     {
         $this->hasSelectionSummary = $condition;
 
@@ -48,7 +48,7 @@ trait HasSelectionOnlyMode
      * Receives the count as `:count` placeholder.
      * Falls back to the package translation if not set.
      */
-    public function selectionSummaryLabel(string | Closure | null $label): static
+    public function selectionSummaryLabel(string|Closure|null $label): static
     {
         $this->selectionSummaryLabel = $label;
 

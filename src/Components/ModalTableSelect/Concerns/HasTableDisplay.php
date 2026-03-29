@@ -13,35 +13,35 @@ use Illuminate\Database\Eloquent\Model;
 trait HasTableDisplay
 {
     /** @var array<Column>|Closure|null */
-    protected array | Closure | null $tableColumns = null;
+    protected array|Closure|null $tableColumns = null;
 
-    protected bool | Closure $isTableStriped = false;
+    protected bool|Closure $isTableStriped = false;
 
-    protected string | Closure | null $tableEmptyMessage = null;
+    protected string|Closure|null $tableEmptyMessage = null;
 
     /** @var array<string>|Closure|null */
-    protected array | Closure | null $tableEagerLoad = null;
+    protected array|Closure|null $tableEagerLoad = null;
 
     /**
      * Define the columns displayed in the selected items table.
      *
      * @param  array<Column>|Closure  $columns
      */
-    public function tableColumns(array | Closure $columns): static
+    public function tableColumns(array|Closure $columns): static
     {
         $this->tableColumns = $columns;
 
         return $this;
     }
 
-    public function tableStriped(bool | Closure $condition = true): static
+    public function tableStriped(bool|Closure $condition = true): static
     {
         $this->isTableStriped = $condition;
 
         return $this;
     }
 
-    public function tableEmptyMessage(string | Closure | null $message): static
+    public function tableEmptyMessage(string|Closure|null $message): static
     {
         $this->tableEmptyMessage = $message;
 
@@ -53,7 +53,7 @@ trait HasTableDisplay
      *
      * @param  array<string>|Closure  $relationships
      */
-    public function tableEagerLoad(array | Closure $relationships): static
+    public function tableEagerLoad(array|Closure $relationships): static
     {
         $this->tableEagerLoad = $relationships;
 
