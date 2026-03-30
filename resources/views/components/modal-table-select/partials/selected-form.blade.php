@@ -15,14 +15,25 @@
             $extractFields = function (array $components) use (&$extractFields): array {
                 $fields = [];
                 foreach ($components as $component) {
+                    if (! is_object($component)) {
+                        // childComponents is keyed ['default' => [...]] — recurse into sub-arrays
+                        if (is_array($component)) {
+                            $fields = array_merge($fields, $extractFields($component));
+                        }
+                        continue;
+                    }
                     if ($component instanceof \Filament\Forms\Components\Field) {
                         $fields[] = $component;
                     }
                     // Read raw childComponents property to avoid needing mount
-                    $ref = new \ReflectionProperty($component, 'childComponents');
-                    $children = $ref->getValue($component);
-                    if (is_array($children) && count($children)) {
-                        $fields = array_merge($fields, $extractFields($children));
+                    try {
+                        $ref = new \ReflectionProperty($component, 'childComponents');
+                        $children = $ref->getValue($component);
+                        if (is_array($children) && count($children)) {
+                            $fields = array_merge($fields, $extractFields($children));
+                        }
+                    } catch (\ReflectionException) {
+                        // Component doesn't have childComponents
                     }
                 }
                 return $fields;
