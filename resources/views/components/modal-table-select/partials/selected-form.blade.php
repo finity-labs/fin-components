@@ -10,9 +10,12 @@
             $livewire = $field->getLivewire();
             $uniqueKey = 'finSelectedForm_' . $field->getStatePath();
 
-            // Set record data on livewire so form fields can read it
-            foreach ($record->toArray() as $key => $value) {
-                data_set($livewire, "{$uniqueKey}.{$key}", $value);
+            // Resolve each field's value from the record using data_get
+            // which handles camelCase relationships and dot notation
+            foreach ($formSchema as $formField) {
+                $name = $formField->getName();
+                $value = data_get($record, $name);
+                data_set($livewire, "{$uniqueKey}.{$name}", $value);
             }
 
             $form = \Filament\Schemas\Schema::make($livewire)
