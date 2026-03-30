@@ -134,17 +134,22 @@ trait HasTableDisplay
     /**
      * Render a column cell for a given record using Filament's column pipeline.
      * This runs the full rendering: badges, colors, icons, formatStateUsing, etc.
+     *
+     * We inject the state via getStateUsing() to bypass the table/livewire
+     * dependency in the column's cacheState() method, since we're rendering
+     * outside of a mounted Filament Table.
      */
     public function renderColumn(Column $column, Model $record): string
     {
         $clone = clone $column;
         $clone->record($record);
 
+        $value = data_get($record, $clone->getName());
+        $clone->getStateUsing($value);
+
         if (method_exists($clone, 'toEmbeddedHtml')) {
             return $clone->toEmbeddedHtml();
         }
-
-        $value = data_get($record, $clone->getName());
 
         return e($value ?? '—');
     }
