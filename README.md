@@ -17,11 +17,13 @@ A powerful email template manager and composer for Filament. Build, manage, and 
 - **Email Composer** — Send emails from any resource using templates as starting points, with full editing of subject, body, recipients, and attachments
 - **Dynamic Templates** — No need for separate Mailable classes per template. One universal `TemplateMail` handles everything
 - **Token Replacement** — `{{ user.name }}`, `{{ config.app.name }}`, conditionals `{% if user.is_premium %}`, and fallbacks `{{ user.name | 'Customer' }}`
+- **Merge Tags** — Tokens are available as merge tags directly in the RichEditor toolbar for easy insertion
+- **CTA Button Block** — Insert styled call-to-action buttons from the editor with configurable label, URL, and alignment
 - **Template Versioning** — Automatic version history with compare and restore
 - **Email Logging** — Every sent email is logged with status tracking, rendered body storage, and polymorphic model association
 - **Translatable** — Templates support multiple languages via `spatie/laravel-translatable`, all locales stored in a single record
-- **Theme System** — Create color themes and apply them to templates
-- **Swappable Editor** — Ships with Tiptap support, but swap in TinyMCE or any editor via the `EditorContract`
+- **Theme System** — Create color themes and apply them to templates, with live preview that updates as you change colors
+- **Swappable Editor** — Ships with Filament's RichEditor by default, with Tiptap and TinyMCE supported via the `EditorContract`
 - **Categories & Tags** — Organize templates as they grow
 - **Reusable Actions** — `SendEmailAction` and `SentEmailsRelationManager` drop into any Filament resource
 - **Preview & Test Send** — Preview templates inline and send test emails from the admin
@@ -218,6 +220,22 @@ $invoice->sentEmailsCount();                  // Count
 | `{{ token \| 'fallback' }}` | `{{ user.name \| 'Customer' }}` | With fallback |
 | `{% if token %}...{% endif %}` | `{% if user.is_premium %}...{% endif %}` | Conditional |
 | `{% if token %}...{% else %}...{% endif %}` | | If/else |
+
+### Merge tags
+
+When editing a template, any tokens defined in the Tokens tab are available as merge tags in the RichEditor toolbar. Click the merge tags button to browse and insert them directly into the email body.
+
+### CTA Button block
+
+The editor includes a built-in Button custom block. Click the custom blocks button (squares-plus icon) in the toolbar, select "Button", and configure:
+
+- **Button Text** — The label displayed on the button
+- **URL** — The link destination
+- **Alignment** — Left, center, or right
+
+The button automatically uses your theme's button colors (`button_bg` and `button_text`) in both preview and sent emails, with full inline styling for email client compatibility.
+
+To add your own custom blocks, register them on the `RichEditor` via the `EditorContract` or by extending `DefaultEditor`.
 
 ## Events
 

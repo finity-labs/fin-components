@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-03-30
+
+### Added
+
+- **Merge Tags in RichEditor** — Tokens defined in the Tokens tab now appear as merge tags in the editor toolbar, allowing easy insertion without switching tabs
+- **CTA Button Block** — New custom block for inserting styled call-to-action buttons with configurable label, URL, and alignment, themed automatically
+- **Inline Link Styling** — Links in email body now receive inline theme colors for email clients that strip `<style>` blocks
+- **Live Theme Preview** — Color changes in the theme editor update the preview immediately without saving
+- **Custom Theme Auto-Registration** — Install command detects custom Filament theme CSS and registers FinMail styles; uninstall cleans up
+
+### Fixed
+
+- Link colors not applied in email clients (Gmail, Outlook, etc.)
+- Email preview now shows current form content and selected theme instead of last saved state
+- TipTap merge tag nodes properly converted to `{{ token }}` text in preview and sent emails
+- Token replacement now works on compose page emails (override body)
+- Replicate action for templates and themes — modal shows editable name/key fields, excludes computed columns, redirects to edit page
+- Uninstall command handles fluent plugin configuration
+- Portuguese translations
+
+### Changed
+
+- Compose page defaults "To" field to logged-in user's email
+- Email preview uses Filament's RichContentRenderer for proper HTML conversion (includes Link extension)
+
 ## [1.0.0] - 2026-03-02
 
 ### Added
