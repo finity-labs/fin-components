@@ -102,10 +102,5 @@
             @endif
         @endif
 
-        @if (! $isDisabled)
-            <div>
-                {{ $getAction('select') }}
-            </div>
-        @endif
     </div>
 </x-dynamic-component>
