@@ -1,52 +1,32 @@
 @php
     $record = $field->getSelectedRecord();
-    $schema = $field->getFormSchema();
+    $formSchema = $field->getFormSchema();
     $columns = $field->getFormColumns();
 @endphp
 
-@if ($record && $schema)
+@if ($record && $formSchema)
     <div class="fi-fo rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-        <div @class([
-            'grid gap-6',
-            match ($columns) {
-                2 => 'sm:grid-cols-2',
-                3 => 'sm:grid-cols-3',
-                4 => 'sm:grid-cols-4',
-                default => 'sm:grid-cols-1',
-            },
-        ])>
-            @foreach ($schema as $formField)
-                @php
-                    $name = $formField->getName();
-                    $value = data_get($record, $name);
-                    $label = $formField->getLabel() ?? str($name)->replace('.', ' ')->replace('_', ' ')->headline()->toString();
+        @php
+            $livewire = $field->getLivewire();
+            $uniqueKey = 'finSelectedForm_' . $field->getStatePath();
 
-                    if ($value instanceof \Filament\Support\Contracts\HasLabel) {
-                        $displayValue = $value->getLabel() ?? $value->value;
-                    } elseif ($value instanceof \BackedEnum) {
-                        $displayValue = $value->value;
-                    } elseif ($value instanceof \UnitEnum) {
-                        $displayValue = $value->name;
-                    } elseif (is_bool($value)) {
-                        $displayValue = $value ? __('Yes') : __('No');
-                    } elseif (is_array($value)) {
-                        $displayValue = implode(', ', $value);
-                    } else {
-                        $displayValue = $value;
-                    }
-                @endphp
+            // Set record data on livewire so form fields can read it
+            foreach ($record->toArray() as $key => $value) {
+                data_set($livewire, "{$uniqueKey}.{$key}", $value);
+            }
 
-                <div class="fi-in-entry">
-                    <dt class="fi-in-entry-label text-sm font-medium leading-6 text-gray-950 dark:text-white">
-                        {{ $label }}
-                    </dt>
+            $form = \Filament\Schemas\Schema::make($livewire)
+                ->schema(
+                    collect($formSchema)
+                        ->map(fn ($formField) => $formField->disabled())
+                        ->all()
+                )
+                ->columns($columns)
+                ->statePath($uniqueKey)
+                ->model($record);
+        @endphp
 
-                    <dd class="fi-in-entry-content mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
-                        {{ $displayValue ?? '—' }}
-                    </dd>
-                </div>
-            @endforeach
-        </div>
+        {{ $form }}
     </div>
 @else
     <div class="fi-fo rounded-xl bg-white px-6 py-12 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
