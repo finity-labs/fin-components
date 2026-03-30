@@ -7,7 +7,7 @@
 @if ($record && $schema)
     <div class="fi-fo rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         @php
-            $form = \Filament\Forms\Form::make($field->getLivewire())
+            $form = \Filament\Schemas\Schema::make($field->getLivewire())
                 ->schema(
                     collect($schema)
                         ->map(fn ($formField) => $formField->disabled())

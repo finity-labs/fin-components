@@ -7,7 +7,7 @@
 @if ($record && $schema)
     <div class="fi-in rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         @php
-            $infolist = \Filament\Infolists\Infolist::make()
+            $infolist = \Filament\Schemas\Schema::make($field->getLivewire())
                 ->record($record)
                 ->schema($schema)
                 ->columns($columns);
