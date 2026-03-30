@@ -37,8 +37,18 @@
                             'bg-gray-50/50 dark:bg-white/[0.02]' => $isStriped && $index % 2 === 1,
                         ])>
                             @foreach ($columns as $column)
+                                @php
+                                    $cell = $field->resolveColumnCell($column, $record);
+                                @endphp
+
                                 <td class="fi-ta-cell px-3 py-4 text-sm text-gray-950 sm:first-of-type:ps-6 sm:last-of-type:pe-6 dark:text-white">
-                                    {!! $field->renderColumn($column, $record) !!}
+                                    @if ($cell['isBadge'])
+                                        <x-filament::badge :color="$cell['color']">
+                                            {{ $cell['label'] }}
+                                        </x-filament::badge>
+                                    @else
+                                        {{ $cell['label'] }}
+                                    @endif
                                 </td>
                             @endforeach
 

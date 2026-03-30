@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace FinityLabs\FinComponents\Components\ModalTableSelect\Concerns;
 
 use Closure;
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -132,25 +134,49 @@ trait HasTableDisplay
     }
 
     /**
-     * Render a column cell for a given record using Filament's column pipeline.
-     * This runs the full rendering: badges, colors, icons, formatStateUsing, etc.
+     * Resolve display data for a column cell from a record.
      *
-     * We inject the state via getStateUsing() to bypass the table/livewire
-     * dependency in the column's cacheState() method, since we're rendering
-     * outside of a mounted Filament Table.
+     * Returns an array with 'label', 'isBadge', and 'color' keys so the
+     * blade view can render it. We can't use Column::toEmbeddedHtml()
+     * because the column pipeline requires a mounted Table/Livewire context.
+     *
+     * @return array{label: string, isBadge: bool, color: string|null}
      */
-    public function renderColumn(Column $column, Model $record): string
+    public function resolveColumnCell(Column $column, Model $record): array
     {
-        $clone = clone $column;
-        $clone->record($record);
+        $value = data_get($record, $column->getName());
+        $isBadge = method_exists($column, 'isBadge') && $column->isBadge();
+        $color = null;
+        $label = $value;
 
-        $value = data_get($record, $clone->getName());
-        $clone->getStateUsing($value);
-
-        if (method_exists($clone, 'toEmbeddedHtml')) {
-            return $clone->toEmbeddedHtml();
+        // Handle enums with Filament's HasLabel/HasColor interfaces
+        if ($value instanceof \BackedEnum) {
+            $label = $value instanceof HasLabel
+                ? ($value->getLabel() ?? $value->value)
+                : $value->value;
+        } elseif ($value instanceof \UnitEnum) {
+            $label = $value->name;
+        } elseif ($value instanceof HasLabel) {
+            $label = $value->getLabel();
         }
 
-        return e($value ?? '—');
+        if ($value instanceof HasColor) {
+            $color = $value->getColor();
+        }
+
+        // If no color from enum, try the column's color config
+        if ($color === null && method_exists($column, 'getColor')) {
+            try {
+                $color = $column->getColor($value);
+            } catch (\Throwable) {
+                // Column may need table context for closure evaluation
+            }
+        }
+
+        return [
+            'label' => (string) ($label ?? '—'),
+            'isBadge' => $isBadge,
+            'color' => $color,
+        ];
     }
 }
