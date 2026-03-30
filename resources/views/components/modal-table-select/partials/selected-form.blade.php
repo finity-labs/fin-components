@@ -8,15 +8,18 @@
     <div class="fi-fo rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
         @php
             $livewire = $field->getLivewire();
-            $uniqueKey = 'finSelectedForm_' . $field->getStatePath();
+            $stateKey = 'finSelectedForm_' . md5($field->getStatePath());
 
-            // Resolve each field's value from the record using data_get
-            // which handles camelCase relationships and dot notation
+            // Resolve each field value from the record and store in
+            // the livewire component's data array where Schema can find it
+            $formState = [];
             foreach ($formSchema as $formField) {
                 $name = $formField->getName();
-                $value = data_get($record, $name);
-                data_set($livewire, "{$uniqueKey}.{$name}", $value);
+                data_set($formState, $name, data_get($record, $name));
             }
+
+            // Store on the livewire component's public data property
+            $livewire->data[$stateKey] = $formState;
 
             $form = \Filament\Schemas\Schema::make($livewire)
                 ->schema(
@@ -25,7 +28,7 @@
                         ->all()
                 )
                 ->columns($columns)
-                ->statePath($uniqueKey)
+                ->statePath("data.{$stateKey}")
                 ->model($record);
         @endphp
 
