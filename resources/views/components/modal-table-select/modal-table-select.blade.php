@@ -24,7 +24,7 @@
                 ], escape: false)
                 ->merge($extraAttributes, escape: false)
                 ->class([
-                    'fi-fo-modal-table-select',
+                    'fi-fo-modal-table-select w-full',
                     'fi-fo-modal-table-select-disabled' => $isDisabled,
                     'fi-fo-modal-table-select-multiple' => $isMultiple,
                 ])
