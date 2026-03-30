@@ -24,12 +24,20 @@
 
             $livewire->data[$stateKey] = $formState;
 
+            // Disable only Field instances — layout components (Grid, Section)
+            // don't support the full Field interface
+            $disabledSchema = collect($formSchema)->map(function ($component) {
+                if ($component instanceof \Filament\Forms\Components\Field) {
+                    return $component->disabled();
+                }
+                return $component;
+            })->all();
+
             $form = \Filament\Schemas\Schema::make($livewire)
-                ->schema($formSchema)
+                ->schema($disabledSchema)
                 ->columns($columns)
                 ->statePath("data.{$stateKey}")
-                ->model($record)
-                ->disabled();
+                ->model($record);
         @endphp
 
         {{ $form }}
