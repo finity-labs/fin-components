@@ -10,23 +10,45 @@
             $livewire = $field->getLivewire();
             $stateKey = 'finSelectedForm_' . md5($field->getStatePath());
 
-            // Resolve each field value from the record and store in
-            // the livewire component's data array where Schema can find it
+            // Recursively extract field names from schema (skip layout components)
+            $extractFieldNames = function (array $components) use (&$extractFieldNames): array {
+                $names = [];
+                foreach ($components as $component) {
+                    if (method_exists($component, 'getName') && method_exists($component, 'getState')) {
+                        $names[] = $component->getName();
+                    }
+                    if (method_exists($component, 'getChildComponents')) {
+                        $names = array_merge($names, $extractFieldNames($component->getChildComponents()));
+                    }
+                }
+                return $names;
+            };
+
             $formState = [];
-            foreach ($formSchema as $formField) {
-                $name = $formField->getName();
+            foreach ($extractFieldNames($formSchema) as $name) {
                 data_set($formState, $name, data_get($record, $name));
             }
 
-            // Store on the livewire component's public data property
             $livewire->data[$stateKey] = $formState;
 
+            // Disable all fields recursively
+            $disableFields = function (array $components) use (&$disableFields): array {
+                return collect($components)->map(function ($component) use ($disableFields) {
+                    if (method_exists($component, 'disabled')) {
+                        $component->disabled();
+                    }
+                    if (method_exists($component, 'schema') && method_exists($component, 'getChildComponents')) {
+                        $children = $component->getChildComponents();
+                        if (! empty($children)) {
+                            $component->schema($disableFields($children));
+                        }
+                    }
+                    return $component;
+                })->all();
+            };
+
             $form = \Filament\Schemas\Schema::make($livewire)
-                ->schema(
-                    collect($formSchema)
-                        ->map(fn ($formField) => $formField->disabled())
-                        ->all()
-                )
+                ->schema($disableFields($formSchema))
                 ->columns($columns)
                 ->statePath("data.{$stateKey}")
                 ->model($record);
