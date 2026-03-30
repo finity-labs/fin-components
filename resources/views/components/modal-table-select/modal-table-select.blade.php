@@ -48,7 +48,7 @@
             @endphp
 
             @if ($hasValue)
-                <div>
+                <div class="w-full">
                     @if ($displayMode === DisplayMode::Table)
                         @include('fin-components::components.modal-table-select.partials.selected-table')
                     @elseif ($displayMode === DisplayMode::Infolist)
