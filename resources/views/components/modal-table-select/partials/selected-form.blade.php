@@ -10,16 +10,29 @@
             $livewire = $field->getLivewire();
             $stateKey = 'finSelectedForm_' . md5($field->getStatePath());
 
-            // Build a flat state array from all record attributes and relations
-            // so fields at any nesting level (inside Grid, Section, etc.) can resolve
-            $formState = $record->toArray();
-
-            // Also resolve dot-notation fields that toArray may miss (camelCase relations)
-            foreach ($formSchema as $component) {
-                if ($component instanceof \Filament\Forms\Components\Field) {
-                    $name = $component->getName();
-                    data_set($formState, $name, data_get($record, $name));
+            // Recursively extract all Field instances from the schema tree
+            // (handles fields nested inside Grid, Section, etc.)
+            $extractFields = function (array $components) use (&$extractFields): array {
+                $fields = [];
+                foreach ($components as $component) {
+                    if ($component instanceof \Filament\Forms\Components\Field) {
+                        $fields[] = $component;
+                    }
+                    // Read raw childComponents property to avoid needing mount
+                    $ref = new \ReflectionProperty($component, 'childComponents');
+                    $children = $ref->getValue($component);
+                    if (is_array($children) && count($children)) {
+                        $fields = array_merge($fields, $extractFields($children));
+                    }
                 }
+                return $fields;
+            };
+
+            // Build state from record, resolving each field by name (supports dot notation)
+            $formState = $record->toArray();
+            foreach ($extractFields($formSchema) as $fieldComponent) {
+                $name = $fieldComponent->getName();
+                data_set($formState, $name, data_get($record, $name));
             }
 
             $livewire->data[$stateKey] = $formState;
