@@ -28,6 +28,7 @@
         /* Theme Colors */
         .email-body { background-color: {{ $theme['background'] ?? '#f4f4f7' }}; }
         .email-content { background-color: {{ $theme['content_bg'] ?? '#ffffff' }}; }
+        .email-content a { color: {{ $theme['link'] ?? '#4F46E5' }}; text-decoration: underline; }
         .email-text { color: {{ $theme['text'] ?? '#333333' }}; }
         .email-text-light { color: {{ $theme['text_light'] ?? '#666666' }}; }
         .email-heading { color: {{ $theme['heading'] ?? '#1a1a1a' }}; }
@@ -67,7 +68,7 @@
                     {{-- Content --}}
                     <tr>
                         <td class="email-content" style="background-color: {{ $theme['content_bg'] ?? '#ffffff' }}; border-radius: 8px; padding: 40px 30px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: {{ $theme['text'] ?? '#333333' }};">
-                            {!! $body !!}
+                            {!! \FinityLabs\FinMail\Helpers\InlineStyler::apply($body, $theme) !!}
                         </td>
                     </tr>
 

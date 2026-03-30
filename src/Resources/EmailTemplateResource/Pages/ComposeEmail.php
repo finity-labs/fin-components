@@ -16,7 +16,7 @@ use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\EmailTemplateResource;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\Schemas\ComposeEmailForm;
 use FinityLabs\FinMail\Settings\GeneralSettings;
-use Tiptap\Editor as TiptapEditor;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 
 /**
  * Full-page compose screen.
@@ -52,7 +52,7 @@ class ComposeEmail extends Page
         $this->form->fill([
             'template_key' => $record->key,
             'from' => $record->from['address'] ?? app(GeneralSettings::class)->default_from_address,
-            'to' => [],
+            'to' => array_filter([auth()->user()?->email]),
             'cc' => [],
             'bcc' => [],
             'locale' => $locale,
@@ -94,7 +94,11 @@ class ComposeEmail extends Page
         $body = $this->data['body'] ?? '';
 
         if (is_array($body)) {
-            return (new TiptapEditor)->setContent($body)->getHTML();
+            $document = isset($body['type']) ? $body : ['type' => 'doc', 'content' => $body];
+
+            return RichContentRenderer::make()
+                ->content($document)
+                ->toUnsafeHtml();
         }
 
         return $body;

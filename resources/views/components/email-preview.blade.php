@@ -2,9 +2,12 @@
     $content = $html ?? '';
 
     if (is_array($content)) {
-        // Tiptap JSON document (has 'type' key) — convert to HTML
-        if (isset($content['type'])) {
-            $content = (new \Tiptap\Editor)->setContent($content)->getHTML();
+        // Tiptap JSON document (has 'type' key) — convert to HTML via Filament's renderer
+        if (isset($content['type']) || (isset($content[0]['type']))) {
+            $document = isset($content['type']) ? $content : ['type' => 'doc', 'content' => $content];
+            $content = \Filament\Forms\Components\RichEditor\RichContentRenderer::make()
+                ->content($document)
+                ->toUnsafeHtml();
         } else {
             // Translatable array — pick current locale
             $content = $content[app()->getLocale()] ?? reset($content) ?: '';

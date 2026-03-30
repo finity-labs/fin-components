@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinMail\Models\EmailTheme;
 use FinityLabs\FinMail\Resources\EmailTemplateResource\EmailTemplateResource;
 use FinityLabs\FinMail\Settings\GeneralSettings;
 
@@ -79,12 +80,17 @@ class EditEmailTemplate extends EditRecord
                 ->icon(Heroicon::OutlinedEye)
                 ->modal()
                 ->modalHeading(fn (): string => __('fin-mail::fin-mail.template.actions.preview').": {$this->record->name}")
-                ->modalContent(fn () => view('fin-mail::components.email-preview', [
-                    'subject' => $this->record->getTranslation('subject', $this->activeLocale),
-                    'preheader' => $this->record->getTranslation('preheader', $this->activeLocale),
-                    'html' => $this->record->getTranslation('body', $this->activeLocale),
-                    'theme' => $this->record->theme?->resolvedColors(),
-                ]))
+                ->modalContent(function () {
+                    $themeId = $this->data['email_theme_id'] ?? null;
+                    $theme = $themeId ? EmailTheme::find($themeId)?->resolvedColors() : null;
+
+                    return view('fin-mail::components.email-preview', [
+                        'subject' => $this->data['subject'] ?? '',
+                        'preheader' => $this->data['preheader'] ?? '',
+                        'html' => $this->data['body'] ?? '',
+                        'theme' => $theme,
+                    ]);
+                })
                 ->modalWidth(Width::FourExtraLarge)
                 ->modalSubmitAction(false),
 
