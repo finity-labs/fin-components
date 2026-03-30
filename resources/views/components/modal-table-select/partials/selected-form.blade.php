@@ -35,7 +35,6 @@
 
             $form = \Filament\Schemas\Schema::make($livewire)
                 ->schema($disabledSchema)
-                ->columns($columns)
                 ->statePath("data.{$stateKey}")
                 ->model($record);
         @endphp
