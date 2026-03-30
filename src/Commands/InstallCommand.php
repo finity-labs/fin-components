@@ -6,6 +6,7 @@ namespace FinityLabs\FinMail\Commands;
 
 use FinityLabs\FinMail\Commands\Concerns\CanRegisterPlugin;
 use FinityLabs\FinMail\Commands\Concerns\DiscoversPanelProviders;
+use FinityLabs\FinMail\Commands\Concerns\ManagesThemeStyles;
 use FinityLabs\FinMail\Enums\CleanupFrequency;
 use FinityLabs\FinMail\Settings\GeneralSettings;
 use FinityLabs\FinMail\Settings\LoggingSettings;
@@ -21,6 +22,7 @@ class InstallCommand extends Command
 {
     use CanRegisterPlugin;
     use DiscoversPanelProviders;
+    use ManagesThemeStyles;
 
     protected ?string $panelId = null;
 
@@ -151,6 +153,7 @@ class InstallCommand extends Command
         }
 
         $this->registerInPanel();
+        $this->registerThemeStylesForPanel();
         $this->configureShield();
         $this->configureSchedule();
 
@@ -350,6 +353,24 @@ class InstallCommand extends Command
 
         $this->comment("Registering FinMailPlugin in {$this->panelId} panel...");
         $this->registerPlugin($panelProviders[$this->panelId]);
+    }
+
+    protected function registerThemeStylesForPanel(): void
+    {
+        if ($this->panelId === null) {
+            return;
+        }
+
+        $cssPath = $this->resolveThemeCssPath($this->panelId);
+
+        if ($cssPath === null) {
+            return;
+        }
+
+        if ($this->confirm('Register FinMail styles in your custom Filament theme?', true)) {
+            $this->comment('Registering FinMail styles...');
+            $this->registerThemeStyles($this->panelId);
+        }
     }
 
     protected function configureShield(): void

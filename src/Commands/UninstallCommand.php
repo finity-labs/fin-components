@@ -6,6 +6,7 @@ namespace FinityLabs\FinMail\Commands;
 
 use FinityLabs\FinMail\Commands\Concerns\CanDeregisterPlugin;
 use FinityLabs\FinMail\Commands\Concerns\DiscoversPanelProviders;
+use FinityLabs\FinMail\Commands\Concerns\ManagesThemeStyles;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
 
@@ -13,6 +14,7 @@ class UninstallCommand extends Command
 {
     use CanDeregisterPlugin;
     use DiscoversPanelProviders;
+    use ManagesThemeStyles;
 
     private const DATABASE_TABLES = [
         'sent_emails',
@@ -46,6 +48,7 @@ class UninstallCommand extends Command
         $this->newLine();
 
         $this->deregisterFromPanels();
+        $this->removeThemeStylesFromPanels();
         $this->removeShieldConfig();
         $this->cleanupDatabaseTables();
         $this->cleanupPublishedMigrations();
@@ -77,6 +80,15 @@ class UninstallCommand extends Command
                 $this->comment("Removing FinMailPlugin from {$panelId} panel...");
                 $this->deregisterPlugin($path);
             }
+        }
+    }
+
+    protected function removeThemeStylesFromPanels(): void
+    {
+        $panelProviders = $this->discoverPanelProviders();
+
+        foreach (array_keys($panelProviders) as $panelId) {
+            $this->deregisterThemeStyles($panelId);
         }
     }
 

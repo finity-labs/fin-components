@@ -55,6 +55,7 @@ The install command will:
 - Configure supported locales (auto-detects from your `lang/` directory)
 - Optionally run migrations and seed default templates
 - Optionally register the plugin in your Filament panel
+- Optionally register FinMail styles in your custom Filament theme
 - Optionally configure [Filament Shield](#filament-shield-integration) permissions
 - Optionally configure scheduled cleanup of old sent emails
 
@@ -67,6 +68,17 @@ php artisan fin-mail:install --locales=en,hu,de --seed
 ```
 
 During interactive install, choose **"Other"** from the locale list to manually enter any of the 59 supported locale codes.
+
+### Custom Filament theme
+
+If you are using a [custom Filament theme](https://filamentphp.com/docs/5.x/panels/themes#creating-a-custom-theme), add the FinMail view path to your theme CSS so Tailwind can scan the plugin's styles:
+
+```css
+/* resources/css/filament/{panel}/theme.css */
+@source '../../../../vendor/finity-labs/fin-mail/resources/views/**/*';
+```
+
+> The install command will do this automatically if it detects a custom theme CSS file for the selected panel.
 
 ### Register the plugin
 
@@ -332,6 +344,7 @@ composer remove finity-labs/fin-mail
 
 The uninstall command will:
 - Remove `FinMailPlugin::make()` from your panel provider(s)
+- Remove FinMail `@source` directive from custom Filament theme CSS files
 - Remove FinMail entries from Shield config and clean up permissions from the database
 - Optionally drop all FinMail database tables and settings entries
 - Optionally delete published migrations, config, views, and translations
