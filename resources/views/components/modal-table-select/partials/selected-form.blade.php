@@ -14,8 +14,9 @@
                         ->all()
                 )
                 ->columns($columns)
+                ->model($record)
                 ->statePath(null)
-                ->model($record);
+                ->fill($record->toArray());
         @endphp
 
         {{ $form }}
