@@ -2,9 +2,10 @@
 
 A Filament component library that bundles enhanced form components under a single package. Install once, get all components.
 
-![Filament v4/v5](https://img.shields.io/badge/Filament-v4%20%7C%20v5-e9b228)
-![PHP 8.2+](https://img.shields.io/badge/PHP-8.2%2B-777bb4)
-![License: MIT](https://img.shields.io/badge/License-MIT-green)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/finity-labs/fin-components.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-components)
+[![Tests](https://github.com/finity-labs/fin-components/actions/workflows/tests.yml/badge.svg)](https://github.com/finity-labs/fin-components/actions/workflows/tests.yml)
+[![Code Style](https://github.com/finity-labs/fin-components/actions/workflows/style.yml/badge.svg)](https://github.com/finity-labs/fin-components/actions/workflows/style.yml)
+[![Total Downloads](https://img.shields.io/packagist/dt/finity-labs/fin-components.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-components)
 
 ## Requirements
 
