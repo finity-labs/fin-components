@@ -1,52 +1,57 @@
 @php
     $record = $field->getSelectedRecord();
-    $schema = $field->getInfolistSchema();
+    $infolistSchema = $field->getInfolistSchema();
     $columns = $field->getInfolistColumns();
 @endphp
 
-@if ($record && $schema)
+@if ($record && $infolistSchema)
     <div class="fi-in rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-        <div @class([
-            'grid gap-6',
-            match ($columns) {
-                2 => 'sm:grid-cols-2',
-                3 => 'sm:grid-cols-3',
-                4 => 'sm:grid-cols-4',
-                default => 'sm:grid-cols-1',
-            },
-        ])>
-            @foreach ($schema as $entry)
-                @php
-                    $name = $entry->getName();
-                    $value = data_get($record, $name);
-                    $label = $entry->getLabel() ?? str($name)->replace('.', ' ')->replace('_', ' ')->headline()->toString();
+        @php
+            $livewire = $field->getLivewire();
+            $stateKey = 'finSelectedInfolist_' . md5($field->getStatePath());
 
-                    if ($value instanceof \Filament\Support\Contracts\HasLabel) {
-                        $displayValue = $value->getLabel() ?? $value->value;
-                    } elseif ($value instanceof \BackedEnum) {
-                        $displayValue = $value->value;
-                    } elseif ($value instanceof \UnitEnum) {
-                        $displayValue = $value->name;
-                    } elseif (is_bool($value)) {
-                        $displayValue = $value ? __('Yes') : __('No');
-                    } elseif (is_array($value)) {
-                        $displayValue = implode(', ', $value);
-                    } else {
-                        $displayValue = $value;
+            // Recursively extract all Field/Entry instances from the schema tree
+            // (handles entries nested inside Grid, Section, etc.)
+            $extractEntries = function (array $components) use (&$extractEntries): array {
+                $entries = [];
+                foreach ($components as $component) {
+                    if (! is_object($component)) {
+                        if (is_array($component)) {
+                            $entries = array_merge($entries, $extractEntries($component));
+                        }
+                        continue;
                     }
-                @endphp
+                    if (method_exists($component, 'getName') && method_exists($component, 'getState')) {
+                        $entries[] = $component;
+                    }
+                    try {
+                        $ref = new \ReflectionProperty($component, 'childComponents');
+                        $children = $ref->getValue($component);
+                        if (is_array($children) && count($children)) {
+                            $entries = array_merge($entries, $extractEntries($children));
+                        }
+                    } catch (\ReflectionException) {
+                    }
+                }
+                return $entries;
+            };
 
-                <div class="fi-in-entry">
-                    <dt class="fi-in-entry-label text-sm font-medium leading-6 text-gray-950 dark:text-white">
-                        {{ $label }}
-                    </dt>
+            // Build state from record, resolving each entry by name (supports dot notation)
+            $infolistState = $record->toArray();
+            foreach ($extractEntries($infolistSchema) as $entry) {
+                $name = $entry->getName();
+                data_set($infolistState, $name, data_get($record, $name));
+            }
 
-                    <dd class="fi-in-entry-content mt-1 text-sm leading-6 text-gray-500 dark:text-gray-400">
-                        {{ $displayValue ?? '—' }}
-                    </dd>
-                </div>
-            @endforeach
-        </div>
+            $livewire->data[$stateKey] = $infolistState;
+
+            $infolist = \Filament\Schemas\Schema::make($livewire)
+                ->schema($infolistSchema)
+                ->statePath("data.{$stateKey}")
+                ->model($record);
+        @endphp
+
+        {{ $infolist }}
     </div>
 @else
     <div class="fi-in rounded-xl bg-white px-6 py-12 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
