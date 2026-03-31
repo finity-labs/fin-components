@@ -78,6 +78,18 @@ return [
             'new_item' => 'Token Nou',
         ],
 
+        'blocks' => [
+            'button' => 'Buton',
+            'button_heading' => 'Inserare buton',
+            'button_label' => 'Text buton',
+            'button_url' => 'URL',
+            'button_align' => 'Aliniere',
+            'align_left' => 'Stânga',
+            'align_center' => 'Centru',
+            'align_right' => 'Dreapta',
+            'button_default_label' => 'Clic aici',
+        ],
+
         'columns' => [
             'locales' => 'Limbi',
             'active' => 'Activ',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Acest sablon este blocat — cheia si categoria sunt doar pentru citire, stergerea este impiedicata.',
+        ],
+
+        'versioning' => [
+            'date' => 'Data',
+            'by' => 'De',
+            'restore' => 'Restaurare',
+            'restore_confirm' => 'Sunteți sigur că doriți să restaurați versiunea :version? Conținutul actual va fi salvat mai întâi ca versiune nouă.',
+            'restored' => 'Versiunea :version a fost restaurată.',
+            'empty' => 'Nu există istoric de versiuni.',
         ],
 
         'notices' => [

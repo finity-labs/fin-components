@@ -78,6 +78,18 @@ return [
             'new_item' => 'Nowy token',
         ],
 
+        'blocks' => [
+            'button' => 'Przycisk',
+            'button_heading' => 'Wstaw przycisk',
+            'button_label' => 'Tekst przycisku',
+            'button_url' => 'URL',
+            'button_align' => 'Wyrównanie',
+            'align_left' => 'Do lewej',
+            'align_center' => 'Do środka',
+            'align_right' => 'Do prawej',
+            'button_default_label' => 'Kliknij tutaj',
+        ],
+
         'columns' => [
             'locales' => 'Języki',
             'active' => 'Aktywny',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Ten szablon jest zablokowany — klucz i kategoria są tylko do odczytu, usuwanie jest zablokowane.',
+        ],
+
+        'versioning' => [
+            'date' => 'Data',
+            'by' => 'Autor',
+            'restore' => 'Przywróć',
+            'restore_confirm' => 'Czy na pewno chcesz przywrócić wersję :version? Bieżąca treść zostanie najpierw zapisana jako nowa wersja.',
+            'restored' => 'Wersja :version przywrócona.',
+            'empty' => 'Brak dostępnej historii wersji.',
         ],
 
         'notices' => [

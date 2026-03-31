@@ -78,6 +78,18 @@ return [
             'new_item' => 'Token ی نوێ',
         ],
 
+        'blocks' => [
+            'button' => 'دوگمە',
+            'button_heading' => 'دوگمە دابنێ',
+            'button_label' => 'دەقی دوگمە',
+            'button_url' => 'URL',
+            'button_align' => 'ڕیزکردن',
+            'align_left' => 'چەپ',
+            'align_center' => 'ناوەند',
+            'align_right' => 'ڕاست',
+            'button_default_label' => 'لێرە کلیک بکە',
+        ],
+
         'columns' => [
             'locales' => 'زمانەکان',
             'active' => 'چالاک',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'ئەم داڕشتەیە قفڵکراوە — کلیل و پۆل تەنها بۆ خوێندنەوەن، سڕینەوە ڕێگری لێکراوە.',
+        ],
+
+        'versioning' => [
+            'date' => 'بەروار',
+            'by' => 'لەلایەن',
+            'restore' => 'گەڕانەوە',
+            'restore_confirm' => 'دڵنیایت لە گەڕانەوەی وەشانی :version؟ ناوەڕۆکی ئێستا سەرەتا وەک وەشانێکی نوێ پاشەکەوت دەکرێت.',
+            'restored' => 'وەشانی :version گەڕێنرایەوە.',
+            'empty' => 'هیچ مێژووی وەشانێک بەردەست نییە.',
         ],
 
         'notices' => [

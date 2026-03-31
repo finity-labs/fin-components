@@ -78,6 +78,18 @@ return [
             'new_item' => 'Yeni Token',
         ],
 
+        'blocks' => [
+            'button' => 'Düymə',
+            'button_heading' => 'Düymə daxil et',
+            'button_label' => 'Düymə mətni',
+            'button_url' => 'URL',
+            'button_align' => 'Düzləndirmə',
+            'align_left' => 'Sol',
+            'align_center' => 'Mərkəz',
+            'align_right' => 'Sağ',
+            'button_default_label' => 'Buraya klikləyin',
+        ],
+
         'columns' => [
             'locales' => 'Dillər',
             'active' => 'Aktiv',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Bu şablon kilidlidir — açar və kateqoriya yalnız oxunur, silinmə qarşısı alınıb.',
+        ],
+
+        'versioning' => [
+            'date' => 'Tarix',
+            'by' => 'Tərəfindən',
+            'restore' => 'Bərpa et',
+            'restore_confirm' => ':version versiyasını bərpa etmək istədiyinizə əminsiniz? Cari məzmun əvvəlcə yeni versiya olaraq saxlanacaq.',
+            'restored' => ':version versiyası bərpa edildi.',
+            'empty' => 'Versiya tarixçəsi mövcud deyil.',
         ],
 
         'notices' => [

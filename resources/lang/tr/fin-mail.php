@@ -78,6 +78,18 @@ return [
             'new_item' => 'Yeni degisken',
         ],
 
+        'blocks' => [
+            'button' => 'Düğme',
+            'button_heading' => 'Düğme ekle',
+            'button_label' => 'Düğme metni',
+            'button_url' => 'URL',
+            'button_align' => 'Hizalama',
+            'align_left' => 'Sol',
+            'align_center' => 'Orta',
+            'align_right' => 'Sağ',
+            'button_default_label' => 'Buraya tıklayın',
+        ],
+
         'columns' => [
             'locales' => 'Diller',
             'active' => 'Aktif',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Bu sablon kilitli -- anahtar ve kategori salt okunurdur, silme engellenmistir.',
+        ],
+
+        'versioning' => [
+            'date' => 'Tarih',
+            'by' => 'Tarafından',
+            'restore' => 'Geri yükle',
+            'restore_confirm' => ':version sürümünü geri yüklemek istediğinizden emin misiniz? Mevcut içerik önce yeni bir sürüm olarak kaydedilecektir.',
+            'restored' => ':version sürümü geri yüklendi.',
+            'empty' => 'Sürüm geçmişi bulunmuyor.',
         ],
 
         'notices' => [

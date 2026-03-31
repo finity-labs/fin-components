@@ -78,6 +78,18 @@ return [
             'new_item' => 'Novi token',
         ],
 
+        'blocks' => [
+            'button' => 'Gumb',
+            'button_heading' => 'Umetni gumb',
+            'button_label' => 'Tekst gumba',
+            'button_url' => 'URL',
+            'button_align' => 'Poravnanje',
+            'align_left' => 'Lijevo',
+            'align_center' => 'Sredina',
+            'align_right' => 'Desno',
+            'button_default_label' => 'Kliknite ovdje',
+        ],
+
         'columns' => [
             'locales' => 'Jezici',
             'active' => 'Aktivno',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Ovaj predložak je zaključan — ključ i kategorija su samo za čitanje, brisanje je onemogućeno.',
+        ],
+
+        'versioning' => [
+            'date' => 'Datum',
+            'by' => 'Od',
+            'restore' => 'Vrati',
+            'restore_confirm' => 'Jeste li sigurni da želite vratiti verziju :version? Trenutni sadržaj će se prvo spremiti kao nova verzija.',
+            'restored' => 'Verzija :version vraćena.',
+            'empty' => 'Nema dostupne povijesti verzija.',
         ],
 
         'notices' => [

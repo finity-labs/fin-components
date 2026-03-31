@@ -78,6 +78,18 @@ return [
             'new_item' => 'Ny variabel',
         ],
 
+        'blocks' => [
+            'button' => 'Knapp',
+            'button_heading' => 'Sett inn knapp',
+            'button_label' => 'Knapptekst',
+            'button_url' => 'URL',
+            'button_align' => 'Justering',
+            'align_left' => 'Venstre',
+            'align_center' => 'Midtstilt',
+            'align_right' => 'Høyre',
+            'button_default_label' => 'Klikk her',
+        ],
+
         'columns' => [
             'locales' => 'Språk',
             'active' => 'Aktiv',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Denne malen er låst — nokkel og kategori er skrivebeskyttet, sletting er forhindret.',
+        ],
+
+        'versioning' => [
+            'date' => 'Dato',
+            'by' => 'Av',
+            'restore' => 'Gjenopprett',
+            'restore_confirm' => 'Er du sikker på at du vil gjenopprette versjon :version? Gjeldende innhold lagres som en ny versjon først.',
+            'restored' => 'Versjon :version gjenopprettet.',
+            'empty' => 'Ingen versjonshistorikk tilgjengelig.',
         ],
 
         'notices' => [

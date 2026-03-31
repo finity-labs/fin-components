@@ -78,6 +78,18 @@ return [
             'new_item' => 'Token i Ri',
         ],
 
+        'blocks' => [
+            'button' => 'Butoni',
+            'button_heading' => 'Fut butonin',
+            'button_label' => 'Teksti i butonit',
+            'button_url' => 'URL',
+            'button_align' => 'Rreshtimi',
+            'align_left' => 'Majtas',
+            'align_center' => 'Qendër',
+            'align_right' => 'Djathtas',
+            'button_default_label' => 'Kliko këtu',
+        ],
+
         'columns' => [
             'locales' => 'Gjuhet',
             'active' => 'Aktiv',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Ky shabllon eshte i bllokuar — celesi dhe kategoria jane vetem per lexim, fshirja eshte e parandaluar.',
+        ],
+
+        'versioning' => [
+            'date' => 'Data',
+            'by' => 'Nga',
+            'restore' => 'Rikthe',
+            'restore_confirm' => 'A jeni i sigurt që dëshironi të riktheni versionin :version? Përmbajtja aktuale do të ruhet fillimisht si version i ri.',
+            'restored' => 'Versioni :version u rikthye.',
+            'empty' => 'Nuk ka histori versionesh të disponueshme.',
         ],
 
         'notices' => [

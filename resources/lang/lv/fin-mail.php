@@ -78,6 +78,18 @@ return [
             'new_item' => 'Jauns mainigais',
         ],
 
+        'blocks' => [
+            'button' => 'Poga',
+            'button_heading' => 'Ievietot pogu',
+            'button_label' => 'Pogas teksts',
+            'button_url' => 'URL',
+            'button_align' => 'Līdzināšana',
+            'align_left' => 'Pa kreisi',
+            'align_center' => 'Centrā',
+            'align_right' => 'Pa labi',
+            'button_default_label' => 'Noklikšķiniet šeit',
+        ],
+
         'columns' => [
             'locales' => 'Valodas',
             'active' => 'Aktivs',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Si veidne ir bloketa — atslega un kategorija ir tikai lasamas, dzesana nav atlauta.',
+        ],
+
+        'versioning' => [
+            'date' => 'Datums',
+            'by' => 'Autors',
+            'restore' => 'Atjaunot',
+            'restore_confirm' => 'Vai tiešām vēlaties atjaunot versiju :version? Pašreizējais saturs vispirms tiks saglabāts kā jauna versija.',
+            'restored' => 'Versija :version atjaunota.',
+            'empty' => 'Versiju vēsture nav pieejama.',
         ],
 
         'notices' => [

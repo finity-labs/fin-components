@@ -78,6 +78,18 @@ return [
             'new_item' => 'Nový Token',
         ],
 
+        'blocks' => [
+            'button' => 'Tlačítko',
+            'button_heading' => 'Vložit tlačítko',
+            'button_label' => 'Text tlačítka',
+            'button_url' => 'URL',
+            'button_align' => 'Zarovnání',
+            'align_left' => 'Vlevo',
+            'align_center' => 'Na střed',
+            'align_right' => 'Vpravo',
+            'button_default_label' => 'Klikněte zde',
+        ],
+
         'columns' => [
             'locales' => 'Jazyky',
             'active' => 'Aktivní',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Tato šablona je uzamčena — klíč a kategorie jsou pouze pro čtení, smazání je zablokováno.',
+        ],
+
+        'versioning' => [
+            'date' => 'Datum',
+            'by' => 'Od',
+            'restore' => 'Obnovit',
+            'restore_confirm' => 'Opravdu chcete obnovit verzi :version? Aktuální obsah bude nejprve uložen jako nová verze.',
+            'restored' => 'Verze :version byla obnovena.',
+            'empty' => 'Historie verzí není k dispozici.',
         ],
 
         'notices' => [

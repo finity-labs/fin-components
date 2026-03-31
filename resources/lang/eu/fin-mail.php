@@ -78,6 +78,18 @@ return [
             'new_item' => 'Token berria',
         ],
 
+        'blocks' => [
+            'button' => 'Botoia',
+            'button_heading' => 'Botoia txertatu',
+            'button_label' => 'Botoiaren testua',
+            'button_url' => 'URL',
+            'button_align' => 'Lerrokatzea',
+            'align_left' => 'Ezkerra',
+            'align_center' => 'Erdia',
+            'align_right' => 'Eskuina',
+            'button_default_label' => 'Egin klik hemen',
+        ],
+
         'columns' => [
             'locales' => 'Hizkuntzak',
             'active' => 'Aktibo',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Txantiloi hau blokeatua dago — gakoa eta kategoria irakurtzeko soilik dira, ezabatzea galarazita dago.',
+        ],
+
+        'versioning' => [
+            'date' => 'Data',
+            'by' => 'Egilea',
+            'restore' => 'Berrezarri',
+            'restore_confirm' => 'Ziur zaude :version bertsioa berrezarri nahi duzula? Uneko edukia bertsio berri gisa gordeko da lehenik.',
+            'restored' => ':version bertsioa berrezarri da.',
+            'empty' => 'Ez dago bertsio-historiarik.',
         ],
 
         'notices' => [

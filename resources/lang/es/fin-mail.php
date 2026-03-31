@@ -78,6 +78,18 @@ return [
             'new_item' => 'Nuevo token',
         ],
 
+        'blocks' => [
+            'button' => 'Botón',
+            'button_heading' => 'Insertar botón',
+            'button_label' => 'Texto del botón',
+            'button_url' => 'URL',
+            'button_align' => 'Alineación',
+            'align_left' => 'Izquierda',
+            'align_center' => 'Centro',
+            'align_right' => 'Derecha',
+            'button_default_label' => 'Haga clic aquí',
+        ],
+
         'columns' => [
             'locales' => 'Idiomas',
             'active' => 'Activo',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Esta plantilla está bloqueada — la clave y la categoría son de solo lectura, la eliminación está impedida.',
+        ],
+
+        'versioning' => [
+            'date' => 'Fecha',
+            'by' => 'Por',
+            'restore' => 'Restaurar',
+            'restore_confirm' => '¿Está seguro de que desea restaurar la versión :version? El contenido actual se guardará primero como una nueva versión.',
+            'restored' => 'Versión :version restaurada.',
+            'empty' => 'No hay historial de versiones disponible.',
         ],
 
         'notices' => [

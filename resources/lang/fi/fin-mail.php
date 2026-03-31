@@ -78,6 +78,18 @@ return [
             'new_item' => 'Uusi token',
         ],
 
+        'blocks' => [
+            'button' => 'Painike',
+            'button_heading' => 'Lisää painike',
+            'button_label' => 'Painikkeen teksti',
+            'button_url' => 'URL',
+            'button_align' => 'Tasaus',
+            'align_left' => 'Vasen',
+            'align_center' => 'Keskitetty',
+            'align_right' => 'Oikea',
+            'button_default_label' => 'Napsauta tästä',
+        ],
+
         'columns' => [
             'locales' => 'Kielet',
             'active' => 'Aktiivinen',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Tämä mallipohja on lukittu — avain ja kategoria ovat vain luku -tilassa, poistaminen on estetty.',
+        ],
+
+        'versioning' => [
+            'date' => 'Päivämäärä',
+            'by' => 'Tekijä',
+            'restore' => 'Palauta',
+            'restore_confirm' => 'Haluatko varmasti palauttaa version :version? Nykyinen sisältö tallennetaan ensin uutena versiona.',
+            'restored' => 'Versio :version palautettu.',
+            'empty' => 'Versiohistoriaa ei ole saatavilla.',
         ],
 
         'notices' => [

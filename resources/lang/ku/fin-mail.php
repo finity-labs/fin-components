@@ -78,6 +78,18 @@ return [
             'new_item' => 'Tokena nû',
         ],
 
+        'blocks' => [
+            'button' => 'Bişkojk',
+            'button_heading' => 'Bişkojkê têxe',
+            'button_label' => 'Nivîsa bişkojkê',
+            'button_url' => 'URL',
+            'button_align' => 'Rêzkirin',
+            'align_left' => 'Çep',
+            'align_center' => 'Navend',
+            'align_right' => 'Rast',
+            'button_default_label' => 'Li vir bikirtînin',
+        ],
+
         'columns' => [
             'locales' => 'Ziman',
             'active' => 'Çalak',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Ev şablon girtî ye — kilît û kategorî tenê dixwînin, jêbirin nehat destûr.',
+        ],
+
+        'versioning' => [
+            'date' => 'Dîrok',
+            'by' => 'Ji aliyê',
+            'restore' => 'Vegerîne',
+            'restore_confirm' => 'Tu bawer î ku dixwazî guhertoya :version vegerînî? Naveroka heyî pêşî wek guhertoyeke nû tê tomarkirin.',
+            'restored' => 'Guhertoya :version hat vegerandin.',
+            'empty' => 'Dîroka guhertoyan tune ye.',
         ],
 
         'notices' => [

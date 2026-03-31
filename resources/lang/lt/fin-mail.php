@@ -78,6 +78,18 @@ return [
             'new_item' => 'Naujas žetonas',
         ],
 
+        'blocks' => [
+            'button' => 'Mygtukas',
+            'button_heading' => 'Įterpti mygtuką',
+            'button_label' => 'Mygtuko tekstas',
+            'button_url' => 'URL',
+            'button_align' => 'Lygiavimas',
+            'align_left' => 'Kairėje',
+            'align_center' => 'Centre',
+            'align_right' => 'Dešinėje',
+            'button_default_label' => 'Spauskite čia',
+        ],
+
         'columns' => [
             'locales' => 'Kalbos',
             'active' => 'Aktyvus',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Šis šablonas užrakintas — raktas ir kategorija yra tik skaitymui, trynimas neleidžiamas.',
+        ],
+
+        'versioning' => [
+            'date' => 'Data',
+            'by' => 'Autorius',
+            'restore' => 'Atkurti',
+            'restore_confirm' => 'Ar tikrai norite atkurti versiją :version? Dabartinis turinys pirmiausia bus išsaugotas kaip nauja versija.',
+            'restored' => 'Versija :version atkurta.',
+            'empty' => 'Versijų istorija nepasiekiama.',
         ],
 
         'notices' => [

@@ -78,6 +78,18 @@ return [
             'new_item' => 'Nieuw token',
         ],
 
+        'blocks' => [
+            'button' => 'Knop',
+            'button_heading' => 'Knop invoegen',
+            'button_label' => 'Knoptekst',
+            'button_url' => 'URL',
+            'button_align' => 'Uitlijning',
+            'align_left' => 'Links',
+            'align_center' => 'Gecentreerd',
+            'align_right' => 'Rechts',
+            'button_default_label' => 'Klik hier',
+        ],
+
         'columns' => [
             'locales' => 'Talen',
             'active' => 'Actief',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Dit sjabloon is vergrendeld — sleutel en categorie zijn alleen-lezen, verwijderen is geblokkeerd.',
+        ],
+
+        'versioning' => [
+            'date' => 'Datum',
+            'by' => 'Door',
+            'restore' => 'Herstellen',
+            'restore_confirm' => 'Weet u zeker dat u versie :version wilt herstellen? De huidige inhoud wordt eerst opgeslagen als nieuwe versie.',
+            'restored' => 'Versie :version hersteld.',
+            'empty' => 'Geen versiegeschiedenis beschikbaar.',
         ],
 
         'notices' => [

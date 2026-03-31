@@ -78,6 +78,18 @@ return [
             'new_item' => '新しいトークン',
         ],
 
+        'blocks' => [
+            'button' => 'ボタン',
+            'button_heading' => 'ボタンを挿入',
+            'button_label' => 'ボタンテキスト',
+            'button_url' => 'URL',
+            'button_align' => '配置',
+            'align_left' => '左',
+            'align_center' => '中央',
+            'align_right' => '右',
+            'button_default_label' => 'ここをクリック',
+        ],
+
         'columns' => [
             'locales' => 'ロケール',
             'active' => '有効',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'このテンプレートはロックされています — キーとカテゴリは読み取り専用で、削除はできません。',
+        ],
+
+        'versioning' => [
+            'date' => '日付',
+            'by' => '作成者',
+            'restore' => '復元',
+            'restore_confirm' => 'バージョン :version を復元してもよろしいですか？現在のコンテンツは先に新しいバージョンとして保存されます。',
+            'restored' => 'バージョン :version を復元しました。',
+            'empty' => 'バージョン履歴はありません。',
         ],
 
         'notices' => [

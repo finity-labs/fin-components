@@ -78,6 +78,18 @@ return [
             'new_item' => 'Token newydd',
         ],
 
+        'blocks' => [
+            'button' => 'Botwm',
+            'button_heading' => 'Mewnosod botwm',
+            'button_label' => 'Testun y botwm',
+            'button_url' => 'URL',
+            'button_align' => 'Aliniad',
+            'align_left' => 'Chwith',
+            'align_center' => 'Canol',
+            'align_right' => 'De',
+            'button_default_label' => 'Cliciwch yma',
+        ],
+
         'columns' => [
             'locales' => 'Ieithoedd',
             'active' => 'Gweithredol',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Mae\'r templed hwn wedi\'i gloi — mae\'r allwedd a\'r categori yn ddarllen yn unig, ac mae dileu wedi\'i atal.',
+        ],
+
+        'versioning' => [
+            'date' => 'Dyddiad',
+            'by' => 'Gan',
+            'restore' => 'Adfer',
+            'restore_confirm' => 'Ydych chi\'n siŵr eich bod am adfer fersiwn :version? Bydd y cynnwys presennol yn cael ei gadw fel fersiwn newydd yn gyntaf.',
+            'restored' => 'Fersiwn :version wedi\'i adfer.',
+            'empty' => 'Dim hanes fersiynau ar gael.',
         ],
 
         'notices' => [

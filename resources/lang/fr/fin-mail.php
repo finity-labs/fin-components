@@ -78,6 +78,18 @@ return [
             'new_item' => 'Nouveau token',
         ],
 
+        'blocks' => [
+            'button' => 'Bouton',
+            'button_heading' => 'Insérer un bouton',
+            'button_label' => 'Texte du bouton',
+            'button_url' => 'URL',
+            'button_align' => 'Alignement',
+            'align_left' => 'Gauche',
+            'align_center' => 'Centre',
+            'align_right' => 'Droite',
+            'button_default_label' => 'Cliquez ici',
+        ],
+
         'columns' => [
             'locales' => 'Langues',
             'active' => 'Actif',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Ce modèle est verrouillé — la clé et la catégorie sont en lecture seule, la suppression est empêchée.',
+        ],
+
+        'versioning' => [
+            'date' => 'Date',
+            'by' => 'Par',
+            'restore' => 'Restaurer',
+            'restore_confirm' => 'Êtes-vous sûr de vouloir restaurer la version :version ? Le contenu actuel sera d\'abord enregistré comme nouvelle version.',
+            'restored' => 'Version :version restaurée.',
+            'empty' => 'Aucun historique de versions disponible.',
         ],
 
         'notices' => [

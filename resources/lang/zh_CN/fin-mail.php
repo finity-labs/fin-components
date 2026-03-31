@@ -78,6 +78,18 @@ return [
             'new_item' => '新变量',
         ],
 
+        'blocks' => [
+            'button' => '按钮',
+            'button_heading' => '插入按钮',
+            'button_label' => '按钮文本',
+            'button_url' => 'URL',
+            'button_align' => '对齐方式',
+            'align_left' => '左对齐',
+            'align_center' => '居中',
+            'align_right' => '右对齐',
+            'button_default_label' => '点击这里',
+        ],
+
         'columns' => [
             'locales' => '语言',
             'active' => '启用',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => '此模板已锁定——键和分类为只读，无法删除。',
+        ],
+
+        'versioning' => [
+            'date' => '日期',
+            'by' => '作者',
+            'restore' => '恢复',
+            'restore_confirm' => '您确定要恢复版本 :version 吗？当前内容将先保存为新版本。',
+            'restored' => '版本 :version 已恢复。',
+            'empty' => '暂无版本历史记录。',
         ],
 
         'notices' => [

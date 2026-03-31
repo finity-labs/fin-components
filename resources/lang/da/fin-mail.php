@@ -78,6 +78,18 @@ return [
             'new_item' => 'Ny token',
         ],
 
+        'blocks' => [
+            'button' => 'Knap',
+            'button_heading' => 'Indsæt knap',
+            'button_label' => 'Knaptekst',
+            'button_url' => 'URL',
+            'button_align' => 'Justering',
+            'align_left' => 'Venstre',
+            'align_center' => 'Center',
+            'align_right' => 'Højre',
+            'button_default_label' => 'Klik her',
+        ],
+
         'columns' => [
             'locales' => 'Sprog',
             'active' => 'Aktiv',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Denne skabelon er låst — nøgle og kategori er skrivebeskyttede, sletning er forhindret.',
+        ],
+
+        'versioning' => [
+            'date' => 'Dato',
+            'by' => 'Af',
+            'restore' => 'Gendan',
+            'restore_confirm' => 'Er du sikker på, at du vil gendanne version :version? Det nuværende indhold gemmes som en ny version først.',
+            'restored' => 'Version :version gendannet.',
+            'empty' => 'Ingen versionshistorik tilgængelig.',
         ],
 
         'notices' => [

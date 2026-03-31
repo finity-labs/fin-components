@@ -78,6 +78,18 @@ return [
             'new_item' => 'Token moi',
         ],
 
+        'blocks' => [
+            'button' => 'Nút',
+            'button_heading' => 'Chèn nút',
+            'button_label' => 'Văn bản nút',
+            'button_url' => 'URL',
+            'button_align' => 'Căn chỉnh',
+            'align_left' => 'Trái',
+            'align_center' => 'Giữa',
+            'align_right' => 'Phải',
+            'button_default_label' => 'Nhấp vào đây',
+        ],
+
         'columns' => [
             'locales' => 'Ngon ngu',
             'active' => 'Hoat dong',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Mau nay bi khoa -- khoa va danh muc chi doc, khong the xoa.',
+        ],
+
+        'versioning' => [
+            'date' => 'Ngày',
+            'by' => 'Bởi',
+            'restore' => 'Khôi phục',
+            'restore_confirm' => 'Bạn có chắc chắn muốn khôi phục phiên bản :version? Nội dung hiện tại sẽ được lưu thành phiên bản mới trước.',
+            'restored' => 'Phiên bản :version đã được khôi phục.',
+            'empty' => 'Không có lịch sử phiên bản.',
         ],
 
         'notices' => [

@@ -78,6 +78,18 @@ return [
             'new_item' => 'Token Baru',
         ],
 
+        'blocks' => [
+            'button' => 'Tombol',
+            'button_heading' => 'Sisipkan tombol',
+            'button_label' => 'Teks tombol',
+            'button_url' => 'URL',
+            'button_align' => 'Perataan',
+            'align_left' => 'Kiri',
+            'align_center' => 'Tengah',
+            'align_right' => 'Kanan',
+            'button_default_label' => 'Klik di sini',
+        ],
+
         'columns' => [
             'locales' => 'Bahasa',
             'active' => 'Aktif',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Templat ini terkunci — kunci dan kategori hanya-baca, penghapusan dicegah.',
+        ],
+
+        'versioning' => [
+            'date' => 'Tanggal',
+            'by' => 'Oleh',
+            'restore' => 'Pulihkan',
+            'restore_confirm' => 'Apakah Anda yakin ingin memulihkan versi :version? Konten saat ini akan disimpan sebagai versi baru terlebih dahulu.',
+            'restored' => 'Versi :version dipulihkan.',
+            'empty' => 'Tidak ada riwayat versi yang tersedia.',
         ],
 
         'notices' => [

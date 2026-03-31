@@ -78,6 +78,18 @@ return [
             'new_item' => '新變數',
         ],
 
+        'blocks' => [
+            'button' => '按鈕',
+            'button_heading' => '插入按鈕',
+            'button_label' => '按鈕文字',
+            'button_url' => 'URL',
+            'button_align' => '對齊方式',
+            'align_left' => '靠左',
+            'align_center' => '置中',
+            'align_right' => '靠右',
+            'button_default_label' => '點擊這裡',
+        ],
+
         'columns' => [
             'locales' => '語言',
             'active' => '啟用',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => '此範本已鎖定——鍵和分類為唯讀，無法刪除。',
+        ],
+
+        'versioning' => [
+            'date' => '日期',
+            'by' => '作者',
+            'restore' => '還原',
+            'restore_confirm' => '您確定要還原版本 :version 嗎？目前的內容將會先儲存為新版本。',
+            'restored' => '版本 :version 已還原。',
+            'empty' => '沒有版本歷史紀錄。',
         ],
 
         'notices' => [

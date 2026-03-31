@@ -78,6 +78,18 @@ return [
             'new_item' => 'Novi token',
         ],
 
+        'blocks' => [
+            'button' => 'Dugme',
+            'button_heading' => 'Umetni dugme',
+            'button_label' => 'Tekst dugmeta',
+            'button_url' => 'URL',
+            'button_align' => 'Poravnanje',
+            'align_left' => 'Levo',
+            'align_center' => 'Centar',
+            'align_right' => 'Desno',
+            'button_default_label' => 'Kliknite ovde',
+        ],
+
         'columns' => [
             'locales' => 'Jezici',
             'active' => 'Aktivan',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Ovaj sablon je zakljucan — kljuc i kategorija su samo za citanje, brisanje je spreceno.',
+        ],
+
+        'versioning' => [
+            'date' => 'Datum',
+            'by' => 'Od',
+            'restore' => 'Vrati',
+            'restore_confirm' => 'Da li ste sigurni da želite da vratite verziju :version? Trenutni sadržaj će prvo biti sačuvan kao nova verzija.',
+            'restored' => 'Verzija :version je vraćena.',
+            'empty' => 'Nema dostupne istorije verzija.',
         ],
 
         'notices' => [

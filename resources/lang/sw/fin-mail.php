@@ -78,6 +78,18 @@ return [
             'new_item' => 'Tokeni mpya',
         ],
 
+        'blocks' => [
+            'button' => 'Kitufe',
+            'button_heading' => 'Ingiza kitufe',
+            'button_label' => 'Maandishi ya kitufe',
+            'button_url' => 'URL',
+            'button_align' => 'Mpangilio',
+            'align_left' => 'Kushoto',
+            'align_center' => 'Katikati',
+            'align_right' => 'Kulia',
+            'button_default_label' => 'Bofya hapa',
+        ],
+
         'columns' => [
             'locales' => 'Lugha',
             'active' => 'Hai',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Kiolezo hiki kimefungwa -- ufunguo na kategoria ni za kusoma tu, kufuta kumezuiwa.',
+        ],
+
+        'versioning' => [
+            'date' => 'Tarehe',
+            'by' => 'Na',
+            'restore' => 'Rejesha',
+            'restore_confirm' => 'Una uhakika unataka kurejesha toleo :version? Maudhui ya sasa yatahifadhiwa kwanza kama toleo jipya.',
+            'restored' => 'Toleo :version limerejeswa.',
+            'empty' => 'Hakuna historia ya matoleo inayopatikana.',
         ],
 
         'notices' => [

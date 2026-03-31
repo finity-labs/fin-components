@@ -78,6 +78,18 @@ return [
             'new_item' => 'نیا ٹوکن',
         ],
 
+        'blocks' => [
+            'button' => 'بٹن',
+            'button_heading' => 'بٹن داخل کریں',
+            'button_label' => 'بٹن کا متن',
+            'button_url' => 'URL',
+            'button_align' => 'سیدھ',
+            'align_left' => 'بائیں',
+            'align_center' => 'درمیان',
+            'align_right' => 'دائیں',
+            'button_default_label' => 'یہاں کلک کریں',
+        ],
+
         'columns' => [
             'locales' => 'زبانیں',
             'active' => 'فعال',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'یہ ٹیمپلیٹ مقفل ہے -- کلید اور زمرہ صرف پڑھنے کے لیے ہیں، حذف کرنا ممنوع ہے۔',
+        ],
+
+        'versioning' => [
+            'date' => 'تاریخ',
+            'by' => 'از',
+            'restore' => 'بحال کریں',
+            'restore_confirm' => 'کیا آپ واقعی ورژن :version بحال کرنا چاہتے ہیں؟ موجودہ مواد پہلے نئے ورژن کے طور پر محفوظ کیا جائے گا۔',
+            'restored' => 'ورژن :version بحال ہو گیا۔',
+            'empty' => 'کوئی ورژن ہسٹری دستیاب نہیں ہے۔',
         ],
 
         'notices' => [

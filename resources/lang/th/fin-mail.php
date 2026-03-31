@@ -78,6 +78,18 @@ return [
             'new_item' => 'โทเค็นใหม่',
         ],
 
+        'blocks' => [
+            'button' => 'ปุ่ม',
+            'button_heading' => 'แทรกปุ่ม',
+            'button_label' => 'ข้อความปุ่ม',
+            'button_url' => 'URL',
+            'button_align' => 'การจัดตำแหน่ง',
+            'align_left' => 'ซ้าย',
+            'align_center' => 'กลาง',
+            'align_right' => 'ขวา',
+            'button_default_label' => 'คลิกที่นี่',
+        ],
+
         'columns' => [
             'locales' => 'ภาษา',
             'active' => 'เปิดใช้งาน',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'เทมเพลตนี้ถูกล็อก -- คีย์และหมวดหมู่เป็นแบบอ่านอย่างเดียว ไม่สามารถลบได้',
+        ],
+
+        'versioning' => [
+            'date' => 'วันที่',
+            'by' => 'โดย',
+            'restore' => 'กู้คืน',
+            'restore_confirm' => 'คุณแน่ใจหรือไม่ว่าต้องการกู้คืนเวอร์ชัน :version? เนื้อหาปัจจุบันจะถูกบันทึกเป็นเวอร์ชันใหม่ก่อน',
+            'restored' => 'กู้คืนเวอร์ชัน :version แล้ว',
+            'empty' => 'ไม่มีประวัติเวอร์ชัน',
         ],
 
         'notices' => [

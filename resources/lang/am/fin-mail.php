@@ -78,6 +78,18 @@ return [
             'new_item' => 'አዲስ Token',
         ],
 
+        'blocks' => [
+            'button' => 'አዝራር',
+            'button_heading' => 'አዝራር አስገባ',
+            'button_label' => 'የአዝራር ጽሑፍ',
+            'button_url' => 'URL',
+            'button_align' => 'አሰላለፍ',
+            'align_left' => 'ግራ',
+            'align_center' => 'መካከል',
+            'align_right' => 'ቀኝ',
+            'button_default_label' => 'እዚህ ጠቅ ያድርጉ',
+        ],
+
         'columns' => [
             'locales' => 'ቋንቋዎች',
             'active' => 'ንቁ',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'ይህ ቅጽ ተቆልፏል — ቁልፍ እና ምድብ ለንባብ ብቻ ናቸው፣ ስረዛ ተከልክሏል።',
+        ],
+
+        'versioning' => [
+            'date' => 'ቀን',
+            'by' => 'በ',
+            'restore' => 'መልስ',
+            'restore_confirm' => 'ስሪት :version መመለስ እንደሚፈልጉ እርግጠኛ ነዎት? የአሁኑ ይዘት መጀመሪያ እንደ አዲስ ስሪት ይቀመጣል።',
+            'restored' => 'ስሪት :version ተመልሷል።',
+            'empty' => 'ምንም የስሪት ታሪክ የለም።',
         ],
 
         'notices' => [

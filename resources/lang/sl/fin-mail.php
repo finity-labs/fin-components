@@ -78,6 +78,18 @@ return [
             'new_item' => 'Nov zeton',
         ],
 
+        'blocks' => [
+            'button' => 'Gumb',
+            'button_heading' => 'Vstavi gumb',
+            'button_label' => 'Besedilo gumba',
+            'button_url' => 'URL',
+            'button_align' => 'Poravnava',
+            'align_left' => 'Levo',
+            'align_center' => 'Sredina',
+            'align_right' => 'Desno',
+            'button_default_label' => 'Kliknite tukaj',
+        ],
+
         'columns' => [
             'locales' => 'Jeziki',
             'active' => 'Aktivno',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Ta predloga je zaklenjena — kljuc in kategorija sta samo za branje, brisanje je prepreceno.',
+        ],
+
+        'versioning' => [
+            'date' => 'Datum',
+            'by' => 'Avtor',
+            'restore' => 'Obnovi',
+            'restore_confirm' => 'Ali ste prepričani, da želite obnoviti različico :version? Trenutna vsebina bo najprej shranjena kot nova različica.',
+            'restored' => 'Različica :version obnovljena.',
+            'empty' => 'Zgodovina različic ni na voljo.',
         ],
 
         'notices' => [

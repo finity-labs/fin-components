@@ -78,6 +78,18 @@ return [
             'new_item' => 'Új token',
         ],
 
+        'blocks' => [
+            'button' => 'Gomb',
+            'button_heading' => 'Gomb beszúrása',
+            'button_label' => 'Gomb szövege',
+            'button_url' => 'URL',
+            'button_align' => 'Igazítás',
+            'align_left' => 'Balra',
+            'align_center' => 'Középre',
+            'align_right' => 'Jobbra',
+            'button_default_label' => 'Kattintson ide',
+        ],
+
         'columns' => [
             'locales' => 'Nyelvek',
             'active' => 'Aktív',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Ez a sablon zárolt — a kulcs és a kategória csak olvasható, a törlés tiltott.',
+        ],
+
+        'versioning' => [
+            'date' => 'Dátum',
+            'by' => 'Szerző',
+            'restore' => 'Visszaállítás',
+            'restore_confirm' => 'Biztosan vissza szeretné állítani a(z) :version verziót? A jelenlegi tartalom előbb új verzióként lesz elmentve.',
+            'restored' => 'A(z) :version verzió visszaállítva.',
+            'empty' => 'Nincs elérhető verziótörténet.',
         ],
 
         'notices' => [

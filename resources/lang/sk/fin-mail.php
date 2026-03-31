@@ -78,6 +78,18 @@ return [
             'new_item' => 'Novy token',
         ],
 
+        'blocks' => [
+            'button' => 'Tlačidlo',
+            'button_heading' => 'Vložiť tlačidlo',
+            'button_label' => 'Text tlačidla',
+            'button_url' => 'URL',
+            'button_align' => 'Zarovnanie',
+            'align_left' => 'Vľavo',
+            'align_center' => 'Na stred',
+            'align_right' => 'Vpravo',
+            'button_default_label' => 'Kliknite sem',
+        ],
+
         'columns' => [
             'locales' => 'Jazyky',
             'active' => 'Aktivny',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Tato sablona je zamknuta — kluc a kategoria su len na citanie, odstranenie je zabranene.',
+        ],
+
+        'versioning' => [
+            'date' => 'Dátum',
+            'by' => 'Od',
+            'restore' => 'Obnoviť',
+            'restore_confirm' => 'Naozaj chcete obnoviť verziu :version? Aktuálny obsah bude najskôr uložený ako nová verzia.',
+            'restored' => 'Verzia :version bola obnovená.',
+            'empty' => 'Žiadna história verzií nie je k dispozícii.',
         ],
 
         'notices' => [

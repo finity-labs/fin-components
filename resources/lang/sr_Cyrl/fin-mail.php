@@ -78,6 +78,18 @@ return [
             'new_item' => 'Нови токен',
         ],
 
+        'blocks' => [
+            'button' => 'Дугме',
+            'button_heading' => 'Уметни дугме',
+            'button_label' => 'Текст дугмета',
+            'button_url' => 'URL',
+            'button_align' => 'Поравнање',
+            'align_left' => 'Лево',
+            'align_center' => 'Центар',
+            'align_right' => 'Десно',
+            'button_default_label' => 'Кликните овде',
+        ],
+
         'columns' => [
             'locales' => 'Језици',
             'active' => 'Активан',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Овај шаблон је закључан — кључ и категорија су само за читање, брисање је спречено.',
+        ],
+
+        'versioning' => [
+            'date' => 'Датум',
+            'by' => 'Од',
+            'restore' => 'Врати',
+            'restore_confirm' => 'Да ли сте сигурни да желите да вратите верзију :version? Тренутни садржај ће прво бити сачуван као нова верзија.',
+            'restored' => 'Верзија :version је враћена.',
+            'empty' => 'Нема доступне историје верзија.',
         ],
 
         'notices' => [

@@ -78,6 +78,18 @@ return [
             'new_item' => 'توکن جدید',
         ],
 
+        'blocks' => [
+            'button' => 'دکمه',
+            'button_heading' => 'درج دکمه',
+            'button_label' => 'متن دکمه',
+            'button_url' => 'URL',
+            'button_align' => 'تراز',
+            'align_left' => 'چپ',
+            'align_center' => 'وسط',
+            'align_right' => 'راست',
+            'button_default_label' => 'اینجا کلیک کنید',
+        ],
+
         'columns' => [
             'locales' => 'زبان‌ها',
             'active' => 'فعال',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'این قالب قفل شده است — کلید و دسته‌بندی فقط‌خواندنی هستند و حذف امکان‌پذیر نیست.',
+        ],
+
+        'versioning' => [
+            'date' => 'تاریخ',
+            'by' => 'توسط',
+            'restore' => 'بازگردانی',
+            'restore_confirm' => 'آیا مطمئن هستید که می‌خواهید نسخه :version را بازگردانی کنید؟ محتوای فعلی ابتدا به عنوان نسخه جدید ذخیره می‌شود.',
+            'restored' => 'نسخه :version بازگردانی شد.',
+            'empty' => 'تاریخچه نسخه‌ای موجود نیست.',
         ],
 
         'notices' => [

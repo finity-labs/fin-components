@@ -78,6 +78,18 @@ return [
             'new_item' => 'Neuer Token',
         ],
 
+        'blocks' => [
+            'button' => 'Schaltfläche',
+            'button_heading' => 'Schaltfläche einfügen',
+            'button_label' => 'Schaltflächentext',
+            'button_url' => 'URL',
+            'button_align' => 'Ausrichtung',
+            'align_left' => 'Links',
+            'align_center' => 'Zentriert',
+            'align_right' => 'Rechts',
+            'button_default_label' => 'Hier klicken',
+        ],
+
         'columns' => [
             'locales' => 'Sprachen',
             'active' => 'Aktiv',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Diese Vorlage ist gesperrt — Schlüssel und Kategorie sind schreibgeschützt, Löschung ist verhindert.',
+        ],
+
+        'versioning' => [
+            'date' => 'Datum',
+            'by' => 'Von',
+            'restore' => 'Wiederherstellen',
+            'restore_confirm' => 'Möchten Sie wirklich Version :version wiederherstellen? Der aktuelle Inhalt wird zuerst als neue Version gespeichert.',
+            'restored' => 'Version :version wiederhergestellt.',
+            'empty' => 'Keine Versionshistorie verfügbar.',
         ],
 
         'notices' => [

@@ -78,6 +78,18 @@ return [
             'new_item' => 'Yangi token',
         ],
 
+        'blocks' => [
+            'button' => 'Tugma',
+            'button_heading' => 'Tugma qo\'shish',
+            'button_label' => 'Tugma matni',
+            'button_url' => 'URL',
+            'button_align' => 'Tekislash',
+            'align_left' => 'Chapga',
+            'align_center' => 'Markazga',
+            'align_right' => 'O\'ngga',
+            'button_default_label' => 'Bu yerni bosing',
+        ],
+
         'columns' => [
             'locales' => 'Tillar',
             'active' => 'Faol',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Bu shablon qulflangan -- kalit va kategoriya faqat o\'qish uchun, o\'chirish taqiqlangan.',
+        ],
+
+        'versioning' => [
+            'date' => 'Sana',
+            'by' => 'Muallif',
+            'restore' => 'Qayta tiklash',
+            'restore_confirm' => ':version versiyasini qayta tiklashni xohlaysizmi? Joriy kontent avval yangi versiya sifatida saqlanadi.',
+            'restored' => ':version versiyasi qayta tiklandi.',
+            'empty' => 'Versiya tarixi mavjud emas.',
         ],
 
         'notices' => [

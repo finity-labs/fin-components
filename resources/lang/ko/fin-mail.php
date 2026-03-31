@@ -78,6 +78,18 @@ return [
             'new_item' => '새 토큰',
         ],
 
+        'blocks' => [
+            'button' => '버튼',
+            'button_heading' => '버튼 삽입',
+            'button_label' => '버튼 텍스트',
+            'button_url' => 'URL',
+            'button_align' => '정렬',
+            'align_left' => '왼쪽',
+            'align_center' => '가운데',
+            'align_right' => '오른쪽',
+            'button_default_label' => '여기를 클릭하세요',
+        ],
+
         'columns' => [
             'locales' => '로케일',
             'active' => '활성',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => '이 템플릿은 잠겨 있습니다 -- 키와 카테고리는 읽기 전용이며 삭제할 수 없습니다.',
+        ],
+
+        'versioning' => [
+            'date' => '날짜',
+            'by' => '작성자',
+            'restore' => '복원',
+            'restore_confirm' => ':version 버전을 복원하시겠습니까? 현재 콘텐츠가 먼저 새 버전으로 저장됩니다.',
+            'restored' => ':version 버전이 복원되었습니다.',
+            'empty' => '버전 기록이 없습니다.',
         ],
 
         'notices' => [

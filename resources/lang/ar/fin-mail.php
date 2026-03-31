@@ -78,6 +78,18 @@ return [
             'new_item' => 'Token جديد',
         ],
 
+        'blocks' => [
+            'button' => 'زر',
+            'button_heading' => 'إدراج زر',
+            'button_label' => 'نص الزر',
+            'button_url' => 'URL',
+            'button_align' => 'المحاذاة',
+            'align_left' => 'يسار',
+            'align_center' => 'وسط',
+            'align_right' => 'يمين',
+            'button_default_label' => 'انقر هنا',
+        ],
+
         'columns' => [
             'locales' => 'اللغات',
             'active' => 'نشط',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'هذا القالب مقفل — المفتاح والفئة للقراءة فقط، والحذف ممنوع.',
+        ],
+
+        'versioning' => [
+            'date' => 'التاريخ',
+            'by' => 'بواسطة',
+            'restore' => 'استعادة',
+            'restore_confirm' => 'هل أنت متأكد أنك تريد استعادة الإصدار :version؟ سيتم حفظ المحتوى الحالي كإصدار جديد أولاً.',
+            'restored' => 'تمت استعادة الإصدار :version.',
+            'empty' => 'لا يوجد سجل إصدارات متاح.',
         ],
 
         'notices' => [

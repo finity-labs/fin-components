@@ -78,6 +78,18 @@ return [
             'new_item' => 'Nou Token',
         ],
 
+        'blocks' => [
+            'button' => 'Botó',
+            'button_heading' => 'Inserir botó',
+            'button_label' => 'Text del botó',
+            'button_url' => 'URL',
+            'button_align' => 'Alineació',
+            'align_left' => 'Esquerra',
+            'align_center' => 'Centre',
+            'align_right' => 'Dreta',
+            'button_default_label' => 'Feu clic aquí',
+        ],
+
         'columns' => [
             'locales' => 'Idiomes',
             'active' => 'Actiu',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Aquesta plantilla està bloquejada — la clau i la categoria són de només lectura, l\'eliminació està impedida.',
+        ],
+
+        'versioning' => [
+            'date' => 'Data',
+            'by' => 'Per',
+            'restore' => 'Restaurar',
+            'restore_confirm' => 'Esteu segur que voleu restaurar la versió :version? El contingut actual es desarà com a nova versió primer.',
+            'restored' => 'Versió :version restaurada.',
+            'empty' => 'No hi ha historial de versions disponible.',
         ],
 
         'notices' => [

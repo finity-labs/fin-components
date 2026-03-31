@@ -78,6 +78,18 @@ return [
             'new_item' => 'טוקן חדש',
         ],
 
+        'blocks' => [
+            'button' => 'כפתור',
+            'button_heading' => 'הוסף כפתור',
+            'button_label' => 'טקסט הכפתור',
+            'button_url' => 'URL',
+            'button_align' => 'יישור',
+            'align_left' => 'שמאל',
+            'align_center' => 'מרכז',
+            'align_right' => 'ימין',
+            'button_default_label' => 'לחצו כאן',
+        ],
+
         'columns' => [
             'locales' => 'שפות',
             'active' => 'פעיל',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'תבנית זו נעולה — המפתח והקטגוריה הם לקריאה בלבד, מחיקה מנועה.',
+        ],
+
+        'versioning' => [
+            'date' => 'תאריך',
+            'by' => 'על ידי',
+            'restore' => 'שחזור',
+            'restore_confirm' => 'האם אתה בטוח שברצונך לשחזר גרסה :version? התוכן הנוכחי יישמר תחילה כגרסה חדשה.',
+            'restored' => 'גרסה :version שוחזרה.',
+            'empty' => 'אין היסטוריית גרסאות זמינה.',
         ],
 
         'notices' => [

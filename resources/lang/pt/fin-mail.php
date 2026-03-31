@@ -78,6 +78,18 @@ return [
             'new_item' => 'Novo Token',
         ],
 
+        'blocks' => [
+            'button' => 'Botão',
+            'button_heading' => 'Inserir botão',
+            'button_label' => 'Texto do botão',
+            'button_url' => 'URL',
+            'button_align' => 'Alinhamento',
+            'align_left' => 'Esquerda',
+            'align_center' => 'Centro',
+            'align_right' => 'Direita',
+            'button_default_label' => 'Clique aqui',
+        ],
+
         'columns' => [
             'locales' => 'Idiomas',
             'active' => 'Ativo',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Este modelo esta bloqueado — a chave e a categoria sao apenas de leitura, a eliminacao esta impedida.',
+        ],
+
+        'versioning' => [
+            'date' => 'Data',
+            'by' => 'Por',
+            'restore' => 'Restaurar',
+            'restore_confirm' => 'Tem a certeza de que pretende restaurar a versão :version? O conteúdo atual será guardado primeiro como uma nova versão.',
+            'restored' => 'Versão :version restaurada.',
+            'empty' => 'Sem histórico de versões disponível.',
         ],
 
         'notices' => [

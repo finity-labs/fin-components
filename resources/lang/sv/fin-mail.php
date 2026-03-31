@@ -78,6 +78,18 @@ return [
             'new_item' => 'Ny variabel',
         ],
 
+        'blocks' => [
+            'button' => 'Knapp',
+            'button_heading' => 'Infoga knapp',
+            'button_label' => 'Knapptext',
+            'button_url' => 'URL',
+            'button_align' => 'Justering',
+            'align_left' => 'Vänster',
+            'align_center' => 'Centrerad',
+            'align_right' => 'Höger',
+            'button_default_label' => 'Klicka här',
+        ],
+
         'columns' => [
             'locales' => 'Sprak',
             'active' => 'Aktiv',
@@ -108,6 +120,15 @@ return [
 
         'tooltips' => [
             'locked' => 'Denna mall ar last -- nyckel och kategori ar skrivskyddade, och radering ar forhindrad.',
+        ],
+
+        'versioning' => [
+            'date' => 'Datum',
+            'by' => 'Av',
+            'restore' => 'Återställ',
+            'restore_confirm' => 'Är du säker på att du vill återställa version :version? Det aktuella innehållet sparas som en ny version först.',
+            'restored' => 'Version :version återställd.',
+            'empty' => 'Ingen versionshistorik tillgänglig.',
         ],
 
         'notices' => [
