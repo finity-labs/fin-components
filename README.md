@@ -1,7 +1,5 @@
 # FinComponents
 
-A Filament component library that bundles enhanced form components under a single package. Install once, get all components.
-
 [![FILAMENT 4.x](https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square)](https://filamentphp.com/docs/4.x/panels/installation)
 [![FILAMENT 5.x](https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square)](https://filamentphp.com/docs/5.x/panels/installation)
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/finity-labs/fin-components.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-components)
@@ -10,9 +8,12 @@ A Filament component library that bundles enhanced form components under a singl
 [![Total Downloads](https://img.shields.io/packagist/dt/finity-labs/fin-components.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-components)
 [![License](https://img.shields.io/packagist/l/finity-labs/fin-components.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-components)
 
+A Filament component library that bundles enhanced form components under a single package. Install once, get all components.
+
 ## Requirements
 
 - PHP 8.2+
+- Laravel 11 or 12
 - Filament v4 or v5
 
 ## Installation
