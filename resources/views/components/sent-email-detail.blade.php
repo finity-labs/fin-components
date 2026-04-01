@@ -51,13 +51,11 @@
     @if($email->rendered_body)
         <div class="border-t pt-4 mt-4">
             <div class="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-                <div class="bg-white dark:bg-gray-900 mx-auto shadow-lg rounded-lg overflow-hidden" style="max-width: 600px;">
-                    <div class="p-6">
-                        <div class="prose dark:prose-invert max-w-none">
-                            {!! $email->rendered_body !!}
-                        </div>
-                    </div>
-                </div>
+                <iframe
+                    src="data:text/html;base64,{{ base64_encode($email->rendered_body) }}"
+                    class="w-full bg-white rounded-lg shadow-lg mx-auto"
+                    style="max-width: 700px; min-height: 500px; border: none;"
+                ></iframe>
             </div>
         </div>
     @else

@@ -10,6 +10,7 @@ use FinityLabs\FinMail\Models\EmailTheme;
 use FinityLabs\FinMail\Models\SentEmail;
 use FinityLabs\FinMail\Settings\BrandingSettings;
 use FinityLabs\FinMail\Settings\GeneralSettings;
+use FinityLabs\FinMail\Settings\LoggingSettings;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Mail\Factory;
 use Illuminate\Contracts\Mail\Mailer;
@@ -214,6 +215,10 @@ class TemplateMail extends Mailable implements ShouldQueue
     public function send($mailer)
     {
         try {
+            if ($this->sentEmailLog) {
+                $this->storeRenderedBody();
+            }
+
             $result = parent::send($mailer);
 
             $this->sentEmailLog?->markAsSent();
@@ -223,6 +228,20 @@ class TemplateMail extends Mailable implements ShouldQueue
             $this->sentEmailLog?->markAsFailed($e->getMessage());
 
             throw $e;
+        }
+    }
+
+    protected function storeRenderedBody(): void
+    {
+        if (! app(LoggingSettings::class)->store_rendered_body) {
+            return;
+        }
+
+        try {
+            $html = $this->render();
+            $this->sentEmailLog->updateQuietly(['rendered_body' => $html]);
+        } catch (\Throwable) {
+            // Don't let rendering failures prevent the email from being sent.
         }
     }
 

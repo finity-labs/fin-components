@@ -136,9 +136,7 @@ class EmailSender
             'cc' => $this->data['cc'] ?? [],
             'bcc' => $this->data['bcc'] ?? [],
             'subject' => $this->data['subject'],
-            'rendered_body' => $loggingSettings->store_rendered_body
-                ? $this->data['body']
-                : null,
+            'rendered_body' => null,
             'attachments' => $this->buildAttachmentMetadata(),
             'status' => EmailStatus::Queued,
             'sent_by' => auth()->id(),

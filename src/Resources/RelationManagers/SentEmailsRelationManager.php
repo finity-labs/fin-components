@@ -86,10 +86,8 @@ class SentEmailsRelationManager extends RelationManager
                     ->icon(Heroicon::OutlinedEye)
                     ->modal()
                     ->modalHeading(fn ($record): string => $record->subject)
-                    ->modalContent(fn ($record) => view('fin-mail::components.email-preview', [
-                        'subject' => $record->subject,
-                        'html' => $record->rendered_body,
-                        'theme' => $record->template?->theme?->resolvedColors(),
+                    ->modalContent(fn ($record) => view('fin-mail::components.sent-email-detail', [
+                        'email' => $record,
                     ]))
                     ->modalWidth(Width::FourExtraLarge)
                     ->modalSubmitAction(false)
