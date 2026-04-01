@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-04-01
+
+### Added
+
+- **Configurable date formatting** — New `date_format` and `datetime_format` config options, supporting a single string or a per-locale array. When null, Filament's defaults apply. Includes `FinMail::dateFormat()` and `FinMail::dateTimeFormat()` facade helpers
+- **Token fields in test email modal** — Send test email modal now shows input fields for documented tokens (excluding `config.*` and `user.*`), pre-filled with example values from the token schema
+- **Full rendered body storage** — Sent emails now store the complete HTML as actually delivered (layout, theme, branding, footer), not just the inner body content
+- **Sent email infolist** — Sent email preview replaced with a proper Filament infolist using `TextEntry`, `ViewEntry`, and badge components
+- **Laravel 13 support**
+- **`@property` annotations on SentEmail model** for PHPStan
+
+### Fixed
+
+- Test emails sent from the template list now go through `EmailSender`, so they appear in the sent emails log
+- Sent email preview now renders with full styling via base64 iframe, matching what was actually delivered
+- Missing translations for `versioning.preview`, `sent.preview.*`, `settings.sections.add_additional_senders`, and `settings.sections.add_footer_links` across all 58 non-en/fr languages
+
+### Changed
+
+- All date/datetime displays across the plugin now use the configured format from `config/fin-mail.php`
+- Sent email relation manager preview uses the shared `SentEmailInfolist` schema instead of a blade view
+- Screenshots section in README uses collapsible `<details>` tags
+
 ## [1.2.0] - 2026-03-31
 
 ### Added
