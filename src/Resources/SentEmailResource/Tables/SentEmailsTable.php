@@ -16,6 +16,7 @@ use Filament\Tables\Table;
 use FinityLabs\FinMail\Enums\EmailStatus;
 use FinityLabs\FinMail\Mail\TemplateMail;
 use FinityLabs\FinMail\Models\SentEmail;
+use FinityLabs\FinMail\Resources\SentEmailResource\Schemas\SentEmailInfolist;
 use Illuminate\Support\Facades\Mail;
 
 class SentEmailsTable
@@ -85,9 +86,7 @@ class SentEmailsTable
                     ->icon(Heroicon::OutlinedEye)
                     ->modal()
                     ->modalHeading(fn ($record): string => $record->subject)
-                    ->modalContent(fn ($record) => view('fin-mail::components.sent-email-detail', [
-                        'email' => $record,
-                    ]))
+                    ->schema(SentEmailInfolist::schema())
                     ->modalWidth(Width::FiveExtraLarge)
                     ->modalSubmitAction(false),
 

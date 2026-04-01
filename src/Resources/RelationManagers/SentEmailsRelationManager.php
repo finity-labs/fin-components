@@ -16,6 +16,7 @@ use Filament\Tables\Table;
 use FinityLabs\FinMail\Enums\EmailStatus;
 use FinityLabs\FinMail\Mail\TemplateMail;
 use FinityLabs\FinMail\Models\SentEmail;
+use FinityLabs\FinMail\Resources\SentEmailResource\Schemas\SentEmailInfolist;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -86,12 +87,9 @@ class SentEmailsRelationManager extends RelationManager
                     ->icon(Heroicon::OutlinedEye)
                     ->modal()
                     ->modalHeading(fn ($record): string => $record->subject)
-                    ->modalContent(fn ($record) => view('fin-mail::components.sent-email-detail', [
-                        'email' => $record,
-                    ]))
-                    ->modalWidth(Width::FourExtraLarge)
-                    ->modalSubmitAction(false)
-                    ->visible(fn ($record): bool => (bool) $record->rendered_body),
+                    ->schema(SentEmailInfolist::schema())
+                    ->modalWidth(Width::FiveExtraLarge)
+                    ->modalSubmitAction(false),
 
                 Action::make('resend')
                     ->label(__('fin-mail::fin-mail.relation.actions.resend'))

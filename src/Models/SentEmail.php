@@ -9,7 +9,29 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property int|null $email_template_id
+ * @property string $sender
+ * @property array<int, string> $to
+ * @property array<int, string> $cc
+ * @property array<int, string> $bcc
+ * @property string $subject
+ * @property string|null $rendered_body
+ * @property array<int, array<string, string>>|null $attachments
+ * @property EmailStatus $status
+ * @property Carbon|null $sent_at
+ * @property array<string, mixed>|null $metadata
+ * @property int|null $sent_by
+ * @property string|null $sendable_type
+ * @property int|string|null $sendable_id
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read EmailTemplate|null $template
+ * @property-read Model|null $sendable
+ */
 class SentEmail extends Model
 {
     protected $fillable = [
