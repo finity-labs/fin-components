@@ -46,11 +46,9 @@
                 data_set($formState, $name, data_get($record, $name));
             }
 
-            $livewire->data[$stateKey] = $formState;
-
             $form = \Filament\Schemas\Schema::make($livewire)
                 ->schema($formSchema)
-                ->statePath("data.{$stateKey}")
+                ->constantState($formState)
                 ->model($record);
         @endphp
 

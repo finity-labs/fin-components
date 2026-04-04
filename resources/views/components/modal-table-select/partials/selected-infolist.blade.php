@@ -43,11 +43,9 @@
                 data_set($infolistState, $name, data_get($record, $name));
             }
 
-            $livewire->data[$stateKey] = $infolistState;
-
             $infolist = \Filament\Schemas\Schema::make($livewire)
                 ->schema($infolistSchema)
-                ->statePath("data.{$stateKey}")
+                ->constantState($infolistState)
                 ->model($record);
         @endphp
 
