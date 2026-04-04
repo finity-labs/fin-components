@@ -1,6 +1,6 @@
 # FinSentinel for Filament
 
-![finity-labs-fin-sentinel](https://github.com/user-attachments/assets/4fe187d8-c5d2-4ef8-a8cd-164a98b305b1)
+<img src="https://github.com/user-attachments/assets/4fe187d8-c5d2-4ef8-a8cd-164a98b305b1" alt="finity-labs-fin-sentinel" class="filament-hidden">
 
 [![FILAMENT 4.x](https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square)](https://filamentphp.com/docs/4.x/panels/installation)
 [![FILAMENT 5.x](https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square)](https://filamentphp.com/docs/5.x/panels/installation)
