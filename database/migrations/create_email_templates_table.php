@@ -11,7 +11,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('email_templates', function (Blueprint $table) {
+        Schema::create(config('fin-mail.table_names.templates') ?? 'email_templates', function (Blueprint $table) {
             $table->id();
             $table->string('key', 255)->unique();
             $table->json('name');
@@ -30,7 +30,7 @@ return new class extends Migration
             // Theme
             $table->foreignIdFor(EmailTheme::class)
                 ->nullable()
-                ->constrained('email_themes')
+                ->constrained(config('fin-mail.table_names.themes') ?? 'email_themes')
                 ->nullOnDelete();
 
             // Token documentation
@@ -47,6 +47,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('email_templates');
+        Schema::dropIfExists(config('fin-mail.table_names.templates') ?? 'email_templates');
     }
 };

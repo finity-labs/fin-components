@@ -11,13 +11,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('sent_emails', function (Blueprint $table) {
+        Schema::create(config('fin-mail.table_names.sent') ?? 'sent_emails', function (Blueprint $table) {
             $table->id();
 
             // Template reference
             $table->foreignIdFor(EmailTemplate::class)
                 ->nullable()
-                ->constrained('email_templates')
+                ->constrained(config('fin-mail.table_names.templates') ?? 'email_templates')
                 ->nullOnDelete();
 
             // Sender & Recipients
@@ -48,6 +48,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('sent_emails');
+        Schema::dropIfExists(config('fin-mail.table_names.sent') ?? 'sent_emails');
     }
 };

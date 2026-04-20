@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('email_themes', function (Blueprint $table) {
+        Schema::create(config('fin-mail.table_names.themes') ?? 'email_themes', function (Blueprint $table) {
             $table->id();
             $table->string('name', 255);
             $table->json('colors');
@@ -21,6 +21,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('email_themes');
+        Schema::dropIfExists(config('fin-mail.table_names.themes') ?? 'email_themes');
     }
 };
