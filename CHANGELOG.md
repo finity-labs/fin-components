@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-04-25
+
+### Added
+
+- **Reply-To support for templates** — Each template can now have its own reply-to address and name, configurable from the template settings tab. Falls back to `null` if not set, so existing templates are unaffected. The `TemplateMail` mailable also gains an `overrideReplyTo()` setter for runtime overrides (#9, thanks @agencetwogether)
+- Reply-to translations added to all 58 supported locales
+
+### Notes
+
+- A new migration is included (`add_reply_to_on_email_templates_table`). Run `php artisan migrate` after upgrading.
+
 ## [1.4.1] - 2026-04-20
 
 ### Fixed
