@@ -51,9 +51,6 @@ class TemplateMail extends Mailable implements ShouldQueue
 
     protected ?SentEmail $sentEmailLog = null;
 
-    /** @var array<string, mixed> */
-    protected array $extraData = [];
-
     protected ?string $overrideSubject = null;
 
     protected ?string $overrideBody = null;
