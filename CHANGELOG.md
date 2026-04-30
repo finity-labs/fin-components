@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-04-26
+
+### Added
+
+- **Pass extra view data to email templates** — New `extraData()` method (and native `with()` support) on `TemplateMail` for passing variables directly to the Blade view, separate from the token replacement system. Useful for view-only data that doesn't need to flow through the token engine (#10, thanks @agencetwogether)
+
+### Fixed
+
+- Reply-To section was missing from the email template infolist (view page). It's now displayed alongside the Custom Sender section (#11, thanks @agencetwogether)
+
 ## [1.5.0] - 2026-04-25
 
 ### Added
