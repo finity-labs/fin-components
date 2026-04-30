@@ -154,6 +154,33 @@ Mail::to($customer->email)->send(
 
 `TemplateMail` is automatically queued. Configure the queue connection and name in `config/fin-mail.php`.
 
+#### Passing extra view data
+
+`models()` is for token replacement (`{{ user.name }}`). For variables you want available directly in the Blade template — without going through the token system — use `with()` or its `extraData()` alias:
+
+```php
+TemplateMail::make('order-confirmation')
+    ->models(['user' => $user])
+    ->with('trackingUrl', $tracking->url)
+    // or pass an array:
+    ->extraData([
+        'orderItems' => $order->items,
+        'currency' => 'EUR',
+    ]);
+```
+
+After publishing the package views (`php artisan vendor:publish --tag=fin-mail-views`), the variables are available directly in the Blade template:
+
+```blade
+<a href="{{ $trackingUrl }}">Track your order</a>
+
+@foreach ($orderItems as $item)
+    {{ $item->name }} — {{ $item->price }} {{ $currency }}
+@endforeach
+```
+
+The default keys (`body`, `preheader`, `theme`, `branding`) remain available — extra data is merged on top.
+
 ### Adding "Send Email" to any resource
 
 ```php

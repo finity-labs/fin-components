@@ -107,6 +107,15 @@ class TemplateMail extends Mailable implements ShouldQueue
         return $this;
     }
 
+    public function extraData(array $data): static
+    {
+        foreach ($data as $key => $value) {
+            $this->with($key, $value);
+        }
+
+        return $this;
+    }
+
     public function overrideSubject(string $subject): static
     {
         $this->overrideSubject = $subject;
@@ -183,17 +192,20 @@ class TemplateMail extends Mailable implements ShouldQueue
 
         return new Content(
             view: 'fin-mail::email.default',
-            with: [
-                'body' => $this->overrideBody
-                    ? app(TokenReplacer::class)->replace(
-                        $this->stripMergeTagSpans($this->overrideBody),
-                        $this->models,
-                    )
-                    : $rendered['body'],
-                'preheader' => $rendered['preheader'],
-                'theme' => $theme?->resolvedColors() ?? EmailTheme::defaultColors(),
-                'branding' => $this->resolveBranding(),
-            ],
+            with: array_merge(
+                [
+                    'body' => $this->overrideBody
+                        ? app(TokenReplacer::class)->replace(
+                            $this->stripMergeTagSpans($this->overrideBody),
+                            $this->models,
+                        )
+                        : $rendered['body'],
+                    'preheader' => $rendered['preheader'],
+                    'theme' => $theme?->resolvedColors() ?? EmailTheme::defaultColors(),
+                    'branding' => $this->resolveBranding(),
+                ],
+                $this->viewData
+            )
         );
     }
 
