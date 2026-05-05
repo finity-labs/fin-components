@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Forhandsgranska',
+            'preview_heading' => 'Forhandsgranska: :record',
             'send_test' => 'Skicka test',
             'send_test_field' => 'Skicka till',
             'send_test_locale' => 'Sprak',

@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Oldindan ko\'rish',
+            'preview_heading' => 'Oldindan ko\'rish: :record',
             'send_test' => 'Test yuborish',
             'send_test_field' => 'Yuborish manzili',
             'send_test_locale' => 'Til',

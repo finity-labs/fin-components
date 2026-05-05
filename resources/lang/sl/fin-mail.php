@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Predogled',
+            'preview_heading' => 'Predogled: :record',
             'send_test' => 'Poslji test',
             'send_test_field' => 'Poslji na',
             'send_test_locale' => 'Jezik',

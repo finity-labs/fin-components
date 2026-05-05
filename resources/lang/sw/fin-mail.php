@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Hakikisho',
+            'preview_heading' => 'Hakikisho: :record',
             'send_test' => 'Tuma jaribio',
             'send_test_field' => 'Tuma kwa',
             'send_test_locale' => 'Lugha',

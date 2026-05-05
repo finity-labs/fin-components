@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Prieksskatijums',
+            'preview_heading' => 'Prieksskatijums: :record',
             'send_test' => 'Sutit testu',
             'send_test_field' => 'Sutit uz',
             'send_test_locale' => 'Valoda',

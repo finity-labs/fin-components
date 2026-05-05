@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Xem truoc',
+            'preview_heading' => 'Xem truoc: :record',
             'send_test' => 'Gui thu nghiem',
             'send_test_field' => 'Gui den',
             'send_test_locale' => 'Ngon ngu',

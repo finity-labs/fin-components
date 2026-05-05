@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'پیش‌نمایش',
+            'preview_heading' => 'پیش‌نمایش: :record',
             'send_test' => 'ارسال آزمایشی',
             'send_test_field' => 'ارسال به',
             'send_test_locale' => 'زبان',

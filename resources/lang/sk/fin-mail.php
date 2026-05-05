@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Nahladit',
+            'preview_heading' => 'Nahladit: :record',
             'send_test' => 'Odoslat test',
             'send_test_field' => 'Odoslat na',
             'send_test_locale' => 'Jazyk',

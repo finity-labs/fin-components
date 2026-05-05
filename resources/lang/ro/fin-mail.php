@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Previzualizare',
+            'preview_heading' => 'Previzualizare: :record',
             'send_test' => 'Trimite Test',
             'send_test_field' => 'Trimite catre',
             'send_test_locale' => 'Limba',

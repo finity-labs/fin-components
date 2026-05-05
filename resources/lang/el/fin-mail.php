@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Προεπισκόπηση',
+            'preview_heading' => 'Προεπισκόπηση: :record',
             'send_test' => 'Αποστολή δοκιμής',
             'send_test_field' => 'Αποστολή σε',
             'send_test_locale' => 'Γλώσσα',

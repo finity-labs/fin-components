@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-05-05
+
+### Added
+
+- **Permission gating for custom actions** — `Preview`, `SendTest`, `Compose` (Email Templates) and `Resend` (Sent Emails) are now hidden from the UI when Filament Shield is installed and the authenticated user lacks the corresponding permission. Falls back to the previous always-visible behavior when Shield is absent, so existing installs are unaffected (#12, thanks @agencetwogether)
+- `FinMailPlugin::isShieldAvailable()` helper for checking Shield presence
+- `preview_heading` translation key for the preview modal header, populated across all 58 supported locales
+
+### Changed
+
+- `InstallCommand` now seeds `preview`, `sendTest`, `compose`, and `resend` into the Filament Shield config so `shield:generate` produces the matching policy methods and permissions
+- Bulk delete on the Email Templates table now uses `authorizeIndividualRecords('delete')` when Shield is active
+
+### Notes
+
+- After upgrading on a Shield-enabled install, run `php artisan shield:generate --panel=admin --option=policies_and_permissions` to register the new permissions
+
 ## [1.6.0] - 2026-04-26
 
 ### Added

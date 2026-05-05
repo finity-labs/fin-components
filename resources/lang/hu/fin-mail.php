@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Előnézet',
+            'preview_heading' => 'Előnézet: :record',
             'send_test' => 'Teszt küldése',
             'send_test_field' => 'Küldés ide',
             'send_test_locale' => 'Nyelv',

@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Урьдчилан харах',
+            'preview_heading' => 'Урьдчилан харах: :record',
             'send_test' => 'Туршилт илгээх',
             'send_test_field' => 'Хаана илгээх',
             'send_test_locale' => 'Хэл',

@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Önizləmə',
+            'preview_heading' => 'Önizləmə: :record',
             'send_test' => 'Test göndər',
             'send_test_field' => 'Göndər',
             'send_test_locale' => 'Dil',

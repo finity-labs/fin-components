@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Peržiūra',
+            'preview_heading' => 'Peržiūra: :record',
             'send_test' => 'Siųsti testą',
             'send_test_field' => 'Siųsti kam',
             'send_test_locale' => 'Kalba',

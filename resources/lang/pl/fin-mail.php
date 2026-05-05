@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Podgląd',
+            'preview_heading' => 'Podgląd: :record',
             'send_test' => 'Wyślij test',
             'send_test_field' => 'Wyślij do',
             'send_test_locale' => 'Język',

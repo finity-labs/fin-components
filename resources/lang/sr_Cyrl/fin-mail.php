@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Преглед',
+            'preview_heading' => 'Преглед: :record',
             'send_test' => 'Пошаљи тест',
             'send_test_field' => 'Пошаљи на',
             'send_test_locale' => 'Језик',

@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'ดูตัวอย่าง',
+            'preview_heading' => 'ดูตัวอย่าง: :record',
             'send_test' => 'ส่งทดสอบ',
             'send_test_field' => 'ส่งถึง',
             'send_test_locale' => 'ภาษา',

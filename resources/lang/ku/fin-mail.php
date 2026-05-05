@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Pêşdîtin',
+            'preview_heading' => 'Pêşdîtin: :record',
             'send_test' => 'Testa bişîne',
             'send_test_field' => 'Bişîne bo',
             'send_test_locale' => 'Ziman',

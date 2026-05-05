@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'معاينة',
+            'preview_heading' => 'معاينة: :record',
             'send_test' => 'إرسال تجريبي',
             'send_test_field' => 'إرسال إلى',
             'send_test_locale' => 'اللغة',

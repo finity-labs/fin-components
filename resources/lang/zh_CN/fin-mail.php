@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => '预览',
+            'preview_heading' => '预览: :record',
             'send_test' => '发送测试',
             'send_test_field' => '发送至',
             'send_test_locale' => '语言',

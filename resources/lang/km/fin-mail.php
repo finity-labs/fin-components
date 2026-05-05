@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'មើលមុន',
+            'preview_heading' => 'មើលមុន: :record',
             'send_test' => 'ផ្ញើសាកល្បង',
             'send_test_field' => 'ផ្ញើទៅ',
             'send_test_locale' => 'ភាសា',

@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Parapamje',
+            'preview_heading' => 'Parapamje: :record',
             'send_test' => 'Dergo Test',
             'send_test_field' => 'Dergo tek',
             'send_test_locale' => 'Gjuha',

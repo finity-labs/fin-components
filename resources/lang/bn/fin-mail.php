@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'প্রিভিউ',
+            'preview_heading' => 'প্রিভিউ: :record',
             'send_test' => 'টেস্ট পাঠান',
             'send_test_field' => 'পাঠান',
             'send_test_locale' => 'ভাষা',

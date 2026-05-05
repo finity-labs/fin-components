@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Pratonton',
+            'preview_heading' => 'Pratonton: :record',
             'send_test' => 'Hantar Ujian',
             'send_test_field' => 'Hantar ke',
             'send_test_locale' => 'Bahasa',

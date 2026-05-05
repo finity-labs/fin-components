@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Aurrebista',
+            'preview_heading' => 'Aurrebista: :record',
             'send_test' => 'Proba bidali',
             'send_test_field' => 'Bidali hona',
             'send_test_locale' => 'Hizkuntza',

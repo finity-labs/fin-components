@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'پێشبینین',
+            'preview_heading' => 'پێشبینین: :record',
             'send_test' => 'تاقیکردنەوە بنێرە',
             'send_test_field' => 'بنێرە بۆ',
             'send_test_locale' => 'زمان',

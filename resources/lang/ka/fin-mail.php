@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'წინასწარი ნახვა',
+            'preview_heading' => 'წინასწარი ნახვა: :record',
             'send_test' => 'სატესტო გაგზავნა',
             'send_test_field' => 'გაგზავნა მისამართზე',
             'send_test_locale' => 'ენა',

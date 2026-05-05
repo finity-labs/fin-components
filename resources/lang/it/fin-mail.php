@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Anteprima',
+            'preview_heading' => 'Anteprima: :record',
             'send_test' => 'Invia test',
             'send_test_field' => 'Invia a',
             'send_test_locale' => 'Lingua',

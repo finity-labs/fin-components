@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'ቅድመ ዕይታ',
+            'preview_heading' => 'ቅድመ ዕይታ: :record',
             'send_test' => 'ሙከራ ላክ',
             'send_test_field' => 'ላክ ወደ',
             'send_test_locale' => 'ቋንቋ',

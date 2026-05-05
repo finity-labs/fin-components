@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'پیش نظارہ',
+            'preview_heading' => 'پیش نظارہ: :record',
             'send_test' => 'ٹیسٹ بھیجیں',
             'send_test_field' => 'بھیجیں بنام',
             'send_test_locale' => 'زبان',

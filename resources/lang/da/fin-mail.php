@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Forhåndsvisning',
+            'preview_heading' => 'Forhåndsvisning: :record',
             'send_test' => 'Send test',
             'send_test_field' => 'Send til',
             'send_test_locale' => 'Sprog',

@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'プレビュー',
+            'preview_heading' => 'プレビュー: :record',
             'send_test' => 'テスト送信',
             'send_test_field' => '送信先',
             'send_test_locale' => '言語',

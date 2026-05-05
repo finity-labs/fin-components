@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Rhagolwg',
+            'preview_heading' => 'Rhagolwg: :record',
             'send_test' => 'Anfon prawf',
             'send_test_field' => 'Anfon at',
             'send_test_locale' => 'Iaith',

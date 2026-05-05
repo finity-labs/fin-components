@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => '預覽',
+            'preview_heading' => '預覽: :record',
             'send_test' => '寄送測試',
             'send_test_field' => '寄送至',
             'send_test_locale' => '語言',

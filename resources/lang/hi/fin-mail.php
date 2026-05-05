@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'पूर्वावलोकन',
+            'preview_heading' => 'पूर्वावलोकन: :record',
             'send_test' => 'टेस्ट भेजें',
             'send_test_field' => 'भेजें',
             'send_test_locale' => 'भाषा',

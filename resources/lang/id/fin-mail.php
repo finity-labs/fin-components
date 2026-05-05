@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Pratinjau',
+            'preview_heading' => 'Pratinjau: :record',
             'send_test' => 'Kirim Tes',
             'send_test_field' => 'Kirim ke',
             'send_test_locale' => 'Bahasa',

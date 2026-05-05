@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Vista previa',
+            'preview_heading' => 'Vista previa: :record',
             'send_test' => 'Enviar prueba',
             'send_test_field' => 'Enviar a',
             'send_test_locale' => 'Idioma',

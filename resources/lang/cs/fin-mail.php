@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Náhled',
+            'preview_heading' => 'Náhled: :record',
             'send_test' => 'Odeslat test',
             'send_test_field' => 'Odeslat na',
             'send_test_locale' => 'Jazyk',

@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Попередній перегляд',
+            'preview_heading' => 'Попередній перегляд: :record',
             'send_test' => 'Надіслати тест',
             'send_test_field' => 'Надіслати на',
             'send_test_locale' => 'Мова',

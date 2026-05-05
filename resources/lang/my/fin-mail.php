@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'အကြိုကြည့်ရှု',
+            'preview_heading' => 'အကြိုကြည့်ရှု: :record',
             'send_test' => 'စမ်းသပ်ပို့',
             'send_test_field' => 'သို့ပို့',
             'send_test_locale' => 'ဘာသာစကား',

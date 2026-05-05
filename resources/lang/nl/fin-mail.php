@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Voorbeeld',
+            'preview_heading' => 'Voorbeeld: :record',
             'send_test' => 'Test versturen',
             'send_test_field' => 'Versturen naar',
             'send_test_locale' => 'Taal',

@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'Esikatselu',
+            'preview_heading' => 'Esikatselu: :record',
             'send_test' => 'Lähetä testi',
             'send_test_field' => 'Lähetä osoitteeseen',
             'send_test_locale' => 'Kieli',

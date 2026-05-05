@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'On izleme',
+            'preview_heading' => 'On izleme: :record',
             'send_test' => 'Test gonder',
             'send_test_field' => 'Gonder',
             'send_test_locale' => 'Dil',

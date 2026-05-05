@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => 'תצוגה מקדימה',
+            'preview_heading' => 'תצוגה מקדימה: :record',
             'send_test' => 'שלח בדיקה',
             'send_test_field' => 'שלח אל',
             'send_test_locale' => 'שפה',

@@ -104,6 +104,7 @@ return [
 
         'actions' => [
             'preview' => '미리보기',
+            'preview_heading' => '미리보기: :record',
             'send_test' => '테스트 발송',
             'send_test_field' => '받는 사람',
             'send_test_locale' => '언어',
