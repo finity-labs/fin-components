@@ -37,6 +37,8 @@ A powerful email template manager and composer for Filament. Build, manage, and 
 - Laravel 11, 12, or 13
 - Filament 4 or 5
 
+FinMail uses [`spatie/laravel-settings`](https://github.com/spatie/laravel-settings) to store plugin settings. It's pulled in automatically as a Composer dependency — `fin-mail:install` publishes and runs its migration if you don't already have a `settings` table.
+
 ## Installation
 
 ```bash
