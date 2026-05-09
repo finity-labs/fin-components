@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace FinityLabs\FinComponents;
+namespace FinityLabs\FinModalTableSelect;
 
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class FinComponentsServiceProvider extends PackageServiceProvider
+class FinModalTableSelectServiceProvider extends PackageServiceProvider
 {
-    public static string $name = 'fin-components';
+    public static string $name = 'fin-modal-table-select';
 
     public function configurePackage(Package $package): void
     {

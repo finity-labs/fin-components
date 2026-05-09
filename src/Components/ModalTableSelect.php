@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace FinityLabs\FinComponents\Components\ModalTableSelect;
+namespace FinityLabs\FinModalTableSelect\Components;
 
 use Filament\Forms\Components\Actions\Action;
 use Filament\Forms\Components\ModalTableSelect as FilamentModalTableSelect;
-use FinityLabs\FinComponents\Components\ModalTableSelect\Concerns\HasFormDisplay;
-use FinityLabs\FinComponents\Components\ModalTableSelect\Concerns\HasInfolistDisplay;
-use FinityLabs\FinComponents\Components\ModalTableSelect\Concerns\HasSelectionOnlyMode;
-use FinityLabs\FinComponents\Components\ModalTableSelect\Concerns\HasTableDisplay;
-use FinityLabs\FinComponents\Components\ModalTableSelect\Enums\DisplayMode;
+use FinityLabs\FinModalTableSelect\Concerns\HasFormDisplay;
+use FinityLabs\FinModalTableSelect\Concerns\HasInfolistDisplay;
+use FinityLabs\FinModalTableSelect\Concerns\HasSelectionOnlyMode;
+use FinityLabs\FinModalTableSelect\Concerns\HasTableDisplay;
+use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
 
 class ModalTableSelect extends FilamentModalTableSelect
 {
@@ -19,7 +19,7 @@ class ModalTableSelect extends FilamentModalTableSelect
     use HasSelectionOnlyMode;
     use HasTableDisplay;
 
-    protected string $view = 'fin-components::components.modal-table-select.modal-table-select';
+    protected string $view = 'fin-modal-table-select::components.modal-table-select.modal-table-select';
 
     protected function setUp(): void
     {

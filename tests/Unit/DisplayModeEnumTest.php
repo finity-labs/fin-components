@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use FinityLabs\FinComponents\Components\ModalTableSelect\Enums\DisplayMode;
+use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
 
 it('has exactly 5 cases', function () {
     expect(DisplayMode::cases())->toHaveCount(5);

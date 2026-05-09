@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use FinityLabs\FinComponents\Components\ModalTableSelect\ModalTableSelect;
+use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 
 it('defaults getIsSelectionOnly to false', function () {
     $field = ModalTableSelect::make('posts');

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FinityLabs\FinComponents\Components\ModalTableSelect\Concerns;
+namespace FinityLabs\FinModalTableSelect\Concerns;
 
 use Closure;
 
@@ -74,7 +74,7 @@ trait HasSelectionOnlyMode
         }
 
         return trans_choice(
-            'fin-components::modal-table-select.count',
+            'fin-modal-table-select::modal-table-select.count',
             $count,
             ['count' => $count],
         );

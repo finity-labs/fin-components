@@ -5,8 +5,8 @@ declare(strict_types=1);
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Tables\Columns\TextColumn;
-use FinityLabs\FinComponents\Components\ModalTableSelect\Enums\DisplayMode;
-use FinityLabs\FinComponents\Components\ModalTableSelect\ModalTableSelect;
+use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
+use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 
 it('defaults to Badges when nothing configured', function () {
     $field = ModalTableSelect::make('posts');

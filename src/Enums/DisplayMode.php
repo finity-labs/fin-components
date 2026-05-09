@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FinityLabs\FinComponents\Components\ModalTableSelect\Enums;
+namespace FinityLabs\FinModalTableSelect\Enums;
 
 enum DisplayMode: string
 {

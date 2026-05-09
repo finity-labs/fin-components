@@ -3,7 +3,7 @@
 Extends Filament's native `ModalTableSelect` with five display modes for showing selected items: table, infolist, form, selection-only, and the default badges.
 
 ```php
-use FinityLabs\FinComponents\Components\ModalTableSelect\ModalTableSelect;
+use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 ```
 
 ## Quick Start
@@ -11,7 +11,7 @@ use FinityLabs\FinComponents\Components\ModalTableSelect\ModalTableSelect;
 The simplest upgrade from standard `ModalTableSelect` -- add `tableColumns()` to show selections in a table:
 
 ```php
-use FinityLabs\FinComponents\Components\ModalTableSelect\ModalTableSelect;
+use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 use Filament\Tables\Columns\TextColumn;
 
 ModalTableSelect::make('categories')
@@ -216,7 +216,7 @@ Use the component purely as a picker. No table, infolist, form, or badges are re
 ### Multiple selection with summary
 
 ```php
-use FinityLabs\FinComponents\Components\ModalTableSelect\ModalTableSelect;
+use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 use Filament\Forms\Components\Placeholder;
 
 ModalTableSelect::make('category_ids')
@@ -348,7 +348,7 @@ If you don't configure any display mode, the component behaves exactly like Fila
 The package ships with English translations. Publish and customize them:
 
 ```bash
-php artisan vendor:publish --tag="fin-components-translations"
+php artisan vendor:publish --tag="fin-modal-table-select-translations"
 ```
 
 Translation keys live in `resources/lang/en/modal-table-select.php`:

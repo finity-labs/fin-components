@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace FinityLabs\FinComponents\Tests;
+namespace FinityLabs\FinModalTableSelect\Tests;
 
 use Filament\FilamentServiceProvider;
 use Filament\Forms\FormsServiceProvider;
 use Filament\Support\SupportServiceProvider;
-use FinityLabs\FinComponents\FinComponentsServiceProvider;
+use FinityLabs\FinModalTableSelect\FinModalTableSelectServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Livewire\LivewireServiceProvider;
@@ -42,7 +42,7 @@ class TestCase extends Orchestra
             SupportServiceProvider::class,
             FilamentServiceProvider::class,
             FormsServiceProvider::class,
-            FinComponentsServiceProvider::class,
+            FinModalTableSelectServiceProvider::class,
         ];
     }
 

@@ -1,5 +1,5 @@
 @php
-    use FinityLabs\FinComponents\Components\ModalTableSelect\Enums\DisplayMode;
+    use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
 
     $fieldWrapperView = $getFieldWrapperView();
     $extraAttributes = $getExtraAttributes();
@@ -50,11 +50,11 @@
             @if ($hasValue)
                 <div class="w-full">
                     @if ($displayMode === DisplayMode::Table)
-                        @include('fin-components::components.modal-table-select.partials.selected-table')
+                        @include('fin-modal-table-select::components.modal-table-select.partials.selected-table')
                     @elseif ($displayMode === DisplayMode::Infolist)
-                        @include('fin-components::components.modal-table-select.partials.selected-infolist')
+                        @include('fin-modal-table-select::components.modal-table-select.partials.selected-infolist')
                     @elseif ($displayMode === DisplayMode::Form)
-                        @include('fin-components::components.modal-table-select.partials.selected-form')
+                        @include('fin-modal-table-select::components.modal-table-select.partials.selected-form')
                     @endif
                 </div>
             @else

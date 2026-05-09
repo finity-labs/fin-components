@@ -23,7 +23,7 @@
                         @if (! $isDisabled)
                             <th class="fi-ta-header-cell w-1 px-3 py-3.5 sm:last-of-type:pe-6">
                                 <span class="sr-only">
-                                    {{ __('fin-components::modal-table-select.actions') }}
+                                    {{ __('fin-modal-table-select::modal-table-select.actions') }}
                                 </span>
                             </th>
                         @endif
@@ -66,7 +66,7 @@
                                                 ))
                                             "
                                             class="fi-icon-btn relative flex items-center justify-center rounded-lg outline-none transition duration-75 focus-visible:ring-2 fi-color-gray fi-icon-btn-size-sm -m-1.5 h-8 w-8 text-gray-400 hover:text-gray-500 focus-visible:ring-primary-600 dark:text-gray-500 dark:hover:text-gray-400 dark:focus-visible:ring-primary-500"
-                                            title="{{ __('fin-components::modal-table-select.remove') }}"
+                                            title="{{ __('fin-modal-table-select::modal-table-select.remove') }}"
                                         >
                                             <x-filament::icon
                                                 icon="heroicon-m-x-mark"
@@ -84,7 +84,7 @@
 
         <div class="fi-ta-footer px-3 py-2 sm:px-6">
             <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ trans_choice('fin-components::modal-table-select.count', $records->count(), ['count' => $records->count()]) }}
+                {{ trans_choice('fin-modal-table-select::modal-table-select.count', $records->count(), ['count' => $records->count()]) }}
             </p>
         </div>
     @else

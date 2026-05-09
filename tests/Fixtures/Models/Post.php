@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FinityLabs\FinComponents\Tests\Fixtures\Models;
+namespace FinityLabs\FinModalTableSelect\Tests\Fixtures\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

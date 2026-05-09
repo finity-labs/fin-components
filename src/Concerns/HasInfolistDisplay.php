@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FinityLabs\FinComponents\Components\ModalTableSelect\Concerns;
+namespace FinityLabs\FinModalTableSelect\Concerns;
 
 use Closure;
 use Filament\Schemas\Components\Component as InfolistComponent;

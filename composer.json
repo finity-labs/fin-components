@@ -1,8 +1,8 @@
 {
-    "name": "finity-labs/fin-components",
-    "description": "Components for Filament",
-    "keywords": ["filament", "laravel", "form-components"],
-    "homepage": "https://github.com/finity-labs/fin-components",
+    "name": "finity-labs/fin-modal-table-select",
+    "description": "Enhanced ModalTableSelect for Filament with table, infolist, and form display modes for selected items.",
+    "keywords": ["filament", "laravel", "modal-table-select", "form-component"],
+    "homepage": "https://github.com/finity-labs/fin-modal-table-select",
     "license": "MIT",
     "type": "library",
     "authors": [
@@ -27,12 +27,12 @@
     },
     "autoload": {
         "psr-4": {
-            "FinityLabs\\FinComponents\\": "src/"
+            "FinityLabs\\FinModalTableSelect\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "FinityLabs\\FinComponents\\Tests\\": "tests/"
+            "FinityLabs\\FinModalTableSelect\\Tests\\": "tests/"
         }
     },
     "scripts": {
@@ -44,7 +44,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "FinityLabs\\FinComponents\\FinComponentsServiceProvider"
+                "FinityLabs\\FinModalTableSelect\\FinModalTableSelectServiceProvider"
             ]
         }
     },

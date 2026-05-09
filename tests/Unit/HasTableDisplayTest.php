@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Filament\Tables\Columns\TextColumn;
-use FinityLabs\FinComponents\Components\ModalTableSelect\ModalTableSelect;
+use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 
 it('returns false for hasTableColumns when none configured', function () {
     $field = ModalTableSelect::make('posts');

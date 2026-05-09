@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace FinityLabs\FinComponents\Components\ModalTableSelect\Concerns;
+namespace FinityLabs\FinModalTableSelect\Concerns;
 
 use Closure;
 use Filament\Support\Contracts\HasColor;
@@ -87,7 +87,7 @@ trait HasTableDisplay
     public function getTableEmptyMessage(): string
     {
         return $this->evaluate($this->tableEmptyMessage)
-            ?? __('fin-components::modal-table-select.empty_message');
+            ?? __('fin-modal-table-select::modal-table-select.empty_message');
     }
 
     public function hasTableColumns(): bool
