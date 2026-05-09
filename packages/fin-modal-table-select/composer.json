@@ -1,0 +1,59 @@
+{
+    "name": "finity-labs/fin-modal-table-select",
+    "description": "Enhanced ModalTableSelect for Filament with table, infolist, and form display modes for selected items.",
+    "keywords": ["filament", "laravel", "modal-table-select", "form-component"],
+    "homepage": "https://github.com/finity-labs/fin-modal-table-select",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Finity Labs",
+            "email": "filament.infinity@gmail.com",
+            "role": "Developer",
+            "homepage": "https://github.com/finity-labs"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "filament/filament": "^4.0|^5.0",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "require-dev": {
+        "larastan/larastan": "^2.0|^3.0",
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^9.0|^10.0",
+        "pestphp/pest": "^2.0|^3.0",
+        "pestphp/pest-plugin-laravel": "^2.0|^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "FinityLabs\\FinModalTableSelect\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FinityLabs\\FinModalTableSelect\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "analyse": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "FinityLabs\\FinModalTableSelect\\FinModalTableSelectServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

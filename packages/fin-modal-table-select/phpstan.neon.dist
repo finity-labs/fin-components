@@ -1,0 +1,10 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - src
+    level: 5
+    ignoreErrors:
+        - '#Call to method getRelated\(\) on an unknown class Znck\\Eloquent\\Relations\\BelongsToThrough#'
+        - '#does not accept default value of type string#'
