@@ -1,0 +1,77 @@
+{
+    "name": "finity-labs/fin-mail",
+    "description": "A powerful email template manager and composer for Filament with dynamic token replacement, template versioning, and inline email sending.",
+    "keywords": [
+        "laravel",
+        "filament",
+        "email",
+        "templates",
+        "email-composer",
+        "email-builder"
+    ],
+    "homepage": "https://github.com/finity-labs/fin-mail",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Finity Labs",
+            "email": "filament.infinity@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "type": "library",
+    "require": {
+        "php": "^8.2",
+        "filament/filament": "^4.0|^5.0",
+        "filament/spatie-laravel-settings-plugin": "^3.0|^4.0|^5.0",
+        "illuminate/contracts": "^11.0|^12.0|^13.0",
+        "spatie/laravel-package-tools": "^1.16",
+        "spatie/laravel-settings": "^3.0|^4.0",
+        "spatie/laravel-translatable": "^6.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^2.0|^3.0",
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^2.0|^3.0",
+        "pestphp/pest-plugin-laravel": "^2.0|^3.0"
+    },
+    "suggest": {
+        "awcodes/filament-tiptap-editor": "For a richer email body editor experience",
+        "mohamedsabil83/filament-forms-tinyeditor": "Alternative rich text editor"
+    },
+    "autoload": {
+        "psr-4": {
+            "FinityLabs\\FinMail\\": "src/",
+            "FinityLabs\\FinMail\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FinityLabs\\FinMail\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "analyse": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "FinityLabs\\FinMail\\FinMailServiceProvider"
+            ],
+            "aliases": {
+                "FinMail": "FinityLabs\\FinMail\\Facades\\FinMail"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

@@ -1,0 +1,29 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - src
+        - config
+        - database
+    level: 5
+    ignoreErrors:
+        - '#Unsafe usage of new static#'
+
+        # Package views are registered at runtime — PHPStan can't validate view-string
+        - '#Parameter \#1 \$view .* expects view-string\|null, string given#'
+
+        # EditorContract returns base Component; actual editors have required()/label() via form traits
+        - '#Call to an undefined method Filament\\Schemas\\Components\\Component::(required|label)\(\)#'
+
+        # switchLocale() is defined on the page class, not on base Livewire\Component
+        - '#Call to an undefined method Livewire\\Component::switchLocale\(\)#'
+
+        # Package can't know the host app's User model properties
+        - '#Access to an undefined property Illuminate\\Foundation\\Auth\\User::\$email#'
+
+        # Public API trait for consumers — unused within the package itself
+        - '#Trait FinityLabs\\FinMail\\Traits\\HasEmailTemplates is used zero times#'
+
+        # Shield facade is only called after class_exists guard
+        - '#BezhanSalleh\\FilamentShield\\#'
