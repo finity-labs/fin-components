@@ -1,0 +1,32 @@
+/vendor/
+/node_modules/
+composer.lock
+
+# Per-package vendor and lockfiles
+packages/*/vendor/
+packages/*/composer.lock
+
+# Test caches
+.phpunit.result.cache
+.phpunit.cache
+.phpunit.xml
+packages/*/.phpunit.cache
+packages/*/.phpunit.result.cache
+
+# Tooling
+.php-cs-fixer.cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Private workspace (symlinked from fin-components-notes)
+.claude/
+.planning/
+packages/*/.claude/
+packages/*/.planning/
