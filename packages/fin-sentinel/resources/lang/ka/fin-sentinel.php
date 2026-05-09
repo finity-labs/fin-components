@@ -1,0 +1,210 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+
+    'navigation' => [
+        'settings' => 'პარამეტრები',
+        'error_channel' => 'შეცდომების არხი',
+        'error_channel_title' => 'შეცდომების არხის პარამეტრები',
+        'debug_channel' => 'გამართვის არხი',
+        'debug_channel_title' => 'გამართვის არხის პარამეტრები',
+        'system_logs' => 'სისტემის ჟურნალები',
+        'log_files' => 'ჟურნალის ფაილები',
+        'log_entries' => 'ჟურნალის ჩანაწერები',
+    ],
+
+    'enums' => [
+        'navigation_group' => [
+            'sentinel' => 'Sentinel',
+        ],
+        'log_level' => [
+            'EMERGENCY' => 'საგანგებო',
+            'ALERT' => 'განგაში',
+            'CRITICAL' => 'კრიტიკული',
+            'ERROR' => 'შეცდომა',
+            'WARNING' => 'გაფრთხილება',
+            'NOTICE' => 'შეტყობინება',
+            'INFO' => 'ინფორმაცია',
+            'DEBUG' => 'Debug',
+        ],
+    ],
+
+    'email' => [
+        'header' => [
+            'error' => 'შეცდომის შეტყობინება',
+            'debug' => 'Debug',
+            'log_file' => 'ჟურნალის ფაილი',
+        ],
+        'footer' => 'გაგზავნილია Fin-Sentinel-ის მიერ',
+
+        'label' => [
+            'error_message' => 'შეცდომის შეტყობინება',
+            'class' => 'კლასი',
+            'file' => 'ფაილი',
+            'context' => 'კონტექსტი',
+            'command' => 'ბრძანება',
+            'url' => 'URL',
+            'method' => 'მეთოდი',
+            'ip' => 'IP',
+            'params' => 'პარამეტრები',
+            'headers' => 'სათაურები',
+            'name' => 'სახელი',
+            'email' => 'Email',
+            'id' => 'ID',
+            'user' => 'მომხმარებელი',
+            'environment' => 'გარემო',
+            'debug_mode' => 'Debug რეჟიმი',
+            'php_version' => 'PHP ვერსია',
+            'laravel_version' => 'Laravel ვერსია',
+            'laravel' => 'Laravel',
+            'peak_memory' => 'მაქსიმალური მეხსიერება',
+            'enabled' => 'ჩართული',
+            'disabled' => 'გამორთული',
+            'relation' => 'კავშირი: :name',
+            'bindings' => 'მიბმები:',
+            'trace_number' => '#',
+            'trace_location' => 'მდებარეობა',
+            'trace_call' => 'გამოძახება',
+        ],
+
+        'collection' => [
+            'count' => ':count ელემენტი|:count ელემენტი',
+            'more' => '... და კიდევ :count ელემენტი',
+        ],
+
+        'error' => [
+            'subject' => ':app — მოხდა შეცდომა',
+            'guest' => 'სტუმარი',
+            'console' => 'კონსოლი',
+            'section_exception' => 'გამონაკლისის დეტალები',
+            'section_trace' => 'გამოძახებების სტეკი',
+            'section_request' => 'მოთხოვნის კონტექსტი',
+            'section_user' => 'ავტორიზებული მომხმარებელი',
+            'section_environment' => 'გარემო',
+        ],
+
+        'debug' => [
+            'subject' => ':app — Debug: :subject',
+            'guest' => 'სტუმარი',
+            'console' => 'კონსოლი',
+            'section_data' => 'Debug მონაცემები',
+            'section_call_site' => 'გამოძახების ადგილი',
+            'section_request' => 'მოთხოვნის კონტექსტი',
+            'section_environment' => 'გარემო',
+        ],
+
+        'log_file' => [
+            'subject' => ':app — ჟურნალის ფაილი: :file',
+            'bulk_subject' => ':app — :count ჟურნალის ფაილი თანდართული',
+            'body' => 'ჟურნალის ფაილი <strong>:file</strong> :app-დან თანდართულია.',
+            'body_text' => 'ჟურნალის ფაილი :file :app-დან თანდართულია.',
+        ],
+    ],
+
+    'settings' => [
+        'recipients' => 'მიმღებები',
+        'throttling' => 'სიხშირის შეზღუდვა',
+        'email_address' => 'Email მისამართი',
+        'add_recipient' => 'მიმღების დამატება',
+        'no_recipients_warning' => 'მიმღებები არ არის კონფიგურირებული — შეტყობინებები არ გაიგზავნება სანამ მინიმუმ ერთი email მისამართი არ დაემატება.',
+        'throttle_rate' => 'შეზღუდვის სიხშირე',
+        'minutes_suffix' => 'წუთი',
+
+        'error' => [
+            'enabled' => 'შეცდომების შეტყობინებების ჩართვა',
+            'enabled_helper' => 'როცა გამორთულია, შეცდომების email-ები არ გაიგზავნება.',
+            'recipients_helper' => 'დაამატეთ email მისამართები, რომლებიც მიიღებენ შეცდომების შეტყობინებებს.',
+            'throttle_helper' => 'მინიმალური ინტერვალი წუთებში განმეორებით შეცდომების email-ებს შორის.',
+            'throttle_exceptions' => 'გამონაკლისების შეზღუდვა',
+            'throttle_exceptions_helper' => 'როცა ჩართულია, განმეორებითი გამონაკლისები იმავე ფაილში:ხაზზე არ გამოიწვევს email-ების გაგზავნას შეზღუდვის ფანჯრის განმავლობაში.',
+            'throttle_log_messages' => 'ჟურნალის შეტყობინებების შეზღუდვა',
+            'throttle_log_messages_helper' => 'როცა ჩართულია, იდენტური შეცდომის შეტყობინებები ჟურნალებში არ გამოიწვევს email-ების გაგზავნას შეზღუდვის ფანჯრის განმავლობაში.',
+            'ignored_exceptions' => 'იგნორირებული გამონაკლისები',
+            'ignored_exceptions_description' => 'ამ სიაში მყოფი გამონაკლისები არ გამოიწვევს email შეტყობინებების გაგზავნას.',
+            'ignored_exceptions_label' => 'იგნორირებული გამონაკლისები',
+            'other_custom' => 'სხვა (მორგებული)',
+            'exception_class' => 'გამონაკლისის კლასი (FQCN)',
+            'class_not_exist' => 'ეს კლასი არ არსებობს.',
+            'custom_exception' => 'მორგებული გამონაკლისი',
+            'select_exception' => 'აირჩიეთ გამონაკლისი',
+            'add_exception' => 'გამონაკლისის დამატება',
+        ],
+
+        'debug' => [
+            'enabled' => 'გამართვის არხის ჩართვა',
+            'enabled_helper' => 'როცა გამორთულია, Sentinel::debug() გამოძახებები იგნორირებული იქნება.',
+            'recipients_helper' => 'დაამატეთ email მისამართები, რომლებიც მიიღებენ გამართვის შეტყობინებებს.',
+            'throttle_enabled' => 'სიხშირის შეზღუდვის ჩართვა',
+            'throttle_enabled_helper' => 'როცა გამორთულია, ყოველი debug გამოძახება აგზავნის email-ს. როცა ჩართულია, განმეორებითი გამოძახებები შეზღუდულია.',
+            'throttle_helper' => 'მინიმალური ინტერვალი წუთებში განმეორებით debug email-ებს შორის.',
+        ],
+
+        'test_email' => [
+            'send' => 'სატესტო email-ის გაგზავნა',
+            'sent' => 'სატესტო email გაგზავნილია :count მიმღებისთვის',
+            'no_recipients' => 'მიმღებები არ არის კონფიგურირებული. ჯერ დაამატეთ მინიმუმ ერთი email მისამართი.',
+            'failed' => 'სატესტო email-ის გაგზავნა ვერ მოხერხდა',
+            'channel_disabled' => 'ეს არხი ამჟამად გამორთულია. სატესტო email მაინც გაიგზავნება.',
+        ],
+    ],
+
+    'logs' => [
+        'title' => 'სისტემის ჟურნალები',
+        'heading' => 'ჟურნალის ფაილები',
+        'entries_title' => 'ჟურნალის ჩანაწერები',
+        'back_to_list' => 'უკან ჟურნალის ფაილებზე',
+        'no_entries' => 'ჟურნალის ჩანაწერები ვერ მოიძებნა',
+        'unsupported_format' => 'ეს ფაილი არ იყენებს Laravel-ის სტანდარტულ ჟურნალის ფორმატს',
+        'search_placeholder' => 'ჟურნალის ჩანაწერების ძიება...',
+        'level_filter' => 'ჟურნალის დონე',
+        'email_recipient' => 'მიმღების email',
+        'email_description' => 'ამ ჟურნალის ფაილის გაგზავნა დანართის სახით მითითებულ მისამართზე.',
+        'bulk_email_description' => 'არჩეული ჟურნალის ფაილების გაგზავნა ცალკეული დანართების სახით მითითებულ მისამართზე.',
+        'bulk_email_files' => 'არჩეული ფაილები',
+
+        'filter' => [
+            'date_from' => 'დან',
+            'date_to' => 'მდე',
+        ],
+
+        'column' => [
+            'filename' => 'ფაილის სახელი',
+            'size' => 'ზომა',
+            'modified' => 'ბოლო ცვლილება',
+            'subfolder' => 'ქვესაქაღალდე',
+            'level' => 'დონე',
+            'timestamp' => 'დრო',
+            'message' => 'შეტყობინება',
+        ],
+
+        'action' => [
+            'refresh' => 'განახლება',
+            'view' => 'ნახვა',
+            'delete' => 'წაშლა',
+            'download' => 'ჩამოტვირთვა',
+            'email' => 'გაგზავნა',
+            'email_send' => 'გაგზავნა',
+            'email_sent' => 'ჟურნალის ფაილი წარმატებით გაიგზავნა',
+            'bulk_email_sent' => ':count ჟურნალის ფაილი წარმატებით გაიგზავნა',
+            'deleted' => 'ჟურნალის ფაილი წაიშალა',
+            'bulk_deleted' => ':count ჟურნალის ფაილი წაიშალა',
+        ],
+
+        'confirm' => [
+            'delete' => 'დარწმუნებული ხართ, რომ გსურთ ამ ჟურნალის ფაილის წაშლა? ეს მოქმედება შეუქცევადია.',
+            'bulk_delete' => 'დარწმუნებული ხართ, რომ გსურთ არჩეული ჟურნალის ფაილების წაშლა? ეს მოქმედება შეუქცევადია.',
+        ],
+
+        'entry' => [
+            'detail' => 'ჩანაწერის დეტალები',
+            'line' => 'ხაზი',
+            'trace_frames' => ':count ფრეიმი|:count ფრეიმი',
+            'copy_trace' => 'გამოძახებების სტეკის კოპირება',
+            'copy_entry' => 'სრული ჩანაწერის კოპირება',
+            'copied' => 'დაკოპირებულია!',
+        ],
+    ],
+
+];

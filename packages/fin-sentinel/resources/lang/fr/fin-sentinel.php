@@ -1,0 +1,210 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+
+    'navigation' => [
+        'settings' => 'Paramètres',
+        'error_channel' => 'Canal d\'erreurs',
+        'error_channel_title' => 'Paramètres du canal d\'erreurs',
+        'debug_channel' => 'Canal Debug',
+        'debug_channel_title' => 'Paramètres du canal Debug',
+        'system_logs' => 'Journaux système',
+        'log_files' => 'Fichiers journaux',
+        'log_entries' => 'Entrées de journal',
+    ],
+
+    'enums' => [
+        'navigation_group' => [
+            'sentinel' => 'Sentinel',
+        ],
+        'log_level' => [
+            'EMERGENCY' => 'Urgence',
+            'ALERT' => 'Alerte',
+            'CRITICAL' => 'Critique',
+            'ERROR' => 'Erreur',
+            'WARNING' => 'Avertissement',
+            'NOTICE' => 'Notification',
+            'INFO' => 'Info',
+            'DEBUG' => 'Debug',
+        ],
+    ],
+
+    'email' => [
+        'header' => [
+            'error' => 'Notification d\'erreur',
+            'debug' => 'Debug',
+            'log_file' => 'Fichier journal',
+        ],
+        'footer' => 'Envoyé par Fin-Sentinel',
+
+        'label' => [
+            'error_message' => 'Message d\'erreur',
+            'class' => 'Classe',
+            'file' => 'Fichier',
+            'context' => 'Contexte',
+            'command' => 'Commande',
+            'url' => 'URL',
+            'method' => 'Méthode',
+            'ip' => 'IP',
+            'params' => 'Paramètres',
+            'headers' => 'En-têtes',
+            'name' => 'Nom',
+            'email' => 'E-mail',
+            'id' => 'ID',
+            'user' => 'Utilisateur',
+            'environment' => 'Environnement',
+            'debug_mode' => 'Mode Debug',
+            'php_version' => 'Version PHP',
+            'laravel_version' => 'Version Laravel',
+            'laravel' => 'Laravel',
+            'peak_memory' => 'Mémoire maximale',
+            'enabled' => 'Activé',
+            'disabled' => 'Désactivé',
+            'relation' => 'Relation : :name',
+            'bindings' => 'Liaisons :',
+            'trace_number' => '#',
+            'trace_location' => 'Emplacement',
+            'trace_call' => 'Appel',
+        ],
+
+        'collection' => [
+            'count' => ':count élément|:count éléments',
+            'more' => '... et :count éléments supplémentaires',
+        ],
+
+        'error' => [
+            'subject' => ':app - Une erreur est survenue',
+            'guest' => 'Invité',
+            'console' => 'Console',
+            'section_exception' => 'Détails de l\'exception',
+            'section_trace' => 'Stack Trace',
+            'section_request' => 'Contexte de la requête',
+            'section_user' => 'Utilisateur authentifié',
+            'section_environment' => 'Environnement',
+        ],
+
+        'debug' => [
+            'subject' => ':app - Debug : :subject',
+            'guest' => 'Invité',
+            'console' => 'Console',
+            'section_data' => 'Données Debug',
+            'section_call_site' => 'Site d\'appel',
+            'section_request' => 'Contexte de la requête',
+            'section_environment' => 'Environnement',
+        ],
+
+        'log_file' => [
+            'subject' => ':app - Fichier journal : :file',
+            'bulk_subject' => ':app - :count fichiers journaux joints',
+            'body' => 'Le fichier journal <strong>:file</strong> de :app est en pièce jointe.',
+            'body_text' => 'Le fichier journal :file de :app est en pièce jointe.',
+        ],
+    ],
+
+    'settings' => [
+        'recipients' => 'Destinataires',
+        'throttling' => 'Limitation',
+        'email_address' => 'Adresse e-mail',
+        'add_recipient' => 'Ajouter un destinataire',
+        'no_recipients_warning' => 'Aucun destinataire configuré — les notifications ne seront pas envoyées tant qu\'au moins une adresse e-mail n\'aura pas été ajoutée.',
+        'throttle_rate' => 'Taux de limitation',
+        'minutes_suffix' => 'minutes',
+
+        'error' => [
+            'enabled' => 'Activer les notifications d\'erreur',
+            'enabled_helper' => 'Lorsque désactivé, aucun e-mail d\'erreur ne sera envoyé.',
+            'recipients_helper' => 'Ajoutez les adresses e-mail qui recevront les notifications d\'erreur.',
+            'throttle_helper' => 'Minutes minimum entre les e-mails d\'erreur en double.',
+            'throttle_exceptions' => 'Limiter les exceptions',
+            'throttle_exceptions_helper' => 'Lorsque activé, les exceptions en double au même fichier:ligne ne déclencheront pas d\'e-mails dans la fenêtre de limitation.',
+            'throttle_log_messages' => 'Limiter les messages de journal',
+            'throttle_log_messages_helper' => 'Lorsque activé, les messages d\'erreur identiques ne déclencheront pas d\'e-mails dans la fenêtre de limitation.',
+            'ignored_exceptions' => 'Exceptions ignorées',
+            'ignored_exceptions_description' => 'Les exceptions de cette liste ne déclencheront pas de notifications par e-mail.',
+            'ignored_exceptions_label' => 'Exceptions ignorées',
+            'other_custom' => 'Autre (personnalisé)',
+            'exception_class' => 'Classe d\'exception (FQCN)',
+            'class_not_exist' => 'Cette classe n\'existe pas.',
+            'custom_exception' => 'Exception personnalisée',
+            'select_exception' => 'Sélectionner une exception',
+            'add_exception' => 'Ajouter une exception',
+        ],
+
+        'debug' => [
+            'enabled' => 'Activer le canal Debug',
+            'enabled_helper' => 'Lorsque désactivé, les appels à Sentinel::debug() seront silencieusement ignorés.',
+            'recipients_helper' => 'Ajoutez les adresses e-mail qui recevront les notifications Debug.',
+            'throttle_enabled' => 'Activer la limitation',
+            'throttle_enabled_helper' => 'Lorsque désactivé, chaque appel Debug envoie un e-mail. Lorsque activé, les appels en double sont limités.',
+            'throttle_helper' => 'Minutes minimum entre les e-mails Debug en double.',
+        ],
+
+        'test_email' => [
+            'send' => 'Envoyer un e-mail de test',
+            'sent' => 'E-mail de test envoyé à :count destinataire(s)',
+            'no_recipients' => 'Aucun destinataire configuré. Ajoutez d\'abord au moins une adresse e-mail.',
+            'failed' => 'Échec de l\'envoi de l\'e-mail de test',
+            'channel_disabled' => 'Ce canal est actuellement désactivé. L\'e-mail de test sera quand même envoyé.',
+        ],
+    ],
+
+    'logs' => [
+        'title' => 'Journaux système',
+        'heading' => 'Fichiers journaux',
+        'entries_title' => 'Entrées de journal',
+        'back_to_list' => 'Retour aux fichiers journaux',
+        'no_entries' => 'Aucune entrée de journal trouvée',
+        'unsupported_format' => 'Ce fichier ne semble pas utiliser le format de journal standard de Laravel',
+        'search_placeholder' => 'Rechercher dans les entrées...',
+        'level_filter' => 'Niveau de journal',
+        'email_recipient' => 'E-mail du destinataire',
+        'email_description' => 'Envoyer ce fichier journal en pièce jointe au destinataire spécifié.',
+        'bulk_email_description' => 'Envoyer les fichiers journaux sélectionnés en pièces jointes individuelles au destinataire spécifié.',
+        'bulk_email_files' => 'Fichiers sélectionnés',
+
+        'filter' => [
+            'date_from' => 'Du',
+            'date_to' => 'Au',
+        ],
+
+        'column' => [
+            'filename' => 'Nom de fichier',
+            'size' => 'Taille',
+            'modified' => 'Dernière modification',
+            'subfolder' => 'Sous-dossier',
+            'level' => 'Niveau',
+            'timestamp' => 'Horodatage',
+            'message' => 'Message',
+        ],
+
+        'action' => [
+            'refresh' => 'Actualiser',
+            'view' => 'Afficher',
+            'delete' => 'Supprimer',
+            'download' => 'Télécharger',
+            'email' => 'Envoyer par e-mail à',
+            'email_send' => 'Envoyer',
+            'email_sent' => 'Fichier journal envoyé par e-mail avec succès',
+            'bulk_email_sent' => ':count fichier(s) journal envoyé(s) par e-mail avec succès',
+            'deleted' => 'Fichier journal supprimé',
+            'bulk_deleted' => ':count fichier(s) journal supprimé(s)',
+        ],
+
+        'confirm' => [
+            'delete' => 'Êtes-vous sûr de vouloir supprimer ce fichier journal ? Cette action est irréversible.',
+            'bulk_delete' => 'Êtes-vous sûr de vouloir supprimer les fichiers journaux sélectionnés ? Cette action est irréversible.',
+        ],
+
+        'entry' => [
+            'detail' => 'Détail de l\'entrée',
+            'line' => 'Ligne',
+            'trace_frames' => ':count frame|:count frames',
+            'copy_trace' => 'Copier le Stack Trace',
+            'copy_entry' => 'Copier l\'entrée complète',
+            'copied' => 'Copié !',
+        ],
+    ],
+
+];
