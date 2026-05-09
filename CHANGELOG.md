@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-05-09
+
+### Fixed
+
+- `MissingSettings` exception during artisan boot when scheduled cleanup is registered before the `fin-mail-logging` settings have been migrated. The catch around `app(LoggingSettings::class)` didn't cover the lazy property access that actually triggers the load, so the exception escaped and broke `package:discover` and `fin-mail:install` in some setups (#13, thanks @devrizzz)
+
+### Notes
+
+- `spatie/laravel-settings` is now mentioned explicitly in the README as an auto-installed dependency
+
 ## [1.7.0] - 2026-05-05
 
 ### Added
