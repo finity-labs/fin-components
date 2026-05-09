@@ -1,33 +1,29 @@
-name: Split packages
+name: Split fin-modal-table-select
 
 on:
   push:
     tags:
-      - '*'
+      - 'fin-modal-table-select/v*'
 
 jobs:
   split:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        package:
-          - fin-avatar
-          - fin-mail
-          - fin-modal-table-select
-          - fin-sentinel
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Split ${{ matrix.package }} to mirror
+      - name: Extract bare version
+        id: version
+        run: echo "value=${GITHUB_REF#refs/tags/fin-modal-table-select/}" >> "$GITHUB_OUTPUT"
+
+      - name: Split to mirror
         uses: symplify/monorepo-split-github-action@v2.3.0
         with:
-          tag: ${{ github.ref_name }}
-          package_directory: packages/${{ matrix.package }}
+          tag: ${{ steps.version.outputs.value }}
+          package_directory: packages/fin-modal-table-select
           repository_organization: finity-labs
-          repository_name: ${{ matrix.package }}
+          repository_name: fin-modal-table-select
           user_name: "Finity Labs"
           user_email: "filament.infinity@gmail.com"
         env:

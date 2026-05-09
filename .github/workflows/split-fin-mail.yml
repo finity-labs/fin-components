@@ -1,0 +1,31 @@
+name: Split fin-mail
+
+on:
+  push:
+    tags:
+      - 'fin-mail/v*'
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract bare version
+        id: version
+        run: echo "value=${GITHUB_REF#refs/tags/fin-mail/}" >> "$GITHUB_OUTPUT"
+
+      - name: Split to mirror
+        uses: symplify/monorepo-split-github-action@v2.3.0
+        with:
+          tag: ${{ steps.version.outputs.value }}
+          package_directory: packages/fin-mail
+          repository_organization: finity-labs
+          repository_name: fin-mail
+          user_name: "Finity Labs"
+          user_email: "filament.infinity@gmail.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
