@@ -1,0 +1,35 @@
+name: Split packages
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - fin-avatar
+          - fin-mail
+          - fin-modal-table-select
+          - fin-sentinel
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Split ${{ matrix.package }} to mirror
+        uses: symplify/monorepo-split-github-action@v2.3.0
+        with:
+          tag: ${{ github.ref_name }}
+          package_directory: packages/${{ matrix.package }}
+          repository_organization: finity-labs
+          repository_name: ${{ matrix.package }}
+          user_name: "Finity Labs"
+          user_email: "filament.infinity@gmail.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
