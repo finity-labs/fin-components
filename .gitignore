@@ -26,7 +26,7 @@ Thumbs.db
 *.swp
 
 # Private workspace (symlinked from fin-components-notes)
-.claude/
-.planning/
-packages/*/.claude/
-packages/*/.planning/
+.claude
+.planning
+packages/*/.claude
+packages/*/.planning
