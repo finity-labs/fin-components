@@ -1,0 +1,31 @@
+name: Code Style
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  style:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: Install dependencies
+        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      # Runs Pint (Style)
+      - name: Check Code Style
+        run: composer test:style
+
+      # Runs PHPStan (Static Analysis) - I included this here as it's usually fast like style checks
+      - name: Static Analysis
+        run: composer analyse

@@ -1,0 +1,57 @@
+{
+    "name": "finity-labs/fin-avatar",
+    "description": "Privacy-focused SVG avatar generator for Filament.",
+    "keywords": ["laravel", "filament", "avatar", "svg", "privacy"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Finity Labs",
+            "email": "filament.infinity@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "filament/filament": "^4.0 | ^5.0",
+        "spatie/laravel-package-tools": "^1.9"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.27",
+        "phpstan/phpstan": "^2.1",
+        "larastan/larastan": "^3.9",
+        "pestphp/pest": "^3.8",
+        "pestphp/pest-plugin-laravel": "^3.2",
+        "orchestra/testbench": "^10.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "FinityLabs\\FinAvatar\\": "src/",
+            "FinityLabs\\FinAvatar\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "FinityLabs\\FinAvatar\\FinAvatarServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "format": "vendor/bin/pint -v",
+        "test:style": "vendor/bin/pint --test -v",
+        "analyse": "vendor/bin/phpstan analyse",
+        "test": "vendor/bin/pest",
+        "check-all": [
+            "@test:style",
+            "@analyse",
+            "@test"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

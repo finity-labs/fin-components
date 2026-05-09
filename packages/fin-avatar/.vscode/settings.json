@@ -1,0 +1,6 @@
+{
+    // Ensure VS Code doesn't force something else
+    "files.eol": "\n",
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true
+}
