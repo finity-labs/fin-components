@@ -280,7 +280,15 @@ MIT
 
 ## Screenshots
 
-<img width="1198" height="635" alt="finity-labs-fin-sentinel-ai" src="https://github.com/user-attachments/assets/a04704f8-2b26-43ba-b939-039a92cce338" />
+<details>
+<summary><b>🤖 AI Error Analysis</b></summary>
+<br>
+
+**AI Settings**
+Pick a provider, store an encrypted API key, and tune the prompt template, hourly cap, and cache TTL.
+![ai-settings](https://github.com/user-attachments/assets/a04704f8-2b26-43ba-b939-039a92cce338)
+
+</details>
 
 <details>
 <summary><b>🔍 Log Browser & Viewer</b></summary>
