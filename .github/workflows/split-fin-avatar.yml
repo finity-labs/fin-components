@@ -18,7 +18,7 @@ jobs:
         run: echo "value=${GITHUB_REF#refs/tags/fin-avatar/}" >> "$GITHUB_OUTPUT"
 
       - name: Split to mirror
-        uses: symplify/monorepo-split-github-action@v2.3.0
+        uses: symplify/monorepo-split-github-action@v2.4.4
         with:
           tag: ${{ steps.version.outputs.value }}
           package_directory: packages/fin-avatar
