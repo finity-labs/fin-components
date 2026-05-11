@@ -45,6 +45,10 @@ function bindMockedInstallCommand(bool $composerSucceeds): void
 }
 
 it('shows the toggle prompt on bare install and respects no answer', function () {
+    if (PHP_VERSION_ID < 80300) {
+        $this->markTestSkipped('AI toggle prompt is hidden on PHP < 8.3.');
+    }
+
     $this->artisan('fin-sentinel:install')
         ->expectsConfirmation('Publish configuration file?', 'no')
         ->expectsConfirmation('Run migrations now?', 'no')
@@ -66,6 +70,10 @@ it('warns and skips AI install when PHP version is below 8.3', function () {
 });
 
 it('with --ai flag and SDK absent, runs composer require and instructs re-run', function () {
+    if (PHP_VERSION_ID < 80300) {
+        $this->markTestSkipped('AI install flow requires PHP 8.3+.');
+    }
+
     if (InstalledVersions::isInstalled('laravel/ai')) {
         $this->markTestSkipped('Test requires laravel/ai to be ABSENT (without-SDK CI row).');
     }
@@ -83,6 +91,10 @@ it('with --ai flag and SDK absent, runs composer require and instructs re-run', 
 });
 
 it('reports composer require failure and exits cleanly', function () {
+    if (PHP_VERSION_ID < 80300) {
+        $this->markTestSkipped('AI install flow requires PHP 8.3+.');
+    }
+
     if (InstalledVersions::isInstalled('laravel/ai')) {
         $this->markTestSkipped('Test requires laravel/ai to be ABSENT (without-SDK CI row).');
     }
