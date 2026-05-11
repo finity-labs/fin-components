@@ -41,7 +41,10 @@ jobs:
 
       - name: Constrain Laravel + Filament versions
         run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "filament/filament:${{ matrix.filament }}" --no-interaction --no-update
+          composer require "illuminate/contracts:${{ matrix.laravel }}" "filament/filament:${{ matrix.filament }}" --no-interaction --no-update
+          if [ "${{ matrix.laravel }}" = "^13.0" ]; then
+            composer remove pestphp/pest-plugin-laravel --dev --no-interaction --no-update
+          fi
           composer update --no-interaction --prefer-dist
 
       - name: Install laravel/ai
