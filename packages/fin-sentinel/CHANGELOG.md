@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-05-11
+
+### Fixed
+
+- **Mirror Tests workflow** -- `step-security/harden-runner@v2`'s pre-step engaged on every matrix row regardless of the step's `if:` gate, which blocked `setup-php`'s composer download and failed all five jobs. Split the workflow into two jobs: a `tests` matrix with no network restrictions, and a dedicated `tests-network-blocked` job that uses plain `iptables` to block outbound traffic *after* composer install but before `pest` runs.
+
 ## [1.1.0] - 2026-05-10
 
 ### Added
