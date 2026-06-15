@@ -25,6 +25,12 @@ trait HasTableDisplay
 
     protected ?Closure $tableModifyQueryUsing = null;
 
+    protected bool|Closure $hasTableFooterCount = false;
+
+    protected bool|Closure $isTableCollapsible = false;
+
+    protected bool|Closure $isTableCollapsed = false;
+
     /**
      * Define the header columns for the selected items table.
      *
@@ -86,6 +92,39 @@ trait HasTableDisplay
         return $this;
     }
 
+    /**
+     * Show a footer beneath the table displaying the selected row count.
+     */
+    public function tableFooterCount(bool|Closure $condition = true): static
+    {
+        $this->hasTableFooterCount = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Render the selected items table inside a collapsible region with a
+     * show/hide toggle. The row count stays visible in the toggle header even
+     * while the table is collapsed.
+     */
+    public function tableCollapsible(bool|Closure $condition = true): static
+    {
+        $this->isTableCollapsible = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Start the collapsible table in its collapsed (hidden) state. Has no
+     * effect unless tableCollapsible() is enabled.
+     */
+    public function tableCollapsed(bool|Closure $condition = true): static
+    {
+        $this->isTableCollapsed = $condition;
+
+        return $this;
+    }
+
     /** @return array<TableColumn> */
     public function getTableColumns(): array
     {
@@ -102,6 +141,21 @@ trait HasTableDisplay
     {
         return $this->evaluate($this->tableEmptyMessage)
             ?? __('fin-modal-table-select::modal-table-select.empty_message');
+    }
+
+    public function getHasTableFooterCount(): bool
+    {
+        return (bool) $this->evaluate($this->hasTableFooterCount);
+    }
+
+    public function getIsTableCollapsible(): bool
+    {
+        return (bool) $this->evaluate($this->isTableCollapsible);
+    }
+
+    public function getIsTableCollapsed(): bool
+    {
+        return (bool) $this->evaluate($this->isTableCollapsed);
     }
 
     public function hasTableColumns(): bool

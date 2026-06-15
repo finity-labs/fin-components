@@ -7,4 +7,5 @@ return [
     'count' => ':count item selected|:count items selected',
     'remove' => 'Remove',
     'actions' => 'Actions',
+    'toggle' => 'Show or hide',
 ];

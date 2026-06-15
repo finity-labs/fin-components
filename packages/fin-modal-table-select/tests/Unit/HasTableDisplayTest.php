@@ -77,3 +77,56 @@ it('evaluates Closure for tableEmptyMessage', function () {
 
     expect($field->getTableEmptyMessage())->toBe('Custom empty');
 });
+
+it('defaults getHasTableFooterCount to false', function () {
+    expect(ModalTableSelect::make('posts')->getHasTableFooterCount())->toBeFalse();
+});
+
+it('returns true for getHasTableFooterCount after tableFooterCount', function () {
+    expect(ModalTableSelect::make('posts')->tableFooterCount()->getHasTableFooterCount())->toBeTrue();
+});
+
+it('evaluates a Closure for tableFooterCount', function () {
+    $field = ModalTableSelect::make('posts')->tableFooterCount(fn () => true);
+
+    expect($field->getHasTableFooterCount())->toBeTrue();
+});
+
+it('defaults getIsTableCollapsible to false', function () {
+    expect(ModalTableSelect::make('posts')->getIsTableCollapsible())->toBeFalse();
+});
+
+it('returns true for getIsTableCollapsible after tableCollapsible', function () {
+    expect(ModalTableSelect::make('posts')->tableCollapsible()->getIsTableCollapsible())->toBeTrue();
+});
+
+it('evaluates a Closure for tableCollapsible', function () {
+    $field = ModalTableSelect::make('posts')->tableCollapsible(fn () => true);
+
+    expect($field->getIsTableCollapsible())->toBeTrue();
+});
+
+it('defaults getIsTableCollapsed to false', function () {
+    expect(ModalTableSelect::make('posts')->getIsTableCollapsed())->toBeFalse();
+});
+
+it('returns true for getIsTableCollapsed after tableCollapsed', function () {
+    expect(ModalTableSelect::make('posts')->tableCollapsed()->getIsTableCollapsed())->toBeTrue();
+});
+
+it('evaluates a Closure for tableCollapsed', function () {
+    $field = ModalTableSelect::make('posts')->tableCollapsed(fn () => true);
+
+    expect($field->getIsTableCollapsed())->toBeTrue();
+});
+
+it('builds a client-side toggleTable hint action', function () {
+    $action = ModalTableSelect::make('posts')->getCollapseToggleAction();
+
+    expect($action->getName())->toBe('toggleTable')
+        ->and($action->getAlpineClickHandler())->toBe('open = ! open');
+});
+
+it('does not show the collapse toggle unless the table is collapsible', function () {
+    expect(ModalTableSelect::make('posts')->shouldShowCollapseToggle())->toBeFalse();
+});

@@ -31,8 +31,22 @@ class ModalTableSelect extends FilamentModalTableSelect
         });
 
         $this->registerActions([
+            fn (): \Filament\Actions\Action => $this->getCollapseToggleAction(),
             fn (): \Filament\Actions\Action => $this->getSelectAction(),
         ]);
+
+        // Share an Alpine `open` flag across the whole field (label hint actions
+        // and content) so the chevron hint action can show/hide the collapsible
+        // table without a Livewire round-trip.
+        $this->extraFieldWrapperAttributes(function (): array {
+            if (! $this->getIsTableCollapsible() || $this->getDisplayMode() !== DisplayMode::Table) {
+                return [];
+            }
+
+            return [
+                'x-data' => '{ open: '.($this->getIsTableCollapsed() ? 'false' : 'true').' }',
+            ];
+        });
     }
 
     /**
@@ -50,7 +64,48 @@ class ModalTableSelect extends FilamentModalTableSelect
             }
         }
 
+        // Place the collapse chevron immediately before the select action.
+        if ($this->shouldShowCollapseToggle()) {
+            $toggleAction = $this->getAction('toggleTable');
+
+            if ($toggleAction) {
+                array_unshift($actions, $toggleAction);
+            }
+        }
+
         return $actions;
+    }
+
+    /**
+     * A client-side-only hint action that shows/hides the collapsible table.
+     * It flips the Alpine `open` flag set on the field wrapper, so there is no
+     * Livewire round-trip and the chevron rotates in step with the table.
+     */
+    public function getCollapseToggleAction(): \Filament\Actions\Action
+    {
+        return \Filament\Actions\Action::make('toggleTable')
+            ->label(__('fin-modal-table-select::modal-table-select.toggle'))
+            ->icon('heroicon-m-chevron-down')
+            ->iconButton()
+            ->color('gray')
+            ->alpineClickHandler('open = ! open')
+            ->extraAttributes([
+                // Drive the rotation inline so it does not depend on a
+                // `rotate-180` utility being present in the consumer's build.
+                'style' => 'transition: transform 200ms ease;',
+                'x-bind:style' => "open ? 'transform: rotate(180deg)' : 'transform: rotate(0deg)'",
+            ]);
+    }
+
+    /**
+     * The collapse toggle only makes sense for a table display that is both
+     * collapsible and actually rendering rows.
+     */
+    public function shouldShowCollapseToggle(): bool
+    {
+        return $this->getIsTableCollapsible()
+            && $this->getDisplayMode() === DisplayMode::Table
+            && filled($this->getState());
     }
 
     /**
