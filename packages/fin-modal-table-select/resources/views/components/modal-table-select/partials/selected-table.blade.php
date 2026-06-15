@@ -1,106 +1,84 @@
 @php
+    use Filament\Infolists\Components\RepeatableEntry;
+    use Filament\Schemas\Schema;
+
     $records = $field->getRecords();
-    $columns = $field->getTableColumns();
-    $isStriped = $field->getIsTableStriped();
-    $isDisabled = $field->isDisabled();
-    $statePath = $field->getStatePath();
+    $entries = $field->getTableSchema();
+    $headers = $field->getTableColumns();
+    $livewire = $field->getLivewire();
 @endphp
 
-<div class="fi-ta rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">
-    @if ($records->isNotEmpty())
-        <div class="fi-ta-content divide-y divide-gray-200 overflow-x-auto dark:divide-white/10 dark:border-t-white/10">
-            <table class="fi-ta-table w-full table-auto divide-y divide-gray-200 text-start dark:divide-white/10">
-                <thead class="divide-y divide-gray-200 dark:divide-white/10">
-                    <tr class="bg-gray-50 dark:bg-white/5">
-                        @foreach ($columns as $column)
-                            <th class="fi-ta-header-cell px-3 py-3.5 sm:first-of-type:ps-6 sm:last-of-type:pe-6">
-                                <span class="fi-ta-header-cell-label text-sm font-semibold text-gray-950 dark:text-white">
-                                    {{ $column->getLabel() }}
-                                </span>
-                            </th>
-                        @endforeach
+@if ($records->isNotEmpty() && filled($entries))
+    @php
+        $entryName = 'finSelectedTable_' . md5($field->getStatePath());
 
-                        @if (! $isDisabled)
-                            <th class="fi-ta-header-cell w-1 px-3 py-3.5 sm:last-of-type:pe-6">
-                                <span class="sr-only">
-                                    {{ __('fin-modal-table-select::modal-table-select.actions') }}
-                                </span>
-                            </th>
-                        @endif
-                    </tr>
-                </thead>
+        // Recursively pull Entry instances (name + getState) out of the schema
+        // tree so we can build per-row state. Using data_get against the record
+        // keeps relationships (dot notation) and enum instances intact so
+        // badge()/date()/durationHours() resolve correctly.
+        $extractEntries = function (array $components) use (&$extractEntries): array {
+            $found = [];
 
-                <tbody class="divide-y divide-gray-200 whitespace-nowrap dark:divide-white/10">
-                    @foreach ($records as $index => $record)
-                        <tr @class([
-                            'fi-ta-row',
-                            'bg-gray-50/50 dark:bg-white/[0.02]' => $isStriped && $index % 2 === 1,
-                        ])>
-                            @foreach ($columns as $column)
-                                @php
-                                    $cell = $field->resolveColumnCell($column, $record);
-                                @endphp
+            foreach ($components as $component) {
+                if (is_array($component)) {
+                    $found = array_merge($found, $extractEntries($component));
 
-                                <td class="fi-ta-cell px-3 py-4 text-sm text-gray-950 sm:first-of-type:ps-6 sm:last-of-type:pe-6 dark:text-white">
-                                    @if ($cell['isBadge'])
-                                        <x-filament::badge :color="$cell['color']">
-                                            {{ $cell['label'] }}
-                                        </x-filament::badge>
-                                    @else
-                                        {{ $cell['label'] }}
-                                    @endif
-                                </td>
-                            @endforeach
+                    continue;
+                }
 
-                            @if (! $isDisabled)
-                                <td class="fi-ta-cell px-3 py-4 sm:last-of-type:pe-6">
-                                    <div class="flex items-center justify-end">
-                                        <button
-                                            type="button"
-                                            x-on:click="
-                                                $wire.set('{{ $statePath }}', @js(
-                                                    collect($field->getState())
-                                                        ->filter(fn ($v) => (string) $v !== (string) $record->getKey())
-                                                        ->values()
-                                                        ->all()
-                                                ))
-                                            "
-                                            class="fi-icon-btn relative flex items-center justify-center rounded-lg outline-none transition duration-75 focus-visible:ring-2 fi-color-gray fi-icon-btn-size-sm -m-1.5 h-8 w-8 text-gray-400 hover:text-gray-500 focus-visible:ring-primary-600 dark:text-gray-500 dark:hover:text-gray-400 dark:focus-visible:ring-primary-500"
-                                            title="{{ __('fin-modal-table-select::modal-table-select.remove') }}"
-                                        >
-                                            <x-filament::icon
-                                                icon="heroicon-m-x-mark"
-                                                class="h-5 w-5"
-                                            />
-                                        </button>
-                                    </div>
-                                </td>
-                            @endif
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+                if (! is_object($component)) {
+                    continue;
+                }
 
-        <div class="fi-ta-footer px-3 py-2 sm:px-6">
-            <p class="text-sm text-gray-500 dark:text-gray-400">
-                {{ trans_choice('fin-modal-table-select::modal-table-select.count', $records->count(), ['count' => $records->count()]) }}
-            </p>
-        </div>
-    @else
-        <div class="fi-ta-empty-state px-6 py-12">
-            <div class="fi-ta-empty-state-content mx-auto grid max-w-lg justify-items-center text-center">
-                <div class="fi-ta-empty-state-icon-ctn mb-4 rounded-full bg-gray-100 p-3 dark:bg-gray-500/20">
-                    <x-filament::icon
-                        icon="heroicon-o-x-mark"
-                        class="fi-ta-empty-state-icon h-6 w-6 text-gray-500 dark:text-gray-400"
-                    />
-                </div>
+                if (method_exists($component, 'getName') && method_exists($component, 'getState')) {
+                    $found[] = $component;
+                }
 
-                <h4 class="fi-ta-empty-state-heading text-base font-semibold leading-6 text-gray-950 dark:text-white">
-                    {{ $field->getTableEmptyMessage() }}
-                </h4>
-            </div>
-        </div>
-    @endif
-</div>
+                try {
+                    $ref = new \ReflectionProperty($component, 'childComponents');
+                    $children = $ref->getValue($component);
+
+                    if (is_array($children) && count($children)) {
+                        $found = array_merge($found, $extractEntries($children));
+                    }
+                } catch (\ReflectionException) {
+                }
+            }
+
+            return $found;
+        };
+
+        $entryComponents = $extractEntries($entries);
+
+        $items = $records->map(function ($record) use ($entryComponents) {
+            $item = [];
+
+            foreach ($entryComponents as $entry) {
+                $name = $entry->getName();
+                data_set($item, $name, data_get($record, $name));
+            }
+
+            return $item;
+        })->values()->all();
+
+        $repeatable = RepeatableEntry::make($entryName)
+            ->table($headers)
+            ->schema($entries)
+            ->contained(false)
+            ->hiddenLabel();
+
+        $schema = Schema::make($livewire)
+            ->schema([$repeatable])
+            ->constantState([$entryName => $items]);
+    @endphp
+
+    <div class="fi-fo-modal-table-select-table w-full min-w-0">
+        {{ $schema }}
+    </div>
+@else
+    <div>
+        <p class="text-sm text-gray-500 italic dark:text-gray-400">
+            {{ $field->getTableEmptyMessage() }}
+        </p>
+    </div>
+@endif

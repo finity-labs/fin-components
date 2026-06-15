@@ -5,29 +5,33 @@ declare(strict_types=1);
 namespace FinityLabs\FinModalTableSelect\Concerns;
 
 use Closure;
-use Filament\Support\Contracts\HasColor;
-use Filament\Support\Contracts\HasLabel;
-use Filament\Tables\Columns\Column;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 
 trait HasTableDisplay
 {
-    /** @var array<Column>|Closure|null */
+    /** @var array<TableColumn>|Closure|null */
     protected array|Closure|null $tableColumns = null;
 
-    protected bool|Closure $isTableStriped = false;
+    /** @var array<object>|Closure|null */
+    protected array|Closure|null $tableSchema = null;
 
     protected string|Closure|null $tableEmptyMessage = null;
 
     /** @var array<string>|Closure|null */
     protected array|Closure|null $tableEagerLoad = null;
 
+    protected ?Closure $tableModifyQueryUsing = null;
+
     /**
-     * Define the columns displayed in the selected items table.
+     * Define the header columns for the selected items table.
      *
-     * @param  array<Column>|Closure  $columns
+     * These are infolist RepeatableEntry table columns; their order lines up
+     * with the entries passed to tableSchema().
+     *
+     * @param  array<TableColumn>|Closure  $columns
      */
     public function tableColumns(array|Closure $columns): static
     {
@@ -36,9 +40,16 @@ trait HasTableDisplay
         return $this;
     }
 
-    public function tableStriped(bool|Closure $condition = true): static
+    /**
+     * Define the infolist entries rendered for each row of the selected items
+     * table. Because these are real infolist entries, Filament applies their
+     * formatting (badge(), date(), money(), durationHours(), etc.) for us.
+     *
+     * @param  array<object>|Closure  $schema
+     */
+    public function tableSchema(array|Closure $schema): static
     {
-        $this->isTableStriped = $condition;
+        $this->tableSchema = $schema;
 
         return $this;
     }
@@ -62,26 +73,29 @@ trait HasTableDisplay
         return $this;
     }
 
-    /** @return array<Column> */
-    public function getTableColumns(): array
+    /**
+     * Modify the query used to load the selected records for table display.
+     *
+     * Useful for aggregates the row entries reference, for example:
+     * fn (Builder $query) => $query->withSum('timeEntries', 'duration_minutes').
+     */
+    public function tableModifyQueryUsing(?Closure $callback): static
     {
-        $columns = $this->evaluate($this->tableColumns);
+        $this->tableModifyQueryUsing = $callback;
 
-        if ($columns === null) {
-            $titleAttribute = $this->getRelationshipTitleAttribute();
-
-            return [
-                TextColumn::make($titleAttribute ?? 'id')
-                    ->label(str($titleAttribute ?? 'ID')->headline()->toString()),
-            ];
-        }
-
-        return $columns;
+        return $this;
     }
 
-    public function getIsTableStriped(): bool
+    /** @return array<TableColumn> */
+    public function getTableColumns(): array
     {
-        return (bool) $this->evaluate($this->isTableStriped);
+        return $this->evaluate($this->tableColumns) ?? [];
+    }
+
+    /** @return array<object> */
+    public function getTableSchema(): array
+    {
+        return $this->evaluate($this->tableSchema) ?? [];
     }
 
     public function getTableEmptyMessage(): string
@@ -122,61 +136,14 @@ trait HasTableDisplay
             $query->with($eagerLoad);
         }
 
+        if ($this->tableModifyQueryUsing !== null) {
+            $query = $this->evaluate($this->tableModifyQueryUsing, [
+                'query' => $query,
+            ], [
+                Builder::class => $query,
+            ]) ?? $query;
+        }
+
         return $query->get();
-    }
-
-    /**
-     * Resolve a column value from a record, supporting dot notation.
-     */
-    public function resolveColumnValue(Model $record, string $name): mixed
-    {
-        return data_get($record, $name);
-    }
-
-    /**
-     * Resolve display data for a column cell from a record.
-     *
-     * Returns an array with 'label', 'isBadge', and 'color' keys so the
-     * blade view can render it. We can't use Column::toEmbeddedHtml()
-     * because the column pipeline requires a mounted Table/Livewire context.
-     *
-     * @return array{label: string, isBadge: bool, color: string|null}
-     */
-    public function resolveColumnCell(Column $column, Model $record): array
-    {
-        $value = data_get($record, $column->getName());
-        $isBadge = method_exists($column, 'isBadge') && $column->isBadge();
-        $color = null;
-        $label = $value;
-
-        // Handle enums with Filament's HasLabel/HasColor interfaces
-        if ($value instanceof \BackedEnum) {
-            $label = $value instanceof HasLabel
-                ? ($value->getLabel() ?? $value->value)
-                : $value->value;
-        } elseif ($value instanceof \UnitEnum) {
-            $label = $value->name;
-        } elseif ($value instanceof HasLabel) {
-            $label = $value->getLabel();
-        }
-
-        if ($value instanceof HasColor) {
-            $color = $value->getColor();
-        }
-
-        // If no color from enum, try the column's color config
-        if ($color === null && method_exists($column, 'getColor')) {
-            try {
-                $color = $column->getColor($value);
-            } catch (\Throwable) {
-                // Column may need table context for closure evaluation
-            }
-        }
-
-        return [
-            'label' => (string) ($label ?? '—'),
-            'isBadge' => $isBadge,
-            'color' => $color,
-        ];
     }
 }
