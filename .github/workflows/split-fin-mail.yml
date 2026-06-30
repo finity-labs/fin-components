@@ -29,3 +29,68 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PAT: ${{ secrets.ACCESS_TOKEN }}
+
+      - name: Publish GitHub release on the mirror
+        env:
+          GH_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          VERSION: ${{ steps.version.outputs.value }}
+        run: |
+          set -euo pipefail
+
+          PACKAGE="${GITHUB_REF_NAME%%/*}"
+          NUMBER="${VERSION#v}"
+          REPO="finity-labs/$PACKAGE"
+          CHANGELOG="packages/$PACKAGE/CHANGELOG.md"
+
+          # The split step just pushed the version tag to the mirror; wait for
+          # it to land so the release never points at the wrong commit.
+          found=""
+          for i in $(seq 1 30); do
+            if gh api "repos/$REPO/git/ref/tags/$VERSION" >/dev/null 2>&1; then
+              found=1
+              break
+            fi
+            echo "Waiting for tag $VERSION on $REPO ($i/30)..."
+            sleep 5
+          done
+          if [ -z "$found" ]; then
+            echo "Tag $VERSION never appeared on $REPO; aborting." >&2
+            exit 1
+          fi
+
+          # Don't clobber an existing release (e.g. on a workflow re-run).
+          if gh release view "$VERSION" --repo "$REPO" >/dev/null 2>&1; then
+            echo "Release $VERSION already exists on $REPO; nothing to do."
+            exit 0
+          fi
+
+          # Build the notes from this version's CHANGELOG section.
+          notes=""
+          if [ -f "$CHANGELOG" ]; then
+            notes="$(awk -v ver="$NUMBER" '
+              $0 ~ "^## \\[" ver "\\]" { capture=1; next }
+              capture && /^## \[/ { exit }
+              capture { print }
+            ' "$CHANGELOG" | sed '/./,$!d')"
+          fi
+
+          args=(--repo "$REPO" --title "$VERSION" --verify-tag --latest)
+
+          if [ -n "$notes" ]; then
+            prev="$(awk -v ver="$NUMBER" '
+              $0 ~ "^## \\[" ver "\\]" { seen=1; next }
+              seen && /^## \[[0-9]/ { print; exit }
+            ' "$CHANGELOG" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -1 || true)"
+            {
+              printf '%s\n' "$notes"
+              if [ -n "$prev" ]; then
+                printf '\n**Full Changelog**: https://github.com/%s/compare/v%s...%s\n' "$REPO" "$prev" "$VERSION"
+              fi
+            } > release-notes.md
+            args+=(--notes-file release-notes.md)
+          else
+            echo "No CHANGELOG entry for $NUMBER; using auto-generated notes."
+            args+=(--generate-notes)
+          fi
+
+          gh release create "$VERSION" "${args[@]}"
