@@ -98,6 +98,54 @@ it('renders tokens in subject and body', function () {
         ->and($rendered['body'])->toBe('<p>Hello Acme Corp</p>');
 });
 
+it('expands button custom blocks to final html when rendering blocks', function () {
+    $config = htmlspecialchars((string) json_encode([
+        'label' => 'Click Me',
+        'url' => 'https://example.com',
+        'align' => 'center',
+    ]), ENT_QUOTES);
+
+    $template = EmailTemplate::create([
+        'key' => 'with-button',
+        'name' => ['en' => 'With Button'],
+        'category' => 'transactional',
+        'subject' => ['en' => 'Test'],
+        'body' => ['en' => '<p>Hi</p><div data-type="customBlock" data-id="emailButton" data-config="'.$config.'">preview</div>'],
+        'is_active' => true,
+    ]);
+
+    $rendered = $template->render();
+
+    expect($rendered['body'])
+        ->toContain('<a href="https://example.com"')
+        ->toContain('Click Me')
+        ->not->toContain('data-type="customBlock"');
+});
+
+it('keeps button custom blocks as editor markup when rendering without blocks', function () {
+    $config = htmlspecialchars((string) json_encode([
+        'label' => 'Click Me',
+        'url' => 'https://example.com',
+        'align' => 'center',
+    ]), ENT_QUOTES);
+
+    $template = EmailTemplate::create([
+        'key' => 'with-button-editable',
+        'name' => ['en' => 'With Button Editable'],
+        'category' => 'transactional',
+        'subject' => ['en' => 'Test'],
+        'body' => ['en' => '<p>Hi</p><div data-type="customBlock" data-id="emailButton" data-config="'.$config.'">preview</div>'],
+        'is_active' => true,
+    ]);
+
+    $rendered = $template->render([], null, renderBlocks: false);
+
+    expect($rendered['body'])
+        ->toContain('data-type="customBlock"')
+        ->toContain('data-id="emailButton"')
+        ->not->toContain('<a href="https://example.com"');
+});
+
 it('renders with specific locale', function () {
     $template = EmailTemplate::create([
         'key' => 'greeting',
@@ -234,4 +282,81 @@ it('belongs to a theme', function () {
 
     expect($template->theme)->toBeInstanceOf(EmailTheme::class)
         ->and($template->theme->name)->toBe('Default');
+});
+
+it('resolves its own theme colors when a theme is assigned', function () {
+    $theme = EmailTheme::create([
+        'name' => 'Branded',
+        'colors' => ['primary' => '#111111', 'button_bg' => '#222222'],
+        'is_default' => false,
+    ]);
+
+    $template = EmailTemplate::create([
+        'key' => 'own-theme',
+        'name' => ['en' => 'Own Theme'],
+        'category' => 'transactional',
+        'subject' => ['en' => 'Test'],
+        'body' => ['en' => 'Test'],
+        'is_active' => true,
+        'email_theme_id' => $theme->id,
+    ]);
+
+    expect($template->resolvedThemeColors())
+        ->toMatchArray(['primary' => '#111111', 'button_bg' => '#222222']);
+});
+
+it('falls back to the default theme colors when no theme is assigned', function () {
+    EmailTheme::create([
+        'name' => 'Default',
+        'colors' => ['primary' => '#FF0000', 'button_bg' => '#00FF00'],
+        'is_default' => true,
+    ]);
+
+    $template = EmailTemplate::create([
+        'key' => 'no-theme',
+        'name' => ['en' => 'No Theme'],
+        'category' => 'transactional',
+        'subject' => ['en' => 'Test'],
+        'body' => ['en' => 'Test'],
+        'is_active' => true,
+    ]);
+
+    expect($template->email_theme_id)->toBeNull()
+        ->and($template->resolvedThemeColors())
+        ->toMatchArray(['primary' => '#FF0000', 'button_bg' => '#00FF00']);
+});
+
+it('falls back to hardcoded default colors when no theme and no default theme exist', function () {
+    $template = EmailTemplate::create([
+        'key' => 'bare',
+        'name' => ['en' => 'Bare'],
+        'category' => 'transactional',
+        'subject' => ['en' => 'Test'],
+        'body' => ['en' => 'Test'],
+        'is_active' => true,
+    ]);
+
+    expect($template->resolvedThemeColors())->toBe(EmailTheme::defaultColors());
+});
+
+it('renders custom blocks in the body using the default theme when no theme is assigned', function () {
+    EmailTheme::create([
+        'name' => 'Default',
+        'colors' => ['button_bg' => '#FF0000'],
+        'is_default' => true,
+    ]);
+
+    $template = EmailTemplate::create([
+        'key' => 'block-body',
+        'name' => ['en' => 'Block Body'],
+        'category' => 'transactional',
+        'subject' => ['en' => 'Test'],
+        'body' => ['en' => '<div data-type="customBlock" data-id="emailButton" data-config="{&quot;label&quot;:&quot;Click&quot;,&quot;url&quot;:&quot;https://example.com&quot;}"></div>'],
+        'is_active' => true,
+    ]);
+
+    $rendered = $template->render();
+
+    expect($rendered['body'])->toContain('#FF0000')
+        ->and($rendered['body'])->not->toContain('#4F46E5');
 });

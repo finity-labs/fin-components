@@ -1,8 +1,8 @@
 @php
     $content = $html ?? '';
 
-    // Use passed theme or fall back to defaults
-    $resolvedTheme = $theme ?? \FinityLabs\FinMail\Models\EmailTheme::defaultColors();
+    // Use passed theme or fall back to the configured default theme (then hardcoded defaults)
+    $resolvedTheme = $theme ?? \FinityLabs\FinMail\Models\EmailTheme::resolvedDefaultColors();
 
     if (is_array($content)) {
         // Tiptap JSON document (has 'type' key) — convert to HTML via Filament's renderer
@@ -17,7 +17,7 @@
     // Resolve branding from settings
     $brandingSettings = app(\FinityLabs\FinMail\Settings\BrandingSettings::class);
     $resolvedBranding = [
-        'logo' => $brandingSettings->logo,
+        'logo' => $brandingSettings->resolvedLogo(),
         'logo_width' => $brandingSettings->logo_width,
         'logo_height' => $brandingSettings->logo_height,
         'content_width' => $brandingSettings->content_width,

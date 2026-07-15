@@ -156,6 +156,18 @@ class EmailTemplate extends Model
     }
 
     /**
+     * Resolve the theme colors for this template, falling back to the
+     * configured default theme (and then the hardcoded defaults) when the
+     * template has no theme of its own.
+     *
+     * @return array<string, string>
+     */
+    public function resolvedThemeColors(): array
+    {
+        return $this->theme?->resolvedColors() ?? EmailTheme::resolvedDefaultColors();
+    }
+
+    /**
      * Find a template by its key, optionally setting the locale for translation resolution.
      */
     public static function findByKey(string $key, ?string $locale = null): ?static
@@ -174,10 +186,14 @@ class EmailTemplate extends Model
      * Render the template body with token replacement.
      *
      * @param  array<string, mixed>  $models  Keyed by token prefix: ['user' => $user, 'invoice' => $invoice]
+     * @param  string|null  $locale  When set, the template's translations are resolved in this locale
+     * @param  bool  $renderBlocks  When false, custom blocks (e.g. buttons) are left as their
+     *                              editor markup instead of being expanded to final HTML. Use this
+     *                              when seeding an editable RichEditor so the blocks round-trip.
      *
      * @return array{subject: string, preheader: string, body: string}
      */
-    public function render(array $models = [], ?string $locale = null): array
+    public function render(array $models = [], ?string $locale = null, bool $renderBlocks = true): array
     {
         if ($locale) {
             $this->setLocale($locale);
@@ -185,9 +201,12 @@ class EmailTemplate extends Model
 
         $replacer = app(TokenReplacer::class);
 
-        $theme = $this->theme?->resolvedColors() ?? EmailTheme::defaultColors();
+        $theme = $this->resolvedThemeColors();
         $body = self::stripMergeTagSpans($this->body);
-        $body = self::renderCustomBlocks($body, $theme);
+
+        if ($renderBlocks) {
+            $body = self::renderCustomBlocks($body, $theme);
+        }
 
         return [
             'subject' => $replacer->replace($this->subject, $models),
