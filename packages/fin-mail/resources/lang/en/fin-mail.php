@@ -188,6 +188,17 @@ return [
         'confirm' => [
             'heading' => 'Confirm Send',
             'description' => 'Are you sure you want to send this email?',
+            'description_multiple' => 'You have multiple recipients. Choose how you would like to send this email.',
+            'send_mode_label' => 'How should this be sent?',
+            'send_mode_individual' => 'Send each email individually',
+            'send_mode_individual_help' => 'A separate email is sent to each "To" recipient, so they don\'t see each other\'s addresses. Any CC/BCC contacts receive a copy of every email.',
+            'send_mode_combined' => 'Send as a single email with multiple recipients',
+            'send_mode_combined_help' => 'One email is sent to everyone. All "To" and CC addresses are visible to every recipient.',
+        ],
+
+        'notifications' => [
+            'individual_sent' => 'Emails sent',
+            'individual_sent_body' => 'Sent :count individual emails.',
         ],
     ],
 
