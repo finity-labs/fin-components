@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
 
-it('has exactly 5 cases', function () {
-    expect(DisplayMode::cases())->toHaveCount(5);
+it('has exactly 4 cases', function () {
+    expect(DisplayMode::cases())->toHaveCount(4);
 });
 
 it('has badges case with correct value', function () {
@@ -18,10 +18,6 @@ it('has table case with correct value', function () {
 
 it('has infolist case with correct value', function () {
     expect(DisplayMode::Infolist->value)->toBe('infolist');
-});
-
-it('has form case with correct value', function () {
-    expect(DisplayMode::Form->value)->toBe('form');
 });
 
 it('has selection_only case with correct value', function () {

@@ -6,15 +6,23 @@ use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 
-it('returns false for hasTableColumns when none configured', function () {
-    expect(ModalTableSelect::make('posts')->hasTableColumns())->toBeFalse();
+it('returns false for hasTableDisplay when none configured', function () {
+    expect(ModalTableSelect::make('posts')->hasTableDisplay())->toBeFalse();
 });
 
-it('returns true for hasTableColumns after tableColumns set', function () {
+it('returns true for hasTableDisplay after tableColumns set', function () {
     $field = ModalTableSelect::make('posts')
         ->tableColumns([TableColumn::make('Title')]);
 
-    expect($field->hasTableColumns())->toBeTrue();
+    expect($field->hasTableDisplay())->toBeTrue();
+});
+
+it('returns true for hasTableDisplay after displayAsTable', function () {
+    expect(ModalTableSelect::make('posts')->displayAsTable()->hasTableDisplay())->toBeTrue();
+});
+
+it('evaluates a Closure for displayAsTable', function () {
+    expect(ModalTableSelect::make('posts')->displayAsTable(fn () => false)->hasTableDisplay())->toBeFalse();
 });
 
 it('returns an empty array from getTableColumns when none configured', function () {

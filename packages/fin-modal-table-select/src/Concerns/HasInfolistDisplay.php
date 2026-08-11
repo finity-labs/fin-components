@@ -6,6 +6,7 @@ namespace FinityLabs\FinModalTableSelect\Concerns;
 
 use Closure;
 use Filament\Schemas\Components\Component as InfolistComponent;
+use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 
 trait HasInfolistDisplay
@@ -64,36 +65,44 @@ trait HasInfolistDisplay
     }
 
     /**
-     * Get the full Eloquent model for the selected single record.
-     * Used by both infolist and form display modes.
+     * The selected record, resolved through the parent component's pipeline
+     * (so getSelectedRecordUsing() and the record cache are respected), with
+     * any configured relationships loaded for display.
      */
-    public function getSelectedRecord(): ?Model
+    public function getSelectedDisplayRecord(): ?Model
     {
-        $state = $this->getState();
+        $record = $this->getSelectedRecord();
 
-        if (empty($state)) {
+        if (! $record) {
             return null;
         }
 
-        $id = is_array($state) ? ($state[0] ?? null) : $state;
+        $eagerLoad = $this->evaluate($this->infolistEagerLoad) ?? [];
 
-        if ($id === null) {
+        if (filled($eagerLoad)) {
+            $record->loadMissing($eagerLoad);
+        }
+
+        return $record;
+    }
+
+    /**
+     * Build the schema that renders the selected record as an infolist. The
+     * schema is bound to the record itself, so entries resolve dot-notation
+     * relationships, casts, and enums natively.
+     */
+    public function makeSelectedInfolistSchema(): ?Schema
+    {
+        $record = $this->getSelectedDisplayRecord();
+        $components = $this->getInfolistSchema();
+
+        if ((! $record) || blank($components)) {
             return null;
         }
 
-        $relationship = $this->getRelationship();
-        $relatedModel = $relationship->getRelated();
-
-        $query = $relatedModel->newQuery()->where($relatedModel->getKeyName(), $id);
-
-        $eagerLoad = $this->evaluate($this->infolistEagerLoad)
-            ?? $this->evaluate($this->formEagerLoad ?? null)
-            ?? [];
-
-        if (! empty($eagerLoad)) {
-            $query->with($eagerLoad);
-        }
-
-        return $query->first();
+        return Schema::make($this->getLivewire())
+            ->components($components)
+            ->record($record)
+            ->columns($this->getInfolistColumns());
     }
 }

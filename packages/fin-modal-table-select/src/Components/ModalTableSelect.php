@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinModalTableSelect\Components;
 
-use Filament\Forms\Components\Actions\Action;
+use Filament\Actions\Action;
 use Filament\Forms\Components\ModalTableSelect as FilamentModalTableSelect;
-use FinityLabs\FinModalTableSelect\Concerns\HasFormDisplay;
+use FinityLabs\FinModalTableSelect\Concerns\CanFillFields;
+use FinityLabs\FinModalTableSelect\Concerns\CanFillRepeater;
 use FinityLabs\FinModalTableSelect\Concerns\HasInfolistDisplay;
 use FinityLabs\FinModalTableSelect\Concerns\HasSelectionOnlyMode;
 use FinityLabs\FinModalTableSelect\Concerns\HasTableDisplay;
@@ -14,7 +15,8 @@ use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
 
 class ModalTableSelect extends FilamentModalTableSelect
 {
-    use HasFormDisplay;
+    use CanFillFields;
+    use CanFillRepeater;
     use HasInfolistDisplay;
     use HasSelectionOnlyMode;
     use HasTableDisplay;
@@ -26,13 +28,13 @@ class ModalTableSelect extends FilamentModalTableSelect
         parent::setUp();
 
         // Move the select action to the label line as a hint action
-        $this->selectAction(function (\Filament\Actions\Action $action): \Filament\Actions\Action {
+        $this->selectAction(function (Action $action): Action {
             return $action->iconButton();
         });
 
         $this->registerActions([
-            fn (): \Filament\Actions\Action => $this->getCollapseToggleAction(),
-            fn (): \Filament\Actions\Action => $this->getSelectAction(),
+            fn (): Action => $this->getCollapseToggleAction(),
+            fn (): Action => $this->getSelectAction(),
         ]);
 
         // Share an Alpine `open` flag across the whole field (label hint actions
@@ -50,7 +52,7 @@ class ModalTableSelect extends FilamentModalTableSelect
     }
 
     /**
-     * @return array<\Filament\Actions\Action>
+     * @return array<Action>
      */
     public function getHintActions(): array
     {
@@ -81,9 +83,9 @@ class ModalTableSelect extends FilamentModalTableSelect
      * It flips the Alpine `open` flag set on the field wrapper, so there is no
      * Livewire round-trip and the chevron rotates in step with the table.
      */
-    public function getCollapseToggleAction(): \Filament\Actions\Action
+    public function getCollapseToggleAction(): Action
     {
-        return \Filament\Actions\Action::make('toggleTable')
+        return Action::make('toggleTable')
             ->label(__('fin-modal-table-select::modal-table-select.toggle'))
             ->icon('heroicon-m-chevron-down')
             ->iconButton()
@@ -112,16 +114,10 @@ class ModalTableSelect extends FilamentModalTableSelect
      * Determine which display mode should be used for the selected items.
      *
      * Priority:
-     *   0. SelectionOnly (if selectionOnly() is enabled)
-     *
-     * For multiple:
-     *   1. Table (if tableColumns configured)
-     *   2. Badges (default)
-     *
-     * For single:
-     *   1. Infolist (if infolistSchema configured)
-     *   2. Form (if formSchema configured)
-     *   3. Badges (default)
+     *   1. SelectionOnly (if selectionOnly() is enabled)
+     *   2. Table (if displayAsTable() or tableColumns()/tableSchema() configured)
+     *   3. Infolist (single selection with infolistSchema() configured)
+     *   4. Badges (default, inherits parent behavior)
      */
     public function getDisplayMode(): DisplayMode
     {
@@ -129,20 +125,12 @@ class ModalTableSelect extends FilamentModalTableSelect
             return DisplayMode::SelectionOnly;
         }
 
-        if ($this->hasTableColumns()) {
+        if ($this->hasTableDisplay()) {
             return DisplayMode::Table;
         }
 
-        if ($this->isMultiple()) {
-            return DisplayMode::Badges;
-        }
-
-        if ($this->hasInfolistSchema()) {
+        if ((! $this->isMultiple()) && $this->hasInfolistSchema()) {
             return DisplayMode::Infolist;
-        }
-
-        if ($this->hasFormSchema()) {
-            return DisplayMode::Form;
         }
 
         return DisplayMode::Badges;
@@ -156,7 +144,6 @@ class ModalTableSelect extends FilamentModalTableSelect
         return in_array($this->getDisplayMode(), [
             DisplayMode::Table,
             DisplayMode::Infolist,
-            DisplayMode::Form,
         ], true);
     }
 }
