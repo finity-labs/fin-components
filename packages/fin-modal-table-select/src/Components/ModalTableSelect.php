@@ -9,11 +9,15 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\ModalTableSelect as FilamentModalTableSelect;
 use FinityLabs\FinModalTableSelect\Concerns\CanFillFields;
 use FinityLabs\FinModalTableSelect\Concerns\CanFillRepeater;
+use FinityLabs\FinModalTableSelect\Concerns\HasBadgeAndListDisplay;
+use FinityLabs\FinModalTableSelect\Concerns\HasCardsDisplay;
 use FinityLabs\FinModalTableSelect\Concerns\HasInfolistDisplay;
+use FinityLabs\FinModalTableSelect\Concerns\HasItemViewDisplay;
 use FinityLabs\FinModalTableSelect\Concerns\HasSelectionOnlyMode;
 use FinityLabs\FinModalTableSelect\Concerns\HasStackedListDisplay;
 use FinityLabs\FinModalTableSelect\Concerns\HasStandaloneMode;
 use FinityLabs\FinModalTableSelect\Concerns\HasTableDisplay;
+use FinityLabs\FinModalTableSelect\Concerns\HasThumbnailsDisplay;
 use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
 use Illuminate\Database\Eloquent\Model;
 
@@ -21,15 +25,21 @@ class ModalTableSelect extends FilamentModalTableSelect
 {
     use CanFillFields;
     use CanFillRepeater;
+    use HasBadgeAndListDisplay;
+    use HasCardsDisplay;
     use HasInfolistDisplay;
+    use HasItemViewDisplay;
     use HasSelectionOnlyMode;
     use HasStackedListDisplay;
     use HasStandaloneMode;
     use HasTableDisplay;
+    use HasThumbnailsDisplay;
 
     protected string $view = 'fin-modal-table-select::components.modal-table-select.modal-table-select';
 
     protected int|Closure|null $displayLimit = null;
+
+    protected bool|Closure $hasEmptyStateSelectButton = false;
 
     protected function setUp(): void
     {
@@ -124,10 +134,14 @@ class ModalTableSelect extends FilamentModalTableSelect
      *
      * Priority:
      *   1. SelectionOnly (if selectionOnly() is enabled)
-     *   2. Table (if displayAsTable() or tableColumns()/tableSchema() configured)
-     *   3. StackedList (if stackedList() is enabled)
-     *   4. Infolist (single selection with infolistSchema() configured)
-     *   5. Badges (default, inherits parent behavior)
+     *   2. ItemView (if itemView() is set — the escape hatch wins)
+     *   3. Table (if displayAsTable() or tableColumns()/tableSchema() configured)
+     *   4. Cards (if cardGrid() is enabled)
+     *   5. Thumbnails (if thumbnails() is set)
+     *   6. StackedList (if stackedList() is enabled)
+     *   7. Infolist (single selection with infolistSchema() configured)
+     *   8. Badges (default, inherits parent behavior; listStyle() and
+     *      per-record badge closures restyle this mode)
      */
     public function getDisplayMode(): DisplayMode
     {
@@ -135,8 +149,20 @@ class ModalTableSelect extends FilamentModalTableSelect
             return DisplayMode::SelectionOnly;
         }
 
+        if ($this->hasItemViewDisplay()) {
+            return DisplayMode::ItemView;
+        }
+
         if ($this->hasTableDisplay()) {
             return DisplayMode::Table;
+        }
+
+        if ($this->hasCardGridDisplay()) {
+            return DisplayMode::Cards;
+        }
+
+        if ($this->hasThumbnailsDisplay()) {
+            return DisplayMode::Thumbnails;
         }
 
         if ($this->hasStackedListDisplay()) {
@@ -156,10 +182,53 @@ class ModalTableSelect extends FilamentModalTableSelect
     public function hasCustomDisplay(): bool
     {
         return in_array($this->getDisplayMode(), [
+            DisplayMode::ItemView,
             DisplayMode::Table,
+            DisplayMode::Cards,
+            DisplayMode::Thumbnails,
             DisplayMode::StackedList,
             DisplayMode::Infolist,
         ], true);
+    }
+
+    /**
+     * Render a "Select ..." link in the empty state that opens the modal, so
+     * users are not left hunting for the icon on the label line.
+     */
+    public function emptyStateSelectButton(bool|Closure $condition = true): static
+    {
+        $this->hasEmptyStateSelectButton = $condition;
+
+        return $this;
+    }
+
+    public function getHasEmptyStateSelectButton(): bool
+    {
+        return (bool) $this->evaluate($this->hasEmptyStateSelectButton);
+    }
+
+    /**
+     * Resolve a per-record display value from an attribute path or a Closure
+     * receiving the record. Shared by the stacked list, cards, thumbnails,
+     * and per-record badge displays.
+     */
+    public function resolveRecordDisplayValue(Model $record, string|Closure|null $source): ?string
+    {
+        if ($source === null) {
+            return null;
+        }
+
+        if ($source instanceof Closure) {
+            $value = $this->evaluate($source, [
+                'record' => $record,
+            ], [
+                Model::class => $record,
+            ]);
+        } else {
+            $value = data_get($record, $source);
+        }
+
+        return filled($value) ? (string) $value : null;
     }
 
     /**

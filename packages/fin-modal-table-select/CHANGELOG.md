@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
+- `listStyle()`: comma, dot, bullet, or line-break text lists instead of badges
+- `badgeColorFromRecord()` / `badgeIconFromRecord()`: per-record badge colors and icons
+- `cardGrid()`: card grid display with image, title, description, and remove buttons
+- `thumbnails()`: compact image strip with tooltips, initials fallback, optional remove
+- `itemView()`: render each selected record with a custom Blade view (receives $record, $field, $removeAction)
+- `emptyStateSelectButton()`: "Select…" link in the empty state that opens the modal
 - `standalone()`: use the picker without an Eloquent relationship — records come from a model query, selected IDs live in the field state (JSON column)
 - `stackedList()`: stacked-list display with primary/secondary lines, thumbnail, and per-item remove buttons that update state server-side
 - `displayLimit()`: collapse badges and stacked-list rows behind a client-side "+N more" toggle

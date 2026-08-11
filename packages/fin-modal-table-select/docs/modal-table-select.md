@@ -17,10 +17,13 @@ The mode resolves automatically from what you configure:
 | Mode | When |
 |------|------|
 | `SelectionOnly` | `selectionOnly()` is enabled |
+| `ItemView` | `itemView()` is set — the escape hatch wins over everything below |
 | `Table` | `displayAsTable()`, `tableColumns()`, or `tableSchema()` is set |
+| `Cards` | `cardGrid()` is enabled |
+| `Thumbnails` | `thumbnails()` is set |
 | `StackedList` | `stackedList()` is enabled |
 | `Infolist` | single selection with `infolistSchema()` set |
-| `Badges` | nothing configured — parent behavior, including `badge()` / `badgeColor()` |
+| `Badges` | nothing configured — parent behavior; `listStyle()` and the per-record badge closures restyle this mode |
 
 ### Table display
 
@@ -125,6 +128,82 @@ ModalTableSelect::make('assignees')
 ```
 
 Primary, secondary, and image accept an attribute path or a closure receiving the record. Primary falls back to the option label (relationship title attribute, standalone title attribute, or record key).
+
+### Badges and text lists
+
+The default mode, upgraded. Per-record badge colors and icons (the selection renders from records instead of plain labels as soon as either closure is set):
+
+```php
+ModalTableSelect::make('tasks')
+    ->relationship('tasks', 'title')
+    ->multiple()
+    ->tableConfiguration(TasksTable::class)
+    ->badgeColorFromRecord(fn (Task $record): string => $record->status->color())
+    ->badgeIconFromRecord(fn (Task $record): string => $record->status->icon())
+```
+
+Or drop badges for a plain text list in one of four styles:
+
+```php
+use FinityLabs\FinModalTableSelect\Enums\ListStyle;
+
+->listStyle(ListStyle::Comma)        // Alpha, Beta, Gamma
+->listStyle(ListStyle::Dot)          // Alpha · Beta · Gamma
+->listStyle(ListStyle::Bullet)       // bulleted <ul>
+->listStyle(ListStyle::LineBreak)    // one per line
+```
+
+### Card grid
+
+For visual records — image on top, title, optional description, remove button in the corner:
+
+```php
+ModalTableSelect::make('properties')
+    ->relationship('properties', 'name')
+    ->multiple()
+    ->tableConfiguration(PropertiesTable::class)
+    ->cardGrid()
+    ->cardImage('cover_url')                         // path or fn ($record)
+    ->cardTitle('name')                              // default: option label
+    ->cardDescription('address')
+    ->cardColumns(3)
+    ->cardsRemovable(false)
+```
+
+### Thumbnail strip
+
+The most compact visual display: a row of small images, record label as tooltip, initials as fallback when a record has no image. Good for media pickers and avatar-style selections.
+
+```php
+ModalTableSelect::make('members')
+    ->relationship('members', 'name')
+    ->multiple()
+    ->tableConfiguration(MembersTable::class)
+    ->thumbnails('avatar_url')
+    ->thumbnailsSquare()                             // rounded squares instead of circles
+    ->thumbnailsRemovable()                          // small x on each thumbnail
+```
+
+### Custom item view
+
+The escape hatch: render each selected record with your own Blade view. It receives `$record`, `$field`, and `$removeAction` (a pre-bound per-item remove action — echo it or ignore it).
+
+```php
+->itemView('components.selected-product', ['showSku' => true])
+```
+
+```blade
+{{-- resources/views/components/selected-product.blade.php --}}
+<div class="flex items-center gap-2">
+    <span>{{ $record->name }}</span>
+    @if ($showSku) <span class="text-gray-500">{{ $record->sku }}</span> @endif
+    {{ $removeAction }}
+</div>
+```
+
+### Empty-state select button
+
+`emptyStateSelectButton()` renders a "Select…" link under the empty-state text that opens the modal — handy when the icon on the label line is easy to miss. Works in every display mode.
 
 ### Display limit
 
@@ -262,6 +341,18 @@ The record key attribute is read from the picker's `fillsRepeater()` configurati
 | `selectionSummary()` | `bool\|Closure $condition = true` | Count badge in selection-only mode |
 | `selectionSummaryLabel()` | `string\|Closure\|null $label` | Custom summary text, `:count` placeholder |
 | `fillsFields()` | `array\|Closure $map` | Fill sibling fields from the selected record |
+| `listStyle()` | `ListStyle\|Closure\|null $style` | Comma / dot / bullet / line-break text list |
+| `badgeColorFromRecord()` | `?Closure $callback` | Per-record badge color |
+| `badgeIconFromRecord()` | `?Closure $callback` | Per-record badge icon |
+| `cardGrid()` | `bool\|Closure $condition = true` | Card grid display |
+| `cardTitle()` / `cardDescription()` / `cardImage()` | `string\|Closure\|null $source` | Card content |
+| `cardColumns()` | `int\|Closure $columns` | Grid columns (default 3) |
+| `cardsRemovable()` | `bool\|Closure $condition = true` | Toggle card remove buttons |
+| `thumbnails()` | `string\|Closure $imageSource` | Thumbnail strip display |
+| `thumbnailsSquare()` | `bool\|Closure $condition = true` | Rounded squares instead of circles |
+| `thumbnailsRemovable()` | `bool\|Closure $condition = true` | Remove button per thumbnail |
+| `itemView()` | `string\|Closure\|null $view, array\|Closure $viewData = []` | Custom Blade view per record |
+| `emptyStateSelectButton()` | `bool\|Closure $condition = true` | "Select…" link in the empty state |
 | `stackedList()` | `bool\|Closure $condition = true` | Stacked-list display with per-item remove |
 | `stackedListPrimary()` | `string\|Closure\|null $source` | Primary line (attribute path or closure) |
 | `stackedListSecondary()` | `string\|Closure\|null $source` | Secondary line |
@@ -282,4 +373,4 @@ Published under the `fin-modal-table-select` namespace:
 php artisan vendor:publish --tag="fin-modal-table-select-translations"
 ```
 
-Keys: `empty_message`, `count` (pluralized), `remove`, `actions`, `toggle`, `more` (pluralized), `less`. English ships with the package.
+Keys: `empty_message`, `count` (pluralized), `remove`, `actions`, `toggle`, `more` (pluralized), `less`, `select`. English ships with the package.

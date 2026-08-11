@@ -10,4 +10,5 @@ return [
     'toggle' => 'Show or hide',
     'more' => '+:count more|+:count more',
     'less' => 'Show less',
+    'select' => 'Select…',
 ];

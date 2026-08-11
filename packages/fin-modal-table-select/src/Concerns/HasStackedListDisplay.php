@@ -85,37 +85,17 @@ trait HasStackedListDisplay
 
     public function getStackedListPrimary(Model $record): string
     {
-        $value = $this->resolveStackedListValue($record, $this->stackedListPrimary);
-
-        return $value ?? $this->getRecordDisplayLabel($record);
+        return $this->resolveRecordDisplayValue($record, $this->stackedListPrimary)
+            ?? $this->getRecordDisplayLabel($record);
     }
 
     public function getStackedListSecondary(Model $record): ?string
     {
-        return $this->resolveStackedListValue($record, $this->stackedListSecondary);
+        return $this->resolveRecordDisplayValue($record, $this->stackedListSecondary);
     }
 
     public function getStackedListImage(Model $record): ?string
     {
-        return $this->resolveStackedListValue($record, $this->stackedListImage);
-    }
-
-    protected function resolveStackedListValue(Model $record, string|Closure|null $source): ?string
-    {
-        if ($source === null) {
-            return null;
-        }
-
-        if ($source instanceof Closure) {
-            $value = $this->evaluate($source, [
-                'record' => $record,
-            ], [
-                Model::class => $record,
-            ]);
-        } else {
-            $value = data_get($record, $source);
-        }
-
-        return filled($value) ? (string) $value : null;
+        return $this->resolveRecordDisplayValue($record, $this->stackedListImage);
     }
 }
