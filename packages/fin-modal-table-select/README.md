@@ -10,9 +10,10 @@
 
 A drop-in replacement for Filament's native `ModalTableSelect` that shows what you've selected — and can push the selection into the rest of your form.
 
-- **Rich selected-items display**: a table (columns inherited from your modal's `tableConfiguration()` via `displayAsTable()`), an infolist card for single selection, badges, or nothing (selection-only mode). The mode resolves automatically from what you configure.
+- **Rich selected-items display**: a table (columns inherited from your modal's `tableConfiguration()` via `displayAsTable()`), a stacked list with per-item remove buttons, an infolist card for single selection, badges with a "+N more" cap (`displayLimit()`), or nothing (selection-only mode). The mode resolves automatically from what you configure.
 - **`fillsFields()`**: selecting a record prefills sibling form fields — pick a company, get its name and tax number filled in, let the user overwrite the phone.
-- **`fillsRepeater()`**: a multiple selection syncs into a sibling `Repeater` with merge semantics — pick products, get one editable row each (quantity, price), and re-picking never wipes what the user already edited.
+- **`fillsRepeater()`** + **`SelectedItemsRepeater`**: a multiple selection syncs into a sibling `Repeater` with merge semantics — pick products, get one editable row each (quantity, price), re-picking never wipes what the user already edited, and deleting a row deselects its record.
+- **`standalone()`**: use the picker without an Eloquent relationship — records come from a model query and the selected IDs land in a JSON column.
 
 ## Requirements
 

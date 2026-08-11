@@ -18,6 +18,7 @@ The mode resolves automatically from what you configure:
 |------|------|
 | `SelectionOnly` | `selectionOnly()` is enabled |
 | `Table` | `displayAsTable()`, `tableColumns()`, or `tableSchema()` is set |
+| `StackedList` | `stackedList()` is enabled |
 | `Infolist` | single selection with `infolistSchema()` set |
 | `Badges` | nothing configured — parent behavior, including `badge()` / `badgeColor()` |
 
@@ -107,6 +108,52 @@ ModalTableSelect::make('device_ids')
     ->selectionSummaryLabel(':count devices')
 ```
 
+### Stacked list display
+
+A middle ground between badges and a full table: one row per record with a primary line, an optional secondary line and round thumbnail, and a remove button — so users can drop an item without reopening the modal. Removing an item updates the state server-side and reruns `fillsFields()` / `fillsRepeater()`.
+
+```php
+ModalTableSelect::make('assignees')
+    ->relationship('assignees', 'name')
+    ->multiple()
+    ->tableConfiguration(UsersTable::class)
+    ->stackedList()
+    ->stackedListPrimary('name')                     // default: option label
+    ->stackedListSecondary('email')
+    ->stackedListImage('avatar_url')
+    ->stackedListRemovable(false)                    // hide the remove buttons
+```
+
+Primary, secondary, and image accept an attribute path or a closure receiving the record. Primary falls back to the option label (relationship title attribute, standalone title attribute, or record key).
+
+### Display limit
+
+`displayLimit(int)` caps how many items render before a "+N more" toggle. It applies to badges and the stacked list, and expands client-side — no round-trip.
+
+```php
+->stackedList()
+->displayLimit(5)                                    // 8 selected: 5 shown, "+3 more"
+```
+
+### Standalone mode (no relationship)
+
+Use the picker against a model directly and store the selected primary keys in the field state — for JSON columns, wizard steps, or anywhere an Eloquent relationship doesn't fit.
+
+```php
+ModalTableSelect::make('device_ids')
+    ->standalone(Device::class, 'name')              // model + title attribute for labels
+    ->multiple()
+    ->tableConfiguration(DevicesTable::class)
+    ->displayAsTable()
+```
+
+Two things to know:
+
+- The modal table has no relationship to query, so your `tableConfiguration()` class must set its own query: `$table->query(Device::query())`.
+- Cast the column on your model (`'device_ids' => 'array'`) so the ID array survives the round-trip to the database.
+
+`standaloneModifyQueryUsing(fn ($query) => ...)` scopes the query used for labels and selected-record loading. All display modes and both fills features work the same as in relationship mode.
+
 ## Filling form fields
 
 `fillsFields()` copies data from the selected record into sibling fields whenever the selection changes. The targets are ordinary form components — they validate, dehydrate, and save like any other field, and the user can overwrite what was filled in.
@@ -180,6 +227,21 @@ The merge is what makes this worth packaging. When the user reopens the modal an
 
 Rows are matched to records through `keyAttribute` (the row key holding the record's primary key). If your closure doesn't include it, it's added automatically.
 
+### SelectedItemsRepeater
+
+A `Repeater` subclass that pairs with the picker so the two stay in sync in both directions. It ships `addable(false)` (rows enter through the modal), and deleting a row deselects the record on the picker — without it, a deleted product would reappear the next time the user confirms the modal.
+
+```php
+use FinityLabs\FinModalTableSelect\Components\SelectedItemsRepeater;
+
+SelectedItemsRepeater::make('items')
+    ->for('product_picker')                          // the picker's field name
+    ->table([...])
+    ->schema([...])
+```
+
+The record key attribute is read from the picker's `fillsRepeater()` configuration; pass a second argument to `for()` to override it. Don't call `deleteAction()` on it yourself — that would replace the sync hook.
+
 ## API reference
 
 | Method | Parameters | Description |
@@ -200,6 +262,14 @@ Rows are matched to records through `keyAttribute` (the row key holding the reco
 | `selectionSummary()` | `bool\|Closure $condition = true` | Count badge in selection-only mode |
 | `selectionSummaryLabel()` | `string\|Closure\|null $label` | Custom summary text, `:count` placeholder |
 | `fillsFields()` | `array\|Closure $map` | Fill sibling fields from the selected record |
+| `stackedList()` | `bool\|Closure $condition = true` | Stacked-list display with per-item remove |
+| `stackedListPrimary()` | `string\|Closure\|null $source` | Primary line (attribute path or closure) |
+| `stackedListSecondary()` | `string\|Closure\|null $source` | Secondary line |
+| `stackedListImage()` | `string\|Closure\|null $source` | Thumbnail image URL |
+| `stackedListRemovable()` | `bool\|Closure $condition = true` | Toggle the remove buttons |
+| `displayLimit()` | `int\|Closure\|null $limit` | "+N more" cap for badges and stacked list |
+| `standalone()` | `class-string\|Closure $model, string\|Closure\|null $titleAttribute = null` | Relationship-free mode |
+| `standaloneModifyQueryUsing()` | `?Closure $callback` | Scope the standalone query |
 | `fillsRepeater()` | `string\|Closure $repeaterName, Closure $itemUsing, string\|Closure $keyAttribute = 'id'` | Sync selection into a sibling Repeater |
 
 Everything the parent supports (`relationship()`, `tableConfiguration()`, `multiple()`, `badge()`, `badgeColor()`, `selectAction()`, `tableArguments()`, ...) works unchanged.
@@ -212,4 +282,4 @@ Published under the `fin-modal-table-select` namespace:
 php artisan vendor:publish --tag="fin-modal-table-select-translations"
 ```
 
-Keys: `empty_message`, `count` (pluralized), `remove`, `actions`, `toggle`. English ships with the package.
+Keys: `empty_message`, `count` (pluralized), `remove`, `actions`, `toggle`, `more` (pluralized), `less`. English ships with the package.
