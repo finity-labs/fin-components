@@ -4,9 +4,15 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinModalTableSelect\Tests;
 
+use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
+use BladeUI\Icons\BladeIconsServiceProvider;
+use Filament\Actions\ActionsServiceProvider;
 use Filament\FilamentServiceProvider;
 use Filament\Forms\FormsServiceProvider;
+use Filament\Infolists\InfolistsServiceProvider;
+use Filament\Schemas\SchemasServiceProvider;
 use Filament\Support\SupportServiceProvider;
+use Filament\Tables\TablesServiceProvider;
 use FinityLabs\FinModalTableSelect\FinModalTableSelectServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -37,11 +43,21 @@ class TestCase extends Orchestra
 
     protected function getPackageProviders($app): array
     {
+        // Filament providers must register before Livewire's: Filament rebinds
+        // Livewire's DataStore with a plain bind(), and only Livewire's own
+        // mechanism registration re-instances it as a shared singleton. This
+        // mirrors real apps, where package discovery loads filament/* first.
         return [
-            LivewireServiceProvider::class,
+            BladeIconsServiceProvider::class,
+            BladeHeroiconsServiceProvider::class,
             SupportServiceProvider::class,
+            ActionsServiceProvider::class,
+            SchemasServiceProvider::class,
+            InfolistsServiceProvider::class,
+            TablesServiceProvider::class,
             FilamentServiceProvider::class,
             FormsServiceProvider::class,
+            LivewireServiceProvider::class,
             FinModalTableSelectServiceProvider::class,
         ];
     }
