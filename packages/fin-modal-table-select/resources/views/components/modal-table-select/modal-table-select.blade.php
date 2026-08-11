@@ -51,6 +51,8 @@
                 <div class="w-full">
                     @if ($displayMode === DisplayMode::Table)
                         @include('fin-modal-table-select::components.modal-table-select.partials.selected-table')
+                    @elseif ($displayMode === DisplayMode::StackedList)
+                        @include('fin-modal-table-select::components.modal-table-select.partials.selected-stacked-list')
                     @elseif ($displayMode === DisplayMode::Infolist)
                         @include('fin-modal-table-select::components.modal-table-select.partials.selected-infolist')
                     @endif
@@ -67,16 +69,44 @@
             @if (((! $isMultiple) && filled($optionLabel = $getOptionLabel())) ||
                  ($isMultiple && filled($optionLabels = $getOptionLabels())))
                 @if ($isMultiple && $hasBadges)
-                    <div class="fi-fo-modal-table-select-badges-ctn">
-                        @foreach ($optionLabels as $optionLabel)
-                            @if ($hasBadges)
+                    @php
+                        $displayLimit = $getDisplayLimit();
+                        $badgeCount = count($optionLabels);
+                        $hasBadgeOverflow = ($displayLimit !== null) && ($badgeCount > $displayLimit);
+                    @endphp
+
+                    <div
+                        class="fi-fo-modal-table-select-badges-ctn"
+                        @if ($hasBadgeOverflow) x-data="{ expanded: false }" @endif
+                    >
+                        @foreach (array_values($optionLabels) as $badgeIndex => $optionLabel)
+                            @if ($hasBadgeOverflow && $badgeIndex >= $displayLimit)
+                                <span x-show="expanded" x-cloak>
+                                    <x-filament::badge :color="$badgeColor">
+                                        {{ $optionLabel }}
+                                    </x-filament::badge>
+                                </span>
+                            @else
                                 <x-filament::badge :color="$badgeColor">
                                     {{ $optionLabel }}
                                 </x-filament::badge>
-                            @else
-                                {{ $optionLabel }}
                             @endif
                         @endforeach
+
+                        @if ($hasBadgeOverflow)
+                            <button
+                                type="button"
+                                x-on:click="expanded = ! expanded"
+                                class="text-sm font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                            >
+                                <span x-show="! expanded">
+                                    {{ trans_choice('fin-modal-table-select::modal-table-select.more', $badgeCount - $displayLimit, ['count' => $badgeCount - $displayLimit]) }}
+                                </span>
+                                <span x-show="expanded" x-cloak>
+                                    {{ __('fin-modal-table-select::modal-table-select.less') }}
+                                </span>
+                            </button>
+                        @endif
                     </div>
                 @else
                     <div>

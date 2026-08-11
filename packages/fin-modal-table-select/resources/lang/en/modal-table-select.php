@@ -8,4 +8,6 @@ return [
     'remove' => 'Remove',
     'actions' => 'Actions',
     'toggle' => 'Show or hide',
+    'more' => '+:count more|+:count more',
+    'less' => 'Show less',
 ];

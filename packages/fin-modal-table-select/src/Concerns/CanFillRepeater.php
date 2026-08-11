@@ -57,6 +57,11 @@ trait CanFillRepeater
         return $this;
     }
 
+    public function getFillsRepeaterKeyAttribute(): string
+    {
+        return $this->evaluate($this->fillsRepeaterKeyAttribute);
+    }
+
     public function runRepeaterFill(Set $set, Get $get): void
     {
         $repeaterName = $this->evaluate($this->fillsRepeaterName);

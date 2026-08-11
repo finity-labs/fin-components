@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
 
-it('has exactly 4 cases', function () {
-    expect(DisplayMode::cases())->toHaveCount(4);
+it('has exactly 5 cases', function () {
+    expect(DisplayMode::cases())->toHaveCount(5);
 });
 
 it('has badges case with correct value', function () {
@@ -14,6 +14,10 @@ it('has badges case with correct value', function () {
 
 it('has table case with correct value', function () {
     expect(DisplayMode::Table->value)->toBe('table');
+});
+
+it('has stacked_list case with correct value', function () {
+    expect(DisplayMode::StackedList->value)->toBe('stacked_list');
 });
 
 it('has infolist case with correct value', function () {

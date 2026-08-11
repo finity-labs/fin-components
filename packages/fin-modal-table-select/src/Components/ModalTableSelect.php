@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinModalTableSelect\Components;
 
+use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ModalTableSelect as FilamentModalTableSelect;
 use FinityLabs\FinModalTableSelect\Concerns\CanFillFields;
 use FinityLabs\FinModalTableSelect\Concerns\CanFillRepeater;
 use FinityLabs\FinModalTableSelect\Concerns\HasInfolistDisplay;
 use FinityLabs\FinModalTableSelect\Concerns\HasSelectionOnlyMode;
+use FinityLabs\FinModalTableSelect\Concerns\HasStackedListDisplay;
+use FinityLabs\FinModalTableSelect\Concerns\HasStandaloneMode;
 use FinityLabs\FinModalTableSelect\Concerns\HasTableDisplay;
 use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
+use Illuminate\Database\Eloquent\Model;
 
 class ModalTableSelect extends FilamentModalTableSelect
 {
@@ -19,9 +23,13 @@ class ModalTableSelect extends FilamentModalTableSelect
     use CanFillRepeater;
     use HasInfolistDisplay;
     use HasSelectionOnlyMode;
+    use HasStackedListDisplay;
+    use HasStandaloneMode;
     use HasTableDisplay;
 
     protected string $view = 'fin-modal-table-select::components.modal-table-select.modal-table-select';
+
+    protected int|Closure|null $displayLimit = null;
 
     protected function setUp(): void
     {
@@ -34,6 +42,7 @@ class ModalTableSelect extends FilamentModalTableSelect
 
         $this->registerActions([
             fn (): Action => $this->getCollapseToggleAction(),
+            fn (): Action => $this->getRemoveSelectedItemAction(),
             fn (): Action => $this->getSelectAction(),
         ]);
 
@@ -116,8 +125,9 @@ class ModalTableSelect extends FilamentModalTableSelect
      * Priority:
      *   1. SelectionOnly (if selectionOnly() is enabled)
      *   2. Table (if displayAsTable() or tableColumns()/tableSchema() configured)
-     *   3. Infolist (single selection with infolistSchema() configured)
-     *   4. Badges (default, inherits parent behavior)
+     *   3. StackedList (if stackedList() is enabled)
+     *   4. Infolist (single selection with infolistSchema() configured)
+     *   5. Badges (default, inherits parent behavior)
      */
     public function getDisplayMode(): DisplayMode
     {
@@ -127,6 +137,10 @@ class ModalTableSelect extends FilamentModalTableSelect
 
         if ($this->hasTableDisplay()) {
             return DisplayMode::Table;
+        }
+
+        if ($this->hasStackedListDisplay()) {
+            return DisplayMode::StackedList;
         }
 
         if ((! $this->isMultiple()) && $this->hasInfolistSchema()) {
@@ -143,7 +157,87 @@ class ModalTableSelect extends FilamentModalTableSelect
     {
         return in_array($this->getDisplayMode(), [
             DisplayMode::Table,
+            DisplayMode::StackedList,
             DisplayMode::Infolist,
         ], true);
+    }
+
+    /**
+     * Cap how many items render before a "+N more" toggle appears. Applies to
+     * the badges and stacked-list displays. Null shows everything.
+     */
+    public function displayLimit(int|Closure|null $limit): static
+    {
+        $this->displayLimit = $limit;
+
+        return $this;
+    }
+
+    public function getDisplayLimit(): ?int
+    {
+        $limit = $this->evaluate($this->displayLimit);
+
+        return $limit === null ? null : (int) $limit;
+    }
+
+    /**
+     * A per-item action that removes one record from the selection without
+     * reopening the modal. Invoked from the view with a recordKey argument.
+     */
+    public function getRemoveSelectedItemAction(): Action
+    {
+        return Action::make('removeSelectedItem')
+            ->label(__('fin-modal-table-select::modal-table-select.remove'))
+            ->icon('heroicon-m-x-mark')
+            ->iconButton()
+            ->color('gray')
+            ->hidden(fn (): bool => $this->isDisabled())
+            ->action(function (array $arguments): void {
+                $this->removeSelectedItem($arguments['recordKey'] ?? null);
+            });
+    }
+
+    public function removeSelectedItem(mixed $key): void
+    {
+        if ($key === null) {
+            return;
+        }
+
+        $state = $this->getState();
+
+        if (is_array($state)) {
+            $this->state(array_values(array_filter(
+                $state,
+                fn ($id): bool => (string) $id !== (string) $key,
+            )));
+        } elseif ((string) $state === (string) $key) {
+            $this->state(null);
+        } else {
+            return;
+        }
+
+        $this->callAfterStateUpdated();
+    }
+
+    /**
+     * The best available human label for a record: the option-label callback
+     * if configured, then the relationship or standalone title attribute,
+     * then the record key.
+     */
+    public function getRecordDisplayLabel(Model $record): string
+    {
+        if ($this->hasOptionLabelFromRecordUsingCallback()) {
+            return (string) $this->getOptionLabelFromRecord($record);
+        }
+
+        $attribute = $this->getIsStandalone()
+            ? $this->getStandaloneTitleAttribute()
+            : $this->getRelationshipTitleAttribute();
+
+        if (filled($attribute)) {
+            return (string) data_get($record, str_replace('->', '.', $attribute));
+        }
+
+        return (string) $record->getKey();
     }
 }

@@ -294,18 +294,22 @@ trait HasTableDisplay
             return $this->cachedSelectedRecords;
         }
 
-        $relationship = Relation::noConstraints(fn (): Relation => $this->getRelationship());
+        if ($this->getIsStandalone()) {
+            $query = $this->getStandaloneQuery()->whereKey($ids);
+        } else {
+            $relationship = Relation::noConstraints(fn (): Relation => $this->getRelationship());
 
-        $query = app(RelationshipJoiner::class)->prepareQueryForNoConstraints($relationship);
+            $query = app(RelationshipJoiner::class)->prepareQueryForNoConstraints($relationship);
 
-        $query->whereIn($this->getQualifiedRelatedKeyNameForRelationship($relationship), $ids);
+            $query->whereIn($this->getQualifiedRelatedKeyNameForRelationship($relationship), $ids);
 
-        if ($this->modifyRelationshipQueryUsing) {
-            $query = $this->evaluate($this->modifyRelationshipQueryUsing, [
-                'query' => $query,
-            ], [
-                Builder::class => $query,
-            ]) ?? $query;
+            if ($this->modifyRelationshipQueryUsing) {
+                $query = $this->evaluate($this->modifyRelationshipQueryUsing, [
+                    'query' => $query,
+                ], [
+                    Builder::class => $query,
+                ]) ?? $query;
+            }
         }
 
         $eagerLoad = $this->evaluate($this->tableEagerLoad);
