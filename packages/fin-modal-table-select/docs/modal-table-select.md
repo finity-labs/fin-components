@@ -1,367 +1,215 @@
 # ModalTableSelect
 
-Extends Filament's native `ModalTableSelect` with five display modes for showing selected items: table, infolist, form, selection-only, and the default badges.
+A drop-in replacement for Filament's `ModalTableSelect` that shows what you've selected — and can push the selection into the rest of your form.
+
+The stock component displays selected records as badges or plain text. This one adds three things on top:
+
+- **Rich display** of selected records: a table (with columns inherited from your modal's table configuration), an infolist card, or nothing at all (selection-only mode).
+- **`fillsFields()`** — selecting a record prefills sibling form fields. The user can overwrite them afterwards.
+- **`fillsRepeater()`** — selecting records syncs them into a sibling Repeater, preserving values the user already edited.
+
+Everything user-facing stays stock Filament: the modal is Filament's table select, the rows are infolist entries, the repeater is Filament's own. This package only wires them together.
+
+## Display modes
+
+The mode resolves automatically from what you configure:
+
+| Mode | When |
+|------|------|
+| `SelectionOnly` | `selectionOnly()` is enabled |
+| `Table` | `displayAsTable()`, `tableColumns()`, or `tableSchema()` is set |
+| `Infolist` | single selection with `infolistSchema()` set |
+| `Badges` | nothing configured — parent behavior, including `badge()` / `badgeColor()` |
+
+### Table display
+
+The fastest way to a table is to reuse the columns your modal already has:
 
 ```php
 use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
+
+ModalTableSelect::make('products')
+    ->relationship('products', 'name')
+    ->multiple()
+    ->tableConfiguration(ProductsTable::class)
+    ->displayAsTable()
 ```
 
-## Quick Start
+`displayAsTable()` derives the selected-items table from `ProductsTable` — same columns inside and outside the modal, zero extra configuration. Text columns become text entries (badges carry over), image columns become image entries, icon columns become icon entries. Hidden columns are skipped.
 
-The simplest upgrade from standard `ModalTableSelect` -- add `tableColumns()` to show selections in a table:
+When you want different columns outside the modal, define them explicitly:
 
 ```php
-use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
+use Filament\Infolists\Components\TextEntry;
 
-ModalTableSelect::make('categories')
-    ->relationship('categories', 'name')
+ModalTableSelect::make('products')
+    ->relationship('products', 'name')
     ->multiple()
-    ->tableConfiguration(CategoriesTable::class)
+    ->tableConfiguration(ProductsTable::class)
     ->tableColumns([
-        TextColumn::make('name'),
-        TextColumn::make('slug'),
+        TableColumn::make('Name'),
+        TableColumn::make('Price'),
+    ])
+    ->tableSchema([
+        TextEntry::make('name'),
+        TextEntry::make('default_price')->money('eur'),
     ])
 ```
 
-That's it. Selected items now render as a table instead of badges.
+Rows are real infolist entries bound to the record models, so `badge()`, `date()`, `money()`, enum casts, and dot-notation relationship paths (`category.name`) all work as usual.
 
-## Table Display
-
-For multiple selections. Configure which columns appear in the selected items table.
-
-### Basic usage
+Options:
 
 ```php
-ModalTableSelect::make('categories')
-    ->relationship('categories', 'name')
-    ->multiple()
-    ->tableConfiguration(CategoriesTable::class)
-    ->tableColumns([
-        TextColumn::make('name'),
-        TextColumn::make('slug'),
-    ])
+->tableEagerLoad(['category'])                       // avoid N+1 for relationship entries
+->tableModifyQueryUsing(fn ($query) => $query->withSum('items', 'qty'))
+->tableEmptyMessage('Nothing picked yet.')
+->tableFooterCount()                                 // "3 items selected" under the table
+->tableCollapsible()                                 // show/hide toggle on the label line
+->tableCollapsed()                                   // start collapsed
 ```
 
-### Striped rows
+Selected records keep their selection order, and the query runs once per state — repeated renders reuse the memoized result.
 
-```php
-ModalTableSelect::make('categories')
-    ->relationship('categories', 'name')
-    ->multiple()
-    ->tableConfiguration(CategoriesTable::class)
-    ->tableColumns([
-        TextColumn::make('name'),
-        TextColumn::make('slug'),
-    ])
-    ->tableStriped()
-```
+### Infolist display
 
-### Eager loading
-
-Load relationships upfront to avoid N+1 queries in your columns:
-
-```php
-ModalTableSelect::make('categories')
-    ->relationship('categories', 'name')
-    ->multiple()
-    ->tableConfiguration(CategoriesTable::class)
-    ->tableColumns([
-        TextColumn::make('name'),
-        TextColumn::make('parent.name')->label('Parent'),
-    ])
-    ->tableEagerLoad(['parent', 'tags'])
-```
-
-### Custom empty message
-
-```php
-ModalTableSelect::make('categories')
-    ->relationship('categories', 'name')
-    ->multiple()
-    ->tableConfiguration(CategoriesTable::class)
-    ->tableColumns([
-        TextColumn::make('name'),
-    ])
-    ->tableEmptyMessage('No categories selected yet.')
-```
-
-### API reference
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `tableColumns()` | `array\|Closure $columns` | Columns for the selected items table |
-| `tableStriped()` | `bool\|Closure $condition = true` | Enable striped rows |
-| `tableEmptyMessage()` | `string\|Closure\|null $message` | Custom empty state message |
-| `tableEagerLoad()` | `array\|Closure $relationships` | Eager load relationships for selected records |
-
-## Infolist Display
-
-For single selections. Show the selected record using Filament infolist entries.
-
-### Basic usage
+For single selection, render the chosen record as a read-only card:
 
 ```php
 use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\IconEntry;
 
-ModalTableSelect::make('category_id')
-    ->relationship('category', 'name')
-    ->tableConfiguration(CategoriesTable::class)
+ModalTableSelect::make('company_id')
+    ->relationship('company', 'name')
+    ->tableConfiguration(CompaniesTable::class)
     ->infolistSchema([
         TextEntry::make('name'),
-        TextEntry::make('slug'),
-        TextEntry::make('description')->columnSpanFull(),
-        IconEntry::make('is_active')->boolean(),
-    ])
-```
-
-### Grid columns
-
-Lay out entries in a multi-column grid:
-
-```php
-ModalTableSelect::make('category_id')
-    ->relationship('category', 'name')
-    ->tableConfiguration(CategoriesTable::class)
-    ->infolistSchema([
-        TextEntry::make('name'),
-        TextEntry::make('slug'),
-        TextEntry::make('description')->columnSpanFull(),
+        TextEntry::make('tax_number'),
+        TextEntry::make('contact.phone'),
     ])
     ->infolistColumns(2)
+    ->infolistEagerLoad(['contact'])
 ```
 
-### Eager loading
+The record resolves through the parent component's pipeline, so `getSelectedRecordUsing()` and the built-in record cache are respected.
+
+### Selection-only mode
+
+A headless picker: nothing renders for the selection except an optional count badge. Useful when other components react to the selected IDs via `$get()`, or together with `fillsFields()` / `fillsRepeater()`.
 
 ```php
-ModalTableSelect::make('post_id')
-    ->relationship('post', 'title')
-    ->tableConfiguration(PostsTable::class)
-    ->infolistSchema([
-        TextEntry::make('title'),
-        TextEntry::make('author.name')->label('Author'),
-    ])
-    ->infolistEagerLoad(['author'])
+ModalTableSelect::make('device_ids')
+    ->relationship('devices', 'name')
+    ->multiple()
+    ->tableConfiguration(DevicesTable::class)
+    ->selectionOnly()
+    ->selectionSummary()
+    ->selectionSummaryLabel(':count devices')
 ```
 
-### API reference
+## Filling form fields
 
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `infolistSchema()` | `array\|Closure $schema` | Infolist entries for the selected record |
-| `infolistColumns()` | `int\|Closure $columns` | Grid columns for layout (default: 1) |
-| `infolistEagerLoad()` | `array\|Closure $relationships` | Eager load relationships for the selected record |
+`fillsFields()` copies data from the selected record into sibling fields whenever the selection changes. The targets are ordinary form components — they validate, dehydrate, and save like any other field, and the user can overwrite what was filled in.
 
-## Form Display
-
-For single selections. Render the selected record using disabled form fields -- a read-only preview.
-
-### Basic usage
+The invoice case: pick a company, show its name and tax number, let the user adjust the phone number.
 
 ```php
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 
-ModalTableSelect::make('category_id')
-    ->relationship('category', 'name')
-    ->tableConfiguration(CategoriesTable::class)
-    ->formSchema([
-        TextInput::make('name'),
-        TextInput::make('slug'),
-        Toggle::make('is_active')->label('Active'),
-    ])
+ModalTableSelect::make('company_id')
+    ->relationship('company', 'name')
+    ->tableConfiguration(CompaniesTable::class)
+    ->fillsFields([
+        'company_name' => 'name',                    // attribute path
+        'tax_number'   => 'tax_number',
+        'phone'        => 'contact.phone',           // dot notation works
+        'greeting'     => fn (Company $record): string => "Dear {$record->owner_name}",
+    ]),
+
+TextEntry::make('company_name'),
+TextEntry::make('tax_number'),
+TextInput::make('phone'),                            // prefilled, user can edit
 ```
 
-Form fields are automatically set to `disabled()`, so they render as read-only. You don't need to add `->disabled()` yourself.
+Deselecting sets every target to `null`. The hook stacks on `afterStateUpdated()`, so your own `afterStateUpdated()` callbacks keep working. Intended for single selection — it does nothing when `multiple()` is enabled.
 
-### Grid columns
+## Filling a repeater
 
-```php
-ModalTableSelect::make('category_id')
-    ->relationship('category', 'name')
-    ->tableConfiguration(CategoriesTable::class)
-    ->formSchema([
-        TextInput::make('name'),
-        TextInput::make('slug'),
-    ])
-    ->formColumns(2)
-```
-
-### Eager loading
+`fillsRepeater()` syncs a multiple selection into a sibling Repeater. This is the invoice-lines flow: pick products in the modal, get one editable row per product.
 
 ```php
-ModalTableSelect::make('product_id')
-    ->relationship('product', 'name')
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
+use Filament\Forms\Components\TextInput;
+
+ModalTableSelect::make('product_picker')
+    ->relationship('products', 'name')
+    ->multiple()
     ->tableConfiguration(ProductsTable::class)
-    ->formSchema([
-        TextInput::make('name'),
-        TextInput::make('category.name')->label('Category'),
+    ->selectionOnly()
+    ->fillsRepeater('items', fn (Product $record): array => [
+        'product_id' => $record->getKey(),
+        'name'       => $record->name,
+        'unit_price' => $record->default_price,
+        'quantity'   => 1,
+    ], keyAttribute: 'product_id')
+    ->dehydrated(false),
+
+Repeater::make('items')
+    ->table([
+        TableColumn::make('Product'),
+        TableColumn::make('Unit price'),
+        TableColumn::make('Qty'),
     ])
-    ->formEagerLoad(['category'])
+    ->schema([
+        Hidden::make('product_id'),
+        TextInput::make('name')->disabled()->dehydrated(),
+        TextInput::make('unit_price')->numeric(),
+        TextInput::make('quantity')->numeric(),
+    ])
+    ->addable(false),                                // rows enter via the modal
 ```
 
-### API reference
+The merge is what makes this worth packaging. When the user reopens the modal and changes the selection:
 
-| Method | Signature | Description |
+- newly selected records are appended as fresh rows built by your closure
+- rows whose record is still selected are left untouched — edited quantities and prices survive
+- rows whose record was deselected are removed
+
+Rows are matched to records through `keyAttribute` (the row key holding the record's primary key). If your closure doesn't include it, it's added automatically.
+
+## API reference
+
+| Method | Parameters | Description |
 |--------|-----------|-------------|
-| `formSchema()` | `array\|Closure $schema` | Form fields to display (rendered disabled) |
-| `formColumns()` | `int\|Closure $columns` | Grid columns for layout (default: 1) |
-| `formEagerLoad()` | `array\|Closure $relationships` | Eager load relationships for the selected record |
+| `displayAsTable()` | `bool\|Closure $condition = true` | Table display with columns inherited from `tableConfiguration()` |
+| `tableColumns()` | `array\|Closure $columns` | Header columns (`RepeatableEntry\TableColumn`) for the selected-items table |
+| `tableSchema()` | `array\|Closure $schema` | Infolist entries rendered per row |
+| `tableEagerLoad()` | `array\|Closure $relationships` | Relationships to eager-load for table display |
+| `tableModifyQueryUsing()` | `?Closure $callback` | Modify the selected-records query (aggregates etc.) |
+| `tableEmptyMessage()` | `string\|Closure\|null $message` | Empty-state text |
+| `tableFooterCount()` | `bool\|Closure $condition = true` | Row-count footer under the table |
+| `tableCollapsible()` | `bool\|Closure $condition = true` | Show/hide toggle on the label line |
+| `tableCollapsed()` | `bool\|Closure $condition = true` | Start collapsed (needs `tableCollapsible()`) |
+| `infolistSchema()` | `array\|Closure $schema` | Entries for the single-record infolist card |
+| `infolistColumns()` | `int\|Closure $columns` | Grid columns for the infolist card |
+| `infolistEagerLoad()` | `array\|Closure $relationships` | Relationships to eager-load for the infolist record |
+| `selectionOnly()` | `bool\|Closure $condition = true` | Headless picker, no selection display |
+| `selectionSummary()` | `bool\|Closure $condition = true` | Count badge in selection-only mode |
+| `selectionSummaryLabel()` | `string\|Closure\|null $label` | Custom summary text, `:count` placeholder |
+| `fillsFields()` | `array\|Closure $map` | Fill sibling fields from the selected record |
+| `fillsRepeater()` | `string\|Closure $repeaterName, Closure $itemUsing, string\|Closure $keyAttribute = 'id'` | Sync selection into a sibling Repeater |
 
-## Selection Only Mode
-
-Use the component purely as a picker. No table, infolist, form, or badges are rendered for the selected items. Other form components can read the selected IDs via `$get()` and handle their own display logic.
-
-### Multiple selection with summary
-
-```php
-use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
-use Filament\Forms\Components\Placeholder;
-
-ModalTableSelect::make('category_ids')
-    ->relationship('categories', 'name')
-    ->multiple()
-    ->tableConfiguration(CategoriesTable::class)
-    ->selectionOnly()
-    ->selectionSummary()
-    ->live(),
-
-// Other components react to the selection
-Placeholder::make('category_info')
-    ->content(function ($get) {
-        $ids = $get('category_ids') ?? [];
-
-        return count($ids) . ' categories will be assigned.';
-    }),
-```
-
-### Single selection with downstream fields
-
-When picking a single record, you can populate other form fields using `afterStateUpdated`:
-
-```php
-ModalTableSelect::make('author_id')
-    ->relationship('author', 'name')
-    ->tableConfiguration(AuthorsTable::class)
-    ->selectionOnly()
-    ->selectionSummary()
-    ->live()
-    ->afterStateUpdated(function ($state, $set) {
-        if ($state) {
-            $author = \App\Models\Author::find($state);
-            $set('author_email', $author?->email);
-            $set('author_bio', $author?->bio);
-        }
-    }),
-
-TextInput::make('author_email')->disabled(),
-TextInput::make('author_bio')->disabled(),
-```
-
-### Custom summary label
-
-The summary badge shows "X items selected" by default. Customize it with the `:count` placeholder:
-
-```php
-ModalTableSelect::make('tags')
-    ->relationship('tags', 'name')
-    ->multiple()
-    ->tableConfiguration(TagsTable::class)
-    ->selectionOnly()
-    ->selectionSummary()
-    ->selectionSummaryLabel(':count tags chosen')
-```
-
-### API reference
-
-| Method | Signature | Description |
-|--------|-----------|-------------|
-| `selectionOnly()` | `bool\|Closure $condition = true` | Enable selection-only mode -- no display of selected items |
-| `selectionSummary()` | `bool\|Closure $condition = true` | Show a count badge next to the select button |
-| `selectionSummaryLabel()` | `string\|Closure\|null $label` | Custom label for the summary (`:count` placeholder) |
-
-## Display Mode Resolution
-
-The component picks a display mode automatically based on what you've configured. Here's the priority:
-
-| Relationship | Configuration | Resulting Display |
-|---|---|---|
-| any | `selectionOnly()` | Button only (+ optional count badge) |
-| `multiple()` | `tableColumns()` | Table |
-| `multiple()` | *(none)* | Badges (default) |
-| single | `infolistSchema()` | Infolist |
-| single | `formSchema()` | Form |
-| single | *(none)* | Text/Badge (default) |
-
-`selectionOnly()` is checked first, regardless of relationship type. After that, for multiple selections the component looks for `tableColumns()`. For single selections, it checks `infolistSchema()` first, then `formSchema()`. If nothing is configured, you get the standard Filament behavior.
-
-## Using Closures
-
-All configuration methods accept closures for dynamic values:
-
-```php
-ModalTableSelect::make('items')
-    ->relationship('items', 'name')
-    ->multiple()
-    ->tableConfiguration(ItemsTable::class)
-    ->tableColumns(fn () => [
-        TextColumn::make('name'),
-        TextColumn::make('price')->money('EUR'),
-    ])
-    ->tableEagerLoad(fn () => ['category', 'brand'])
-```
-
-This works the same way across every method -- `infolistSchema()`, `formSchema()`, `tableStriped()`, and so on. Closures receive the standard Filament component evaluation context.
-
-## Combining with Standard Features
-
-All parent `ModalTableSelect` features work as normal. Mix them with display mode configuration:
-
-```php
-use Filament\Actions\Action;
-
-ModalTableSelect::make('categories')
-    ->relationship('categories', 'name')
-    ->multiple()
-    ->tableConfiguration(CategoriesTable::class)
-    ->selectAction(
-        fn (Action $action) => $action
-            ->label('Choose categories')
-            ->modalHeading('Browse categories')
-    )
-    ->getOptionLabelFromRecordUsing(
-        fn (Category $record) => "{$record->name} ({$record->slug})"
-    )
-    ->tableColumns([
-        TextColumn::make('name'),
-        TextColumn::make('slug'),
-    ])
-```
-
-## Fallback Behavior
-
-If you don't configure any display mode, the component behaves exactly like Filament's standard `ModalTableSelect` -- badges for multiple selections, text or badge for single.
+Everything the parent supports (`relationship()`, `tableConfiguration()`, `multiple()`, `badge()`, `badgeColor()`, `selectAction()`, `tableArguments()`, ...) works unchanged.
 
 ## Translations
 
-The package ships with English translations. Publish and customize them:
+Published under the `fin-modal-table-select` namespace:
 
 ```bash
 php artisan vendor:publish --tag="fin-modal-table-select-translations"
 ```
 
-Translation keys live in `resources/lang/en/modal-table-select.php`:
-
-| Key | Default |
-|-----|---------|
-| `empty_message` | No items selected. |
-| `count` | :count item selected\|:count items selected |
-| `remove` | Remove |
-| `actions` | Actions |
-
-## Known Limitations
-
-- The selected items table uses a styled HTML table with Filament CSS classes, not a full Filament `Table` component. There's no sorting, filtering, or pagination on the selected items display.
-- Infolist and form rendering create standalone instances. Complex Livewire-dependent components (like file uploads) in the form schema may not work as expected.
-- Row actions in the selected table are limited to "remove". Custom row actions aren't supported yet.
+Keys: `empty_message`, `count` (pluralized), `remove`, `actions`, `toggle`. English ships with the package.

@@ -8,7 +8,11 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/finity-labs/fin-modal-table-select.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-modal-table-select)
 [![License](https://img.shields.io/packagist/l/finity-labs/fin-modal-table-select.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-modal-table-select)
 
-A drop-in replacement for Filament's native `ModalTableSelect` that actually shows what you've selected. It supports five display modes: badges (default), table, infolist, form, and selection-only. The mode resolves automatically based on what you configure -- set table columns and it uses table mode, set an infolist schema and it uses infolist mode, configure nothing and it falls back to standard badges.
+A drop-in replacement for Filament's native `ModalTableSelect` that shows what you've selected — and can push the selection into the rest of your form.
+
+- **Rich selected-items display**: a table (columns inherited from your modal's `tableConfiguration()` via `displayAsTable()`), an infolist card for single selection, badges, or nothing (selection-only mode). The mode resolves automatically from what you configure.
+- **`fillsFields()`**: selecting a record prefills sibling form fields — pick a company, get its name and tax number filled in, let the user overwrite the phone.
+- **`fillsRepeater()`**: a multiple selection syncs into a sibling `Repeater` with merge semantics — pick products, get one editable row each (quantity, price), and re-picking never wipes what the user already edited.
 
 ## Requirements
 
@@ -46,16 +50,26 @@ English translations are included out of the box. You can publish and customize 
 
 ```php
 use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
-use Filament\Tables\Columns\TextColumn;
 
+// Selected records rendered as a table, columns inherited from CategoriesTable:
 ModalTableSelect::make('categories')
     ->relationship('categories', 'name')
     ->multiple()
     ->tableConfiguration(CategoriesTable::class)
-    ->tableColumns([
-        TextColumn::make('name'),
-        TextColumn::make('slug'),
-    ])
+    ->displayAsTable()
+
+// Invoice lines: pick products, edit quantity/price per row in a Repeater:
+ModalTableSelect::make('product_picker')
+    ->relationship('products', 'name')
+    ->multiple()
+    ->tableConfiguration(ProductsTable::class)
+    ->selectionOnly()
+    ->fillsRepeater('items', fn (Product $record): array => [
+        'product_id' => $record->getKey(),
+        'name'       => $record->name,
+        'unit_price' => $record->default_price,
+        'quantity'   => 1,
+    ], keyAttribute: 'product_id')
 ```
 
 See [the full documentation](docs/modal-table-select.md) for all display modes and configuration options.
