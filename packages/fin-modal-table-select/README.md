@@ -14,7 +14,7 @@ The stock component renders the selection as badges or comma-separated text. Thi
 - **`fillsRepeater()` + `SelectedItemsRepeater`** — pick products, get one editable row each (quantity, price). Re-picking never wipes what the user edited, and deleting a row deselects its record.
 - **`standalone()`** — use the picker without an Eloquent relationship; selected IDs land in a JSON column.
 
-Everything user-facing stays stock Filament — the modal, the row entries, the repeater. This package only wires them together.
+Everything user-facing stays stock Filament — the modal, the row entries, the repeater. This package only wires them together. All display modes support dark mode out of the box, and 58 locales ship with the package.
 
 ## Screenshots
 

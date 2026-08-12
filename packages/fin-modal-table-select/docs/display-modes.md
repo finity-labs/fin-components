@@ -2,6 +2,8 @@
 
 Every way the selection can render on the form. The mode resolves automatically — see [Getting started](getting-started.md#how-the-display-mode-is-chosen) for the priority order.
 
+Every mode supports Filament's dark mode out of the box — no configuration needed. (On a custom theme, make sure the package views are in your `@source` list — see [Installation](installation.md#tailwind-setup-custom-themes-only).)
+
 ## Table
 
 The flagship. The fastest way to a table is to reuse the columns your modal already has:
