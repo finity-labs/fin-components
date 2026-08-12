@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>fin-modal-table-select banner</title>
+<style>
+    /* Render at exactly 2560x1280 (2:1). See art/README.md for the one-liner. */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body { width: 2560px; height: 1280px; overflow: hidden; }
+
+    body {
+        font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background:
+            radial-gradient(1600px 900px at 78% 30%, rgba(245, 158, 11, 0.14), transparent 60%),
+            radial-gradient(1200px 800px at 15% 85%, rgba(245, 158, 11, 0.07), transparent 55%),
+            #0a0a0b;
+        color: #fafafa;
+        display: flex;
+        align-items: center;
+        position: relative;
+    }
+
+    /* faint grid */
+    body::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+        background-size: 64px 64px;
+        mask-image: radial-gradient(1800px 1100px at 50% 45%, black 40%, transparent 100%);
+    }
+
+    .left {
+        position: relative;
+        width: 1150px;
+        padding: 0 0 0 140px;
+        z-index: 2;
+    }
+
+    .kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 30px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #fbbf24;
+        margin-bottom: 36px;
+    }
+
+    .kicker::before {
+        content: '';
+        width: 44px;
+        height: 4px;
+        border-radius: 2px;
+        background: #f59e0b;
+    }
+
+    h1 {
+        font-size: 118px;
+        line-height: 1.04;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 44px;
+    }
+
+    h1 .accent { color: #fbbf24; }
+
+    .tagline {
+        font-size: 42px;
+        line-height: 1.45;
+        color: #a1a1aa;
+        max-width: 950px;
+        margin-bottom: 60px;
+    }
+
+    .tagline strong { color: #e4e4e7; font-weight: 600; }
+
+    .chips { display: flex; flex-wrap: wrap; gap: 18px; max-width: 980px; }
+
+    .chip {
+        font-size: 30px;
+        font-weight: 600;
+        padding: 14px 30px;
+        border-radius: 999px;
+        background: rgba(245, 158, 11, 0.10);
+        border: 1.5px solid rgba(245, 158, 11, 0.35);
+        color: #fcd34d;
+    }
+
+    .chip.gray {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.14);
+        color: #d4d4d8;
+    }
+
+    .repo {
+        margin-top: 72px;
+        font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+        font-size: 27px;
+        color: #52525b;
+        letter-spacing: 0.02em;
+    }
+
+    /* ---- right side: stylized component mock ---- */
+
+    .right {
+        position: absolute;
+        right: -60px;
+        top: 50%;
+        transform: translateY(-50%) rotate(-1.5deg);
+        width: 1330px;
+        z-index: 2;
+    }
+
+    .window {
+        background: #18181b;
+        border: 1.5px solid rgba(255,255,255,0.09);
+        border-radius: 28px;
+        box-shadow: 0 60px 140px rgba(0,0,0,0.65);
+        padding: 56px 60px;
+    }
+
+    /* Prefer a real screenshot: put art/screenshot.png next to this file and
+       set .shot { display:block } / .mock { display:none } below. */
+    .shot { display: none; width: 100%; border-radius: 18px; }
+
+    .label-row {
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        margin-bottom: 34px;
+    }
+
+    .label-row .label { font-size: 38px; font-weight: 600; color: #e4e4e7; }
+
+    .badge {
+        font-size: 26px;
+        font-weight: 600;
+        padding: 8px 22px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.07);
+        border: 1px solid rgba(255,255,255,0.12);
+        color: #a1a1aa;
+    }
+
+    .label-row .pick {
+        margin-left: auto;
+        width: 58px;
+        height: 58px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(245, 158, 11, 0.14);
+        border: 1.5px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .pick svg { width: 32px; height: 32px; stroke: #fbbf24; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    th {
+        text-align: left;
+        font-size: 26px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #71717a;
+        padding: 0 26px 22px;
+    }
+
+    td {
+        font-size: 32px;
+        color: #e4e4e7;
+        padding: 26px;
+        border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    td.num { font-variant-numeric: tabular-nums; color: #a1a1aa; }
+
+    .pill {
+        display: inline-block;
+        font-size: 25px;
+        font-weight: 600;
+        padding: 7px 20px;
+        border-radius: 999px;
+    }
+
+    .pill.green { background: rgba(52, 211, 153, 0.12); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.35); }
+    .pill.amber { background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.35); }
+
+    .x {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.05);
+        color: #71717a;
+        font-size: 28px;
+        line-height: 1;
+    }
+
+    .footer-count {
+        border-top: 1px solid rgba(255,255,255,0.07);
+        padding: 24px 26px 0;
+        font-size: 27px;
+        color: #71717a;
+    }
+</style>
+</head>
+<body>
+    <div class="left">
+        <div class="kicker">Filament plugin</div>
+
+        <h1>Modal Table<br>Select<span class="accent">.</span></h1>
+
+        <p class="tagline">
+            Pick records in a modal table — then <strong>show them beautifully</strong>
+            and <strong>fill your form</strong>: tables, cards, stacked lists,
+            prefilled fields, editable repeater rows.
+        </p>
+
+        <div class="chips">
+            <span class="chip">9 display modes</span>
+            <span class="chip">fillsRepeater()</span>
+            <span class="chip gray">fillsFields()</span>
+            <span class="chip gray">standalone mode</span>
+            <span class="chip gray">Filament v5</span>
+        </div>
+
+        <div class="repo">finity-labs / fin-modal-table-select</div>
+    </div>
+
+    <div class="right">
+        <div class="window">
+            <img class="shot" src="screenshot.png" alt="">
+
+            <div class="mock">
+                <div class="label-row">
+                    <span class="label">Products</span>
+                    <span class="badge">3 items selected</span>
+                    <span class="pick">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487z"/>
+                        </svg>
+                    </span>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr><th>Product</th><th>SKU</th><th>Price</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Standing desk</td>
+                            <td><span class="pill amber">DSK-001</span></td>
+                            <td class="num">$499.00</td>
+                            <td><span class="x">×</span></td>
+                        </tr>
+                        <tr>
+                            <td>Monitor 27&Prime;</td>
+                            <td><span class="pill amber">MON-003</span></td>
+                            <td class="num">$329.00</td>
+                            <td><span class="x">×</span></td>
+                        </tr>
+                        <tr>
+                            <td>Office chair</td>
+                            <td><span class="pill green">CHR-002</span></td>
+                            <td class="num">$189.99</td>
+                            <td><span class="x">×</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="footer-count">+9 more</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
