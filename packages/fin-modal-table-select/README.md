@@ -2,19 +2,14 @@
     <img src="art/main-image.jpeg" alt="FinModalTableSelect" width="640">
 </p>
 
-<h1 align="center">FinModalTableSelect for Filament</h1>
+# FinModalTableSelect for Filament
 
-<p align="center">
-    <a href="https://filamentphp.com/docs/4.x/panels/installation"><img src="https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square" alt="Filament 4.x"></a>
-    <a href="https://filamentphp.com/docs/5.x/panels/installation"><img src="https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square" alt="Filament 5.x"></a>
-    <a href="https://packagist.org/packages/finity-labs/fin-modal-table-select"><img src="https://img.shields.io/packagist/v/finity-labs/fin-modal-table-select.svg?style=flat-square" alt="Latest Version on Packagist"></a>
-    <a href="https://github.com/finity-labs/fin-modal-table-select/actions/workflows/tests.yml"><img src="https://github.com/finity-labs/fin-modal-table-select/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
-</p>
+  <a href="https://filamentphp.com/docs/4.x/panels/installation"><img src="https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square" alt="Filament 4.x"></a>
+  <a href="https://filamentphp.com/docs/5.x/panels/installation"><img src="https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square" alt="Filament 5.x"></a>
+  <a href="https://packagist.org/packages/finity-labs/fin-modal-table-select"><img src="https://img.shields.io/packagist/v/finity-labs/fin-modal-table-select.svg?style=flat-square" alt="Latest Version on Packagist"></a>
+  <a href="https://github.com/finity-labs/fin-modal-table-select/actions/workflows/tests.yml"><img src="https://github.com/finity-labs/fin-modal-table-select/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
 
-<p align="center">
-    A drop-in replacement for Filament's native <code>ModalTableSelect</code> that shows what you've selected —<br>
-    and can push the selection into the rest of your form.
-</p>
+A drop-in replacement for Filament's native <code>ModalTableSelect</code> that shows what you've selected — and can push the selection into the rest of your form.
 
 The stock component renders the selection as badges or comma-separated text. This one adds:
 
