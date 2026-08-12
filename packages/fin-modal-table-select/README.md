@@ -1,4 +1,4 @@
-# FinModalTableSelect
+# FinModalTableSelect for Filament
 
 [![FILAMENT 4.x](https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square)](https://filamentphp.com/docs/4.x/panels/installation)
 [![FILAMENT 5.x](https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square)](https://filamentphp.com/docs/5.x/panels/installation)
@@ -36,22 +36,28 @@ Everything user-facing stays stock Filament — the modal, the row entries, the 
 
 <!-- screenshot: the "displayAsTable" picker with 3-4 products selected, collapsible + footer count visible -->
 <img src="PASTE-GITHUB-ATTACHMENT-URL" alt="Selected records rendered as a table with inherited columns" width="800">
+<img width="946" height="321" alt="items-repeater" src="https://github.com/user-attachments/assets/848af614-d15b-416e-9a27-e1dca0150917" />
 
 **The invoice flow** — pick products in the modal, edit quantity and price per row; re-picking keeps your edits:
 
 <!-- screenshot: the "Invoice lines" section with the modal OPEN over it, a few rows checked -->
 <img src="PASTE-GITHUB-ATTACHMENT-URL" alt="Modal table select filling a table-layout repeater with editable rows" width="800">
+<img width="1030" height="643" alt="modal-table-select-open" src="https://github.com/user-attachments/assets/612cbda6-0d9a-481c-8dca-e1acbe16cf77" />
+
 
 **Prefilled invoice header** — `fillsFields()` with read-only entries and an editable phone:
 
 <!-- screenshot: the "Company" section after picking a company -->
 <img src="PASTE-GITHUB-ATTACHMENT-URL" alt="Company picker prefilling name, tax number, and phone" width="800">
+<img width="944" height="237" alt="form-components" src="https://github.com/user-attachments/assets/48ae5f2f-bab3-44c4-9c2b-ed8c183c6121" />
 
 **Stacked list, card grid, and per-record badges**:
 
 <!-- screenshots: side-by-side or stacked captures of the display showcase sections -->
 <img src="PASTE-GITHUB-ATTACHMENT-URL" alt="Stacked list with remove buttons and +N more overflow" width="800">
 <img src="PASTE-GITHUB-ATTACHMENT-URL" alt="Card grid and per-record badge colors" width="800">
+<img width="951" height="571" alt="display-showcase" src="https://github.com/user-attachments/assets/08c6e393-9d1a-4071-a1be-77b137c3f39c" />
+<img width="946" height="641" alt="more-view-types" src="https://github.com/user-attachments/assets/d90cb4a5-c896-4181-b10c-afca0fca8b52" />
 
 ## Quick example
 
