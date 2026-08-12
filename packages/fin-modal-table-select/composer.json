@@ -1,7 +1,7 @@
 {
     "name": "finity-labs/fin-modal-table-select",
-    "description": "Enhanced ModalTableSelect for Filament with table, infolist, and form display modes for selected items.",
-    "keywords": ["filament", "laravel", "modal-table-select", "form-component"],
+    "description": "ModalTableSelect for Filament with rich selected-item displays (table, cards, stacked list), form prefill, and repeater sync",
+    "keywords": ["filament", "laravel", "modal-table-select", "form-component", "repeater", "table-select"],
     "homepage": "https://github.com/finity-labs/fin-modal-table-select",
     "license": "MIT",
     "type": "library",
