@@ -16,9 +16,25 @@
     $statePath = $getStatePath();
     $listStyle = $getListStyle();
     $hasRecordBadges = $hasRecordBadges();
+
+    // Count badge rendered right after the field label via the wrapper's
+    // labelSuffix slot. The afterLabel slot must stay untouched — Filament
+    // renders the hint actions (including the select icon) through it.
+    $selectionSummaryText = null;
+
+    if ($getHasSelectionSummary() && filled($state)) {
+        $selectionSummaryText = $getSelectionSummaryLabel(is_array($state) ? count($state) : 1);
+    }
 @endphp
 
 <x-dynamic-component :component="$fieldWrapperView" :field="$field">
+    @if (filled($selectionSummaryText))
+        <x-slot name="labelSuffix">
+            <x-filament::badge color="gray">
+                {{ $selectionSummaryText }}
+            </x-filament::badge>
+        </x-slot>
+    @endif
     <div
         {{
             $attributes
