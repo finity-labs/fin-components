@@ -1,6 +1,6 @@
 # FinModalTableSelect for Filament
 
-![finity-labs-fin-modal-table-select](art/main-image.jpeg)
+<img width="1867" height="877" alt="finity-labs-fin-modal-table-select" src="https://github.com/user-attachments/assets/8eabca4a-40bc-476a-95b4-f7c5f532ac66" />
 
 [![FILAMENT 4.x](https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square)](https://filamentphp.com/docs/4.x/panels/installation)
 [![FILAMENT 5.x](https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square)](https://filamentphp.com/docs/5.x/panels/installation)
