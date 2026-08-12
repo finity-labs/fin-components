@@ -1,3 +1,16 @@
+# Art assets
+
+## Main image (`main-image.html` → `main-image.jpeg`)
+
+The filamentphp.com plugin main image: flat icon-only design per the submission
+requirements — modal-window-with-selected-row motif, amber #EBB304 on #111827,
+no text, 16:9 at 2560×1440, JPEG. The rendered `main-image.jpeg` is committed
+so it's ready to upload; re-render after edits with:
+
+```bash
+npx playwright screenshot --viewport-size=2560,1440 "file://$PWD/art/main-image.html" art/main-image.jpeg
+```
+
 # Banner
 
 `banner.html` is the main image for the filamentphp.com plugin listing, built as
