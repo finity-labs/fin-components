@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
+- Translations for 58 locales, matching the locale set of the other fin packages
 - `FilledEntry`: a fillsFields() display target pairing a Hidden field with a live TextEntry — bare infolist entries are not stateful and cannot receive fills
 - `hydrateSelectionFromRepeater()`: rebuild the picker selection from saved repeater rows on edit pages
 - `listStyle()`: comma, dot, bullet, or line-break text lists instead of badges

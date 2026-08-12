@@ -33,7 +33,7 @@ On Filament's default theme you can skip this — but if a display mode looks un
 
 ## Translations
 
-English ships with the package. To customize the strings or add locales:
+58 locales ship with the package (the same set as the other fin packages). To customize any of the strings:
 
 ```bash
 php artisan vendor:publish --tag="fin-modal-table-select-translations"

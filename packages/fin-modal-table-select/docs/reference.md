@@ -91,3 +91,5 @@ php artisan vendor:publish --tag="fin-modal-table-select-translations"
 | `more` (pluralized) | "+N more" overflow toggle |
 | `less` | "Show less" overflow toggle |
 | `select` | Empty-state select button |
+
+58 locales ship with the package. The pluralized keys use explicit `{1} ...|[2,*] ...` intervals, so they behave the same under every locale's plural rules.
