@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## Unreleased
 
 ### Added
+- `FilledEntry`: a fillsFields() display target pairing a Hidden field with a live TextEntry — bare infolist entries are not stateful and cannot receive fills
+- `hydrateSelectionFromRepeater()`: rebuild the picker selection from saved repeater rows on edit pages
 - `listStyle()`: comma, dot, bullet, or line-break text lists instead of badges
 - `badgeColorFromRecord()` / `badgeIconFromRecord()`: per-record badge colors and icons
 - `cardGrid()`: card grid display with image, title, description, and remove buttons
@@ -21,6 +23,8 @@ All notable changes to this project will be documented in this file.
 - Livewire feature tests covering rendering, prefill, and repeater merge
 
 ### Changed
+- `selectionSummary()` now renders the count badge on the label line (after the field label) and works in every display mode, not just selection-only
+- The inherited table display derived from `tableConfiguration()` is memoized per request
 - Table and infolist rendering moved out of Blade into PHP schema builders; rows and cards are bound to the record models, so entry formatting, casts, and dot-notation relationships resolve natively
 - `getSelectedRecords()` (was `getRecords()`) uses the parent's relationship query strategy, honors `modifyRelationshipQueryUsing()`, keeps selection order, and memoizes per state
 - The parent's `getSelectedRecord()` pipeline and cache are used as-is instead of being overridden

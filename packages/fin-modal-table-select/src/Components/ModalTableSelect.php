@@ -7,6 +7,7 @@ namespace FinityLabs\FinModalTableSelect\Components;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ModalTableSelect as FilamentModalTableSelect;
+use Filament\Schemas\Components\Text;
 use FinityLabs\FinModalTableSelect\Concerns\CanFillFields;
 use FinityLabs\FinModalTableSelect\Concerns\CanFillRepeater;
 use FinityLabs\FinModalTableSelect\Concerns\HasBadgeAndListDisplay;
@@ -55,6 +56,26 @@ class ModalTableSelect extends FilamentModalTableSelect
             fn (): Action => $this->getRemoveSelectedItemAction(),
             fn (): Action => $this->getSelectAction(),
         ]);
+
+        // Count badge on the label line, right after the field label. Opt-in
+        // via selectionSummary(); renders nothing while the selection is empty.
+        $this->afterLabel(function (): ?Text {
+            if (! $this->getHasSelectionSummary()) {
+                return null;
+            }
+
+            $state = $this->getState();
+
+            if (blank($state)) {
+                return null;
+            }
+
+            $count = is_array($state) ? count($state) : 1;
+
+            return Text::make($this->getSelectionSummaryLabel($count))
+                ->badge()
+                ->color('gray');
+        });
 
         // Share an Alpine `open` flag across the whole field (label hint actions
         // and content) so the chevron hint action can show/hide the collapsible

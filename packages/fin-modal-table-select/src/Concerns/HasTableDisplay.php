@@ -52,6 +52,9 @@ trait HasTableDisplay
 
     protected ?string $cachedSelectedRecordsKey = null;
 
+    /** @var array{columns: array<TableColumn>, entries: array<SchemaComponent>}|null */
+    protected ?array $cachedInheritedTableDisplay = null;
+
     /**
      * Display the selected records as a table. With no explicit tableColumns()
      * or tableSchema(), the columns are inherited from the modal's
@@ -222,13 +225,17 @@ trait HasTableDisplay
      */
     protected function getInheritedTableDisplay(): array
     {
+        if ($this->cachedInheritedTableDisplay !== null) {
+            return $this->cachedInheritedTableDisplay;
+        }
+
         try {
             $configuration = $this->getTableConfiguration();
 
             $table = Table::make(app(TableSelectLivewireComponent::class));
             $configuration::configure($table);
         } catch (Throwable) {
-            return ['columns' => [], 'entries' => []];
+            return $this->cachedInheritedTableDisplay = ['columns' => [], 'entries' => []];
         }
 
         $columns = [];
@@ -243,7 +250,7 @@ trait HasTableDisplay
             $entries[] = $this->makeEntryForTableColumn($column);
         }
 
-        return ['columns' => $columns, 'entries' => $entries];
+        return $this->cachedInheritedTableDisplay = ['columns' => $columns, 'entries' => $entries];
     }
 
     protected function makeEntryForTableColumn(Column $column): SchemaComponent

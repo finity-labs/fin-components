@@ -72,18 +72,10 @@ The picker is `dehydrated(false)`, so its selection isn't saved — the rows are
 ```php
 ModalTableSelect::make('product_picker')
     // ...
-    ->afterStateHydrated(function (ModalTableSelect $component, $state): void {
-        if (filled($state)) {
-            return;
-        }
-
-        $items = $component->getContainer()->getRawState()['items'] ?? [];
-
-        $component->state(
-            collect($items)->pluck('product_id')->filter()->values()->all(),
-        );
-    }),
+    ->hydrateSelectionFromRepeater(),
 ```
+
+The repeater name and key attribute default to the `fillsRepeater()` configuration; pass them explicitly to override. The hook only runs when the picker state is empty, so a saved selection is never clobbered.
 
 ## Alternative: picker as its own display
 

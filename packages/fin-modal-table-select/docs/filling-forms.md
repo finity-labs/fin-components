@@ -6,6 +6,7 @@ The invoice case: pick a company, show its name and tax number, let the user adj
 
 ```php
 use Filament\Forms\Components\TextInput;
+use FinityLabs\FinModalTableSelect\Components\FilledEntry;
 use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 
 ModalTableSelect::make('company_id')
@@ -18,8 +19,8 @@ ModalTableSelect::make('company_id')
         'greeting'     => fn (Company $record): string => "Dear {$record->owner_name}",
     ]),
 
-TextInput::make('company_name')->disabled()->dehydrated(),
-TextInput::make('tax_number')->disabled()->dehydrated(),
+FilledEntry::make('company_name'),                   // read-only infolist entry, still saved
+FilledEntry::make('tax_number'),
 TextInput::make('phone'),                            // prefilled, user can edit
 ```
 
@@ -31,9 +32,23 @@ TextInput::make('phone'),                            // prefilled, user can edit
 - **Targets are relative paths**, the same way `$set()` resolves them: siblings by plain name.
 - The record is re-resolved fresh when the fill runs, so it always reflects the just-changed selection.
 
+## Displaying filled values as infolist entries
+
+Filament lets you put infolist entries in forms, but entries are **not stateful** — a bare `TextEntry::make('company_name')` cannot receive a fill. Worse, it shadows the state path, so the value never reaches form state at all.
+
+`FilledEntry` solves this: it pairs a `Hidden` field (holds and dehydrates the value) with a `TextEntry` that reads it live.
+
+```php
+FilledEntry::make('tax_number'),                                  // label derived from the name
+FilledEntry::make('company_name', label: 'Legal name'),
+FilledEntry::make('status', modifyEntryUsing: fn (TextEntry $entry) => $entry->badge()),
+```
+
+If you'd rather wire it yourself, the equivalent is `Hidden::make('x')` plus `TextEntry::make('x_display')->state(fn (Get $get) => $get('x'))`.
+
 ## Field choice tips
 
-- Prefilled-but-locked values: `TextInput::make(...)->disabled()->dehydrated()` — visible, not editable, still saved.
+- Prefilled-but-locked values: `FilledEntry::make(...)` for infolist styling, or `TextInput::make(...)->disabled()->dehydrated()` for input styling — both visible, not editable, still saved.
 - Prefilled-and-editable values: a plain `TextInput` — the fill writes once per selection change; anything the user types afterwards stays.
 - A dropdown of the selected record's relations (e.g. the company's contacts): a normal `Select` reading the picker's state:
 

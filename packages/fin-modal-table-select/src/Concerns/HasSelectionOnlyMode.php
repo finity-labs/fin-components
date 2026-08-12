@@ -30,10 +30,9 @@ trait HasSelectionOnlyMode
     }
 
     /**
-     * Show a compact summary next to the select button
-     * (e.g. "3 items selected") when in selection-only mode.
-     *
-     * Has no effect when selectionOnly is not enabled.
+     * Show a compact count badge (e.g. "3 items selected") on the label line,
+     * right after the field label. Works in every display mode; off by
+     * default.
      */
     public function selectionSummary(bool|Closure $condition = true): static
     {

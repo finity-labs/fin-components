@@ -62,6 +62,45 @@ trait CanFillRepeater
         return $this->evaluate($this->fillsRepeaterKeyAttribute);
     }
 
+    /**
+     * On edit pages, rebuild the picker selection from the saved repeater
+     * rows, so the modal opens with the right records pre-checked. The
+     * repeater name and key attribute default to the fillsRepeater()
+     * configuration.
+     */
+    public function hydrateSelectionFromRepeater(
+        string|Closure|null $repeaterName = null,
+        string|Closure|null $keyAttribute = null,
+    ): static {
+        $this->afterStateHydrated(static function (ModalTableSelect $component, mixed $state) use ($repeaterName, $keyAttribute): void {
+            if (filled($state)) {
+                return;
+            }
+
+            $name = $component->evaluate($repeaterName)
+                ?? $component->evaluate($component->fillsRepeaterName);
+
+            if (blank($name)) {
+                return;
+            }
+
+            $key = $component->evaluate($keyAttribute)
+                ?? $component->getFillsRepeaterKeyAttribute();
+
+            $rows = $component->getContainer()->getRawState()[$name] ?? [];
+
+            $component->state(
+                collect($rows)
+                    ->map(fn ($row): mixed => data_get($row, $key))
+                    ->filter(fn ($value): bool => filled($value))
+                    ->values()
+                    ->all(),
+            );
+        });
+
+        return $this;
+    }
+
     public function runRepeaterFill(Set $set, Get $get): void
     {
         $repeaterName = $this->evaluate($this->fillsRepeaterName);

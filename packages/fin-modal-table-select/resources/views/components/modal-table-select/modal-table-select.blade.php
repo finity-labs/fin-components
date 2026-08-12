@@ -34,16 +34,8 @@
         }}
     >
         @if ($isSelectionOnly)
-            {{-- Selection-only mode: optional compact summary --}}
-            @if (filled($state) && $getHasSelectionSummary())
-                @php
-                    $count = is_array($state) ? count($state) : ($state ? 1 : 0);
-                @endphp
-
-                <x-filament::badge color="gray">
-                    {{ $getSelectionSummaryLabel($count) }}
-                </x-filament::badge>
-            @endif
+            {{-- Selection-only mode: nothing renders in the body; the optional
+                 count badge lives on the label line (see selectionSummary()). --}}
         @elseif ($hasCustomDisplay)
             {{-- Custom display modes --}}
             @php

@@ -35,7 +35,7 @@ Everything the parent supports (`relationship()`, `tableConfiguration()`, `multi
 | `infolistEagerLoad()` | `array\|Closure $relationships` | Relationships to eager-load for the infolist record |
 | `itemView()` | `string\|Closure\|null $view, array\|Closure $viewData = []` | Custom Blade view per record |
 | `selectionOnly()` | `bool\|Closure $condition = true` | Headless picker, no selection display |
-| `selectionSummary()` | `bool\|Closure $condition = true` | Count badge in selection-only mode |
+| `selectionSummary()` | `bool\|Closure $condition = true` | Count badge on the label line, any display mode |
 | `selectionSummaryLabel()` | `string\|Closure\|null $label` | Custom summary text, `:count` placeholder |
 | `displayLimit()` | `int\|Closure\|null $limit` | "+N more" cap for badges, stacked list, cards, thumbnails |
 | `emptyStateSelectButton()` | `bool\|Closure $condition = true` | "Select…" link in the empty state |
@@ -48,6 +48,13 @@ Everything the parent supports (`relationship()`, `tableConfiguration()`, `multi
 | `standaloneModifyQueryUsing()` | `?Closure $callback` | Scope the standalone query |
 | `fillsFields()` | `array\|Closure $map` | Fill sibling fields from the selected record |
 | `fillsRepeater()` | `string\|Closure $repeaterName, Closure $itemUsing, string\|Closure $keyAttribute = 'id'` | Sync selection into a sibling Repeater |
+| `hydrateSelectionFromRepeater()` | `string\|Closure\|null $repeaterName = null, string\|Closure\|null $keyAttribute = null` | On edit pages, rebuild the picker selection from saved rows (defaults from `fillsRepeater()`) |
+
+## FilledEntry
+
+| Method | Parameters | Description |
+|--------|-----------|-------------|
+| `FilledEntry::make()` | `string $name, string\|Closure\|null $label = null, ?Closure $modifyEntryUsing = null` | A fillsFields() display target: Hidden field + live TextEntry pair |
 
 ## SelectedItemsRepeater
 

@@ -198,3 +198,55 @@ it('syncs the picker state when a repeater row is deleted', function () {
 
     expect($field->getState())->toBe([$first->getKey()]);
 });
+
+it('renders the selection summary as a badge on the label line in any mode', function () {
+    $user = User::query()->create(['name' => 'Jane', 'email' => 'jane@example.com']);
+    $first = $user->posts()->create(['title' => 'First post']);
+    $second = $user->posts()->create(['title' => 'Second post']);
+
+    $livewire = mountDisplayForm(fn (): array => [
+        ModalTableSelect::make('posts')
+            ->tableConfiguration(PostsTable::class)
+            ->relationship('posts', 'title')
+            ->multiple()
+            ->stackedList()
+            ->selectionSummary(),
+    ], $user);
+
+    $livewire->set('data.posts', [$first->getKey(), $second->getKey()]);
+
+    expect($livewire->html())->toContain('2 items selected');
+});
+
+it('hydrates the picker selection from saved repeater rows', function () {
+    $user = User::query()->create(['name' => 'Jane', 'email' => 'jane@example.com']);
+    $first = $user->posts()->create(['title' => 'First post']);
+    $second = $user->posts()->create(['title' => 'Second post']);
+
+    $livewire = mountDisplayForm(fn (): array => [
+        ModalTableSelect::make('posts')
+            ->tableConfiguration(PostsTable::class)
+            ->relationship('posts', 'title')
+            ->multiple()
+            ->selectionOnly()
+            ->fillsRepeater('items', fn (Post $record): array => [
+                'post_id' => $record->getKey(),
+                'title' => $record->title,
+            ], keyAttribute: 'post_id')
+            ->hydrateSelectionFromRepeater(),
+        TextInput::make('items')->hidden(),
+    ], $user);
+
+    $field = displayField($livewire, 'posts');
+
+    // Simulate an edit page: rows exist, picker state is empty.
+    $livewire->instance()->data['items'] = [
+        'row-a' => ['post_id' => $first->getKey(), 'title' => 'First post'],
+        'row-b' => ['post_id' => $second->getKey(), 'title' => 'Second post'],
+    ];
+
+    $field->state(null);
+    $field->callAfterStateHydrated();
+
+    expect($field->getState())->toBe([$first->getKey(), $second->getKey()]);
+});

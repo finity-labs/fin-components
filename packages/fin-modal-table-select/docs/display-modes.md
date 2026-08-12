@@ -178,6 +178,8 @@ ModalTableSelect::make('device_ids')
     ->selectionSummaryLabel(':count devices')
 ```
 
+`selectionSummary()` renders the count as a badge on the label line, right after the field label. It's off by default, works in **every** display mode (not just selection-only), and hides itself while the selection is empty.
+
 ## Shared options
 
 **Display limit.** `displayLimit(int)` caps how many items render before a "+N more" toggle. It applies to badges, the stacked list, cards, and thumbnails, and expands client-side — no round-trip.
