@@ -218,10 +218,10 @@
 
     .mini {
         position: absolute;
-        left: -150px;
-        bottom: -70px;
-        width: 520px;
-        transform: rotate(1.6deg);
+        right: 150px;
+        top: -110px;
+        width: 470px;
+        transform: rotate(-2deg);
         background: #18181b;
         border: 1.5px solid rgba(255,255,255,0.09);
         border-radius: 22px;
@@ -259,30 +259,73 @@
     .mini .l2 { height: 13px; width: 45%; border-radius: 7px; background: #3f3f46; }
     .mini .x { width: 38px; height: 38px; font-size: 24px; }
 
-    .badge-cluster {
+    .form-card {
         position: absolute;
-        right: 120px;
-        top: -66px;
-        display: flex;
-        gap: 14px;
-        transform: rotate(-1.5deg);
+        left: -170px;
+        bottom: -90px;
+        width: 560px;
+        transform: rotate(1.6deg);
+        background: #18181b;
+        border: 1.5px solid rgba(255,255,255,0.09);
+        border-radius: 22px;
+        box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+        padding: 30px 34px 36px;
         z-index: 3;
     }
 
-    .badge-cluster .b {
-        font-size: 26px;
-        font-weight: 600;
-        padding: 12px 26px;
-        border-radius: 999px;
-        background: #18181b;
-        border: 1.5px solid rgba(235, 179, 4, 0.45);
-        color: #fcd34d;
-        box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+    .form-card .field-label-row {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 26px;
     }
 
-    .badge-cluster .b.muted {
-        border-color: rgba(255,255,255,0.14);
-        color: #a1a1aa;
+    .form-card .field-label { font-size: 32px; font-weight: 600; color: #e4e4e7; }
+
+    .form-card .pick-sm {
+        margin-left: auto;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(245, 158, 11, 0.14);
+        border: 1.5px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .form-card .pick-sm svg { width: 26px; height: 26px; stroke: #fbbf24; }
+
+    .form-card .entry-label {
+        font-size: 22px;
+        font-weight: 600;
+        color: #71717a;
+        margin-bottom: 8px;
+    }
+
+    .form-card .entry-value {
+        font-size: 30px;
+        color: #fafafa;
+        margin-bottom: 26px;
+    }
+
+    .form-card .input {
+        display: flex;
+        align-items: center;
+        height: 66px;
+        padding: 0 22px;
+        border-radius: 14px;
+        background: #0c0c0e;
+        border: 1.5px solid rgba(255,255,255,0.13);
+        font-size: 28px;
+        color: #e4e4e7;
+    }
+
+    .form-card .input .caret {
+        width: 2px;
+        height: 34px;
+        background: #fbbf24;
+        margin-left: 6px;
     }
 </style>
 </head>
@@ -309,10 +352,21 @@
     </div>
 
     <div class="right">
-        <div class="badge-cluster">
-            <span class="b">Acme Corp.</span>
-            <span class="b">Globex Inc.</span>
-            <span class="b muted">+3 more</span>
+        <div class="form-card">
+            <div class="field-label-row">
+                <span class="field-label">Company</span>
+                <span class="pick-sm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.862 4.487z"/>
+                    </svg>
+                </span>
+            </div>
+
+            <div class="entry-label">Company name</div>
+            <div class="entry-value">Acme Corporation</div>
+
+            <div class="entry-label">Phone</div>
+            <div class="input">+1 (555) 010-2345<span class="caret"></span></div>
         </div>
 
         <div class="mini">
