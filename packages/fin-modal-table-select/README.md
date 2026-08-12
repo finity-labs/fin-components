@@ -1,11 +1,20 @@
-# FinModalTableSelect for Filament
+<p align="center">
+    <img src="art/main-image.jpeg" alt="FinModalTableSelect" width="640">
+</p>
 
-[![FILAMENT 4.x](https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square)](https://filamentphp.com/docs/4.x/panels/installation)
-[![FILAMENT 5.x](https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square)](https://filamentphp.com/docs/5.x/panels/installation)
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/finity-labs/fin-modal-table-select.svg?style=flat-square)](https://packagist.org/packages/finity-labs/fin-modal-table-select)
-[![Tests](https://github.com/finity-labs/fin-modal-table-select/actions/workflows/tests.yml/badge.svg)](https://github.com/finity-labs/fin-modal-table-select/actions/workflows/tests.yml)
+<h1 align="center">FinModalTableSelect for Filament</h1>
 
-A drop-in replacement for Filament's native `ModalTableSelect` that shows what you've selected — and can push the selection into the rest of your form.
+<p align="center">
+    <a href="https://filamentphp.com/docs/4.x/panels/installation"><img src="https://img.shields.io/badge/FILAMENT-4.x-EBB304?style=flat-square" alt="Filament 4.x"></a>
+    <a href="https://filamentphp.com/docs/5.x/panels/installation"><img src="https://img.shields.io/badge/FILAMENT-5.x-EBB304?style=flat-square" alt="Filament 5.x"></a>
+    <a href="https://packagist.org/packages/finity-labs/fin-modal-table-select"><img src="https://img.shields.io/packagist/v/finity-labs/fin-modal-table-select.svg?style=flat-square" alt="Latest Version on Packagist"></a>
+    <a href="https://github.com/finity-labs/fin-modal-table-select/actions/workflows/tests.yml"><img src="https://github.com/finity-labs/fin-modal-table-select/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+</p>
+
+<p align="center">
+    A drop-in replacement for Filament's native <code>ModalTableSelect</code> that shows what you've selected —<br>
+    and can push the selection into the rest of your form.
+</p>
 
 The stock component renders the selection as badges or comma-separated text. This one adds:
 
@@ -18,46 +27,30 @@ Everything user-facing stays stock Filament — the modal, the row entries, the 
 
 ## Screenshots
 
-<!--
-    Image workflow (GitHub hosts the files, the repo stays lean):
+**Pick records in a full Filament table** — search, sort, and filter inside the modal; the selection summary badge sits right on the field label:
 
-    1. Open a NEW ISSUE on the GitHub repo (you don't have to submit it).
-    2. Drag each screenshot into the issue textarea — GitHub uploads it and
-       inserts a https://github.com/user-attachments/assets/... URL.
-    3. Copy each URL into the matching placeholder below (in the MONOREPO
-       copy of this README, so a release sync doesn't overwrite it).
-    4. Close the issue tab without submitting; the uploads stay hosted.
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/612cbda6-0d9a-481c-8dca-e1acbe16cf77" alt="The modal table select open over the invoice form, with rows checked" width="880">
+</p>
 
-    Suggested capture: light theme, ~1200px wide browser, from the demo at
-    /admin/demo-invoices.
--->
+**The invoice flow** — every picked product becomes an editable repeater row (`fillsRepeater()` + `SelectedItemsRepeater`). Re-picking keeps your edited quantities and prices; deleting a row deselects the product:
 
-**Selected records as a table** — columns inherited from the modal's `tableConfiguration()` via `displayAsTable()`:
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/848af614-d15b-416e-9a27-e1dca0150917" alt="Table-layout repeater filled from the selection, with editable quantity and price" width="880">
+</p>
 
-<!-- screenshot: the "displayAsTable" picker with 3-4 products selected, collapsible + footer count visible -->
-<img src="PASTE-GITHUB-ATTACHMENT-URL" alt="Selected records rendered as a table with inherited columns" width="800">
-<img width="946" height="321" alt="items-repeater" src="https://github.com/user-attachments/assets/848af614-d15b-416e-9a27-e1dca0150917" />
+**Prefilled invoice header** — `fillsFields()` fills read-only entries and an editable phone from the picked company:
 
-**The invoice flow** — pick products in the modal, edit quantity and price per row; re-picking keeps your edits:
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/48ae5f2f-bab3-44c4-9c2b-ed8c183c6121" alt="Company picker prefilling name, tax number, and an editable phone" width="880">
+</p>
 
-<!-- screenshot: the "Invoice lines" section with the modal OPEN over it, a few rows checked -->
-<img src="PASTE-GITHUB-ATTACHMENT-URL" alt="Modal table select filling a table-layout repeater with editable rows" width="800">
-<img width="1030" height="643" alt="modal-table-select-open" src="https://github.com/user-attachments/assets/612cbda6-0d9a-481c-8dca-e1acbe16cf77" />
+**Nine ways to show the selection** — badges with `displayLimit()`, stacked lists with per-item remove, inherited-column tables, text lists, per-record badge colors, card grids, thumbnails, and your own Blade view per item:
 
-
-**Prefilled invoice header** — `fillsFields()` with read-only entries and an editable phone:
-
-<!-- screenshot: the "Company" section after picking a company -->
-<img src="PASTE-GITHUB-ATTACHMENT-URL" alt="Company picker prefilling name, tax number, and phone" width="800">
-<img width="944" height="237" alt="form-components" src="https://github.com/user-attachments/assets/48ae5f2f-bab3-44c4-9c2b-ed8c183c6121" />
-
-**Stacked list, card grid, and per-record badges**:
-
-<!-- screenshots: side-by-side or stacked captures of the display showcase sections -->
-<img src="PASTE-GITHUB-ATTACHMENT-URL" alt="Stacked list with remove buttons and +N more overflow" width="800">
-<img src="PASTE-GITHUB-ATTACHMENT-URL" alt="Card grid and per-record badge colors" width="800">
-<img width="951" height="571" alt="display-showcase" src="https://github.com/user-attachments/assets/08c6e393-9d1a-4071-a1be-77b137c3f39c" />
-<img width="946" height="641" alt="more-view-types" src="https://github.com/user-attachments/assets/d90cb4a5-c896-4181-b10c-afca0fca8b52" />
+<p align="center">
+    <img src="https://github.com/user-attachments/assets/08c6e393-9d1a-4071-a1be-77b137c3f39c" alt="Badges with display limit, stacked list, and inherited-column table displays" width="49%">
+    <img src="https://github.com/user-attachments/assets/d90cb4a5-c896-4181-b10c-afca0fca8b52" alt="Text lists, per-record badges, card grid, thumbnails, and custom item views" width="49%">
+</p>
 
 ## Quick example
 
