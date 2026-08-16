@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Files uploaded in the Compose Email page's Attachments section are now actually attached to the sent email and recorded in the log. The upload field dehydrated under a key the sender never read, so uploads were silently discarded while the UI reported success
 - Editing the preheader on the Compose Email page now affects the delivered email. The form collected the value and the preview showed it, but the sender had no way to pass it through — `TemplateMail` gained `overridePreheader()` and the compose path uses it. Tokens in the overridden preheader are replaced like in the body
+- Sending from the composer no longer throws a `TypeError` when the configured editor stores the body as a TipTap document array (e.g. the Tiptap editor). The preview already converted the document to HTML; the send path now does the same, using the template's theme colors for custom blocks
 
 ## [1.11.4] - 2026-08-13
 
