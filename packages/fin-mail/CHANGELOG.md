@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deleting themes in bulk now detaches their templates like single deletes always did. The detach logic moved from two duplicated action callbacks into a model `deleting` hook, so every delete path behaves the same — including on SQLite databases without foreign key enforcement (enforcing databases were already covered by the FK's `nullOnDelete`)
 - The stored-email viewers now render the email HTML in a sandboxed iframe (`sandbox="allow-same-origin"`), matching the template preview. Stored bodies can contain recipient-influenced content, and the unsandboxed frames allowed scripts to run inside the admin panel
 - Replicating a template now suggests a readable, collision-free key (`invoice-copy`, `invoice-copy-2`, …) instead of a `-copy-<timestamp>` suffix that could collide when two replications happened in the same second
+- Resending from the Sent Emails relation manager now behaves exactly like resending from the Sent Emails page: stored HTML sent verbatim (no re-wrapping in the layout, no re-running token replacement) and original attachments re-attached when they still exist. The two actions had drifted apart — the relation manager was still re-wrapping the full stored document (the bug fixed for the resource in 1.11.3) and silently dropped attachments. Both now share one `SentEmailResender` service
 
 ## [1.11.4] - 2026-08-13
 
