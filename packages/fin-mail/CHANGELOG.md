@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verification and password reset emails sent through the auth overrides no longer store their rendered body in the Sent Emails log. The bodies contain signed URLs; the log entry itself is still created, as the documentation always described
 - Locked templates now enforce their `key` and `category` protection server-side. The fields were only `disabled()` in the form but still dehydrated, so a crafted request could rewrite a locked system template's key — which the auth email overrides depend on
 - Switching languages while editing a template no longer discards unsaved work. The edit page now stashes in-progress translations per locale (like the create page always did), restores them when switching back, keeps unsaved non-translatable edits (theme, tags, sender) intact across the switch, and persists every stashed locale on save
+- Only one theme can be the default now, enforced on the model for every write path. Previously the uniqueness lived in a form callback that only ran when editing an existing theme — creating a new theme with "default" toggled on produced two defaults, and which one actually applied was undefined. The premature form callback (which rewrote other themes before the form was even saved) is gone
 
 ## [1.11.4] - 2026-08-13
 

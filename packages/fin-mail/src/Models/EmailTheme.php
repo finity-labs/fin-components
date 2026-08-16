@@ -32,6 +32,19 @@ class EmailTheme extends Model
         ];
     }
 
+    protected static function booted(): void
+    {
+        // Only one default theme may exist. Enforced on the model so every
+        // write path (create, edit, bulk, programmatic) keeps the invariant.
+        static::saved(function (self $theme): void {
+            if ($theme->is_default) {
+                static::whereKeyNot($theme->getKey())
+                    ->where('is_default', true)
+                    ->update(['is_default' => false]);
+            }
+        });
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Relationships
