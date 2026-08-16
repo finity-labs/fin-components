@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- New `auth_emails.store_rendered_body` config option (default `false`). When enabled, the password reset and verification overrides store their rendered body in the Sent Emails log like any other email, for teams that want a full audit trail of exactly what was sent. Left off, the signed reset/verification URLs stay out of the database
+
 ### Fixed
 
 - Files uploaded in the Compose Email page's Attachments section are now actually attached to the sent email and recorded in the log. The upload field dehydrated under a key the sender never read, so uploads were silently discarded while the UI reported success

@@ -124,3 +124,17 @@ it('falls back to the default password reset mail when the template is missing',
     expect($mail)->toBeInstanceOf(MailMessage::class)
         ->and($mail->actionUrl)->toContain('test-token');
 });
+
+it('stores the rendered auth email body when the config opts in', function () {
+    config()->set('fin-mail.auth_emails.store_rendered_body', true);
+
+    createAuthTemplate('user-password-reset');
+
+    Mail::send((new ResetPassword('test-token'))->toMail(createOverrideTestUser()));
+
+    $log = SentEmail::first();
+
+    expect($log)->not->toBeNull()
+        ->and($log->rendered_body)->not->toBeNull()
+        ->and($log->rendered_body)->toContain('test-token');
+});

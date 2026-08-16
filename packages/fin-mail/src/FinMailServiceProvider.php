@@ -156,13 +156,14 @@ class FinMailServiceProvider extends PackageServiceProvider
         VerifyEmail::toMailUsing(function (mixed $notifiable, string $url): Mail\TemplateMail|MailMessage {
             try {
                 if (Models\EmailTemplate::findByKey('user-verify-email')) {
-                    return Mail\TemplateMail::make('user-verify-email', app()->getLocale())
+                    $mail = Mail\TemplateMail::make('user-verify-email', app()->getLocale())
                         ->to($notifiable->getEmailForVerification())
                         ->models([
                             'user' => $notifiable,
                             'url' => new Helpers\TokenValue($url),
-                        ])
-                        ->withoutStoringRenderedBody();
+                        ]);
+
+                    return $this->applyAuthBodyStoragePolicy($mail);
                 }
             } catch (\Throwable $e) {
                 report($e);
@@ -181,13 +182,14 @@ class FinMailServiceProvider extends PackageServiceProvider
 
             try {
                 if (Models\EmailTemplate::findByKey('user-password-reset')) {
-                    return Mail\TemplateMail::make('user-password-reset', app()->getLocale())
+                    $mail = Mail\TemplateMail::make('user-password-reset', app()->getLocale())
                         ->to($notifiable->getEmailForPasswordReset())
                         ->models([
                             'user' => $notifiable,
                             'url' => new Helpers\TokenValue($url),
-                        ])
-                        ->withoutStoringRenderedBody();
+                        ]);
+
+                    return $this->applyAuthBodyStoragePolicy($mail);
                 }
             } catch (\Throwable $e) {
                 report($e);
@@ -197,6 +199,19 @@ class FinMailServiceProvider extends PackageServiceProvider
             // reset - fall back to Laravel's default notification mail.
             return $this->defaultAuthMailMessage(new ResetPassword($token), $url);
         });
+    }
+
+    /**
+     * Auth email bodies contain signed URLs, so they are kept out of the
+     * Sent Emails log unless the developer opts in via config.
+     */
+    protected function applyAuthBodyStoragePolicy(Mail\TemplateMail $mail): Mail\TemplateMail
+    {
+        if (! config('fin-mail.auth_emails.store_rendered_body', false)) {
+            $mail->withoutStoringRenderedBody();
+        }
+
+        return $mail;
     }
 
     protected function defaultAuthMailMessage(VerifyEmail|ResetPassword $notification, string $url): MailMessage
