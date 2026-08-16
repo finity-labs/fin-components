@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Switching languages while editing a template no longer discards unsaved work. The edit page now stashes in-progress translations per locale (like the create page always did), restores them when switching back, keeps unsaved non-translatable edits (theme, tags, sender) intact across the switch, and persists every stashed locale on save
 - Only one theme can be the default now, enforced on the model for every write path. Previously the uniqueness lived in a form callback that only ran when editing an existing theme — creating a new theme with "default" toggled on produced two defaults, and which one actually applied was undefined. The premature form callback (which rewrote other themes before the form was even saved) is gone
 - Deleting themes in bulk now detaches their templates like single deletes always did. The detach logic moved from two duplicated action callbacks into a model `deleting` hook, so every delete path behaves the same — including on SQLite databases without foreign key enforcement (enforcing databases were already covered by the FK's `nullOnDelete`)
+- The stored-email viewers now render the email HTML in a sandboxed iframe (`sandbox="allow-same-origin"`), matching the template preview. Stored bodies can contain recipient-influenced content, and the unsandboxed frames allowed scripts to run inside the admin panel
 
 ## [1.11.4] - 2026-08-13
 
