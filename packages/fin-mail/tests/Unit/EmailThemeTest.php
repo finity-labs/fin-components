@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use FinityLabs\FinMail\Models\EmailTemplate;
 use FinityLabs\FinMail\Models\EmailTheme;
 
 it('resolves the configured default theme colors', function () {
@@ -74,4 +75,23 @@ it('does not disturb the default theme when saving a non-default one', function 
     $other->update(['name' => 'Renamed']);
 
     expect($default->fresh()->is_default)->toBeTrue();
+});
+
+it('detaches templates when a theme is deleted, on any delete path', function () {
+    $theme = EmailTheme::create(['name' => 'Doomed', 'colors' => [], 'is_default' => false]);
+
+    $template = EmailTemplate::create([
+        'key' => 'theme-detach-test',
+        'name' => ['en' => 'Theme Detach Test'],
+        'category' => 'transactional',
+        'subject' => ['en' => 'Hello'],
+        'body' => ['en' => '<p>Body</p>'],
+        'is_active' => true,
+        'email_theme_id' => $theme->id,
+    ]);
+
+    // Same iteration shape Filament's DeleteBulkAction uses
+    EmailTheme::whereKey($theme->id)->get()->each->delete();
+
+    expect($template->fresh()->email_theme_id)->toBeNull();
 });

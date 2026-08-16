@@ -43,6 +43,13 @@ class EmailTheme extends Model
                     ->update(['is_default' => false]);
             }
         });
+
+        // Detach templates on every delete path (single, bulk, programmatic).
+        // The email_theme_id FK is nullOnDelete, but not every database
+        // enforces foreign keys (e.g. SQLite without the pragma).
+        static::deleting(function (self $theme): void {
+            $theme->templates()->update(['email_theme_id' => null]);
+        });
     }
 
     /*
