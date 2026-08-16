@@ -7,6 +7,12 @@ namespace FinityLabs\FinMail\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property array<string, string|null> $colors
+ * @property bool $is_default
+ */
 class EmailTheme extends Model
 {
     protected $fillable = [

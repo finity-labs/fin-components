@@ -120,7 +120,7 @@ class EditEmailTemplate extends EditRecord
             }
 
             foreach ($fields as $field => $value) {
-                if ($value !== '' && $value !== null) {
+                if ($value !== '') {
                     $this->record->setTranslation($field, $locale, $value);
                 }
             }
