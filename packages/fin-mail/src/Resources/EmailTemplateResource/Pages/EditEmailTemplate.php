@@ -80,6 +80,12 @@ class EditEmailTemplate extends EditRecord
     {
         $this->record->setLocale($this->activeLocale);
 
+        // Server-side lock enforcement: disabled inputs are only a client-side
+        // guard, so a crafted request could still submit these fields.
+        if ($this->record->is_locked) {
+            unset($data['key'], $data['category']);
+        }
+
         return $data;
     }
 
