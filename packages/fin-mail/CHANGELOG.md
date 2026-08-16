@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Files uploaded in the Compose Email page's Attachments section are now actually attached to the sent email and recorded in the log. The upload field dehydrated under a key the sender never read, so uploads were silently discarded while the UI reported success
+- Editing the preheader on the Compose Email page now affects the delivered email. The form collected the value and the preview showed it, but the sender had no way to pass it through — `TemplateMail` gained `overridePreheader()` and the compose path uses it. Tokens in the overridden preheader are replaced like in the body
 
 ## [1.11.4] - 2026-08-13
 

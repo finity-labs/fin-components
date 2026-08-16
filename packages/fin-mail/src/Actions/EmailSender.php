@@ -57,6 +57,10 @@ class EmailSender
                 ->overrideSubject($this->data['subject'])
                 ->overrideBody($this->data['body']);
 
+            if (($this->data['preheader'] ?? null) !== null) {
+                $mail->overridePreheader($this->data['preheader']);
+            }
+
             if ($this->sentEmailLog) {
                 $mail->withLogging($this->sentEmailLog);
             } else {

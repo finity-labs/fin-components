@@ -70,6 +70,8 @@ class TemplateMail extends Mailable implements ShouldQueue
 
     protected ?string $overrideBody = null;
 
+    protected ?string $overridePreheader = null;
+
     protected ?string $rawBody = null;
 
     protected ?string $overrideView = null;
@@ -147,6 +149,13 @@ class TemplateMail extends Mailable implements ShouldQueue
     public function overrideBody(string $body): static
     {
         $this->overrideBody = $body;
+
+        return $this;
+    }
+
+    public function overridePreheader(string $preheader): static
+    {
+        $this->overridePreheader = $preheader;
 
         return $this;
     }
@@ -275,7 +284,9 @@ class TemplateMail extends Mailable implements ShouldQueue
                             $this->models,
                         )
                         : $rendered['body'],
-                    'preheader' => $rendered['preheader'],
+                    'preheader' => $this->overridePreheader !== null
+                        ? app(TokenReplacer::class)->replace($this->overridePreheader, $this->models)
+                        : $rendered['preheader'],
                     'theme' => $themeColors,
                     'branding' => $this->resolveBranding(),
                 ],
