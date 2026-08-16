@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Editing the preheader on the Compose Email page now affects the delivered email. The form collected the value and the preview showed it, but the sender had no way to pass it through — `TemplateMail` gained `overridePreheader()` and the compose path uses it. Tokens in the overridden preheader are replaced like in the body
 - Sending from the composer no longer throws a `TypeError` when the configured editor stores the body as a TipTap document array (e.g. the Tiptap editor). The preview already converted the document to HTML; the send path now does the same, using the template's theme colors for custom blocks
 - The requested template locale now survives every queue path: log creation and stored-body rendering are wrapped in the mailable's locale, so a `TemplateMail` whose log entry is first created after queue serialization (e.g. dispatch-time log insert failed, or the mailable was re-dispatched from a stored job) no longer renders in the worker's app locale
+- Auth email overrides no longer break authentication when their template is unavailable: if `user-verify-email` or `user-password-reset` is missing, deactivated, or errors during lookup, the notification falls back to Laravel's default mail instead of throwing — deactivating a template can no longer take down password reset app-wide
+- Verification and password reset emails sent through the auth overrides no longer store their rendered body in the Sent Emails log. The bodies contain signed URLs; the log entry itself is still created, as the documentation always described
 
 ## [1.11.4] - 2026-08-13
 
