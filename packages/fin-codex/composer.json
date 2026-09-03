@@ -1,0 +1,82 @@
+{
+    "name": "finity-labs/fin-codex",
+    "description": "In-app help for Filament. A contextual help drawer, help buttons on resources and pages, and an article editor, built on lin-codex.",
+    "keywords": [
+        "laravel",
+        "filament",
+        "help",
+        "knowledge-base",
+        "documentation"
+    ],
+    "homepage": "https://github.com/finity-labs/fin-codex",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Finity Labs",
+            "email": "filament.infinity@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "type": "library",
+    "require": {
+        "php": "^8.2",
+        "filament/filament": "^4.0|^5.0",
+        "filament/spatie-laravel-settings-plugin": "^3.0|^4.0|^5.0",
+        "finity-labs/lin-codex": "^0.1",
+        "illuminate/contracts": "^11.0|^12.0|^13.0",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "require-dev": {
+        "larastan/larastan": "^2.0|^3.0",
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^2.0|^3.0",
+        "pestphp/pest-plugin-laravel": "^2.0|^3.0"
+    },
+    "suggest": {
+        "finity-labs/fin-ai": "AI settings UI for drafting, rewriting, and translating articles from the editor."
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "../lin-codex*",
+            "options": {
+                "symlink": true
+            }
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "FinityLabs\\FinCodex\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FinityLabs\\FinCodex\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage",
+        "analyse": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.1.x-dev"
+        },
+        "laravel": {
+            "providers": [
+                "FinityLabs\\FinCodex\\FinCodexServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

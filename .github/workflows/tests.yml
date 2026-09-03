@@ -7,13 +7,13 @@ on:
     branches: [main]
 
 jobs:
-  tests:
+  filament:
     name: ${{ matrix.package }} | PHP ${{ matrix.php }} / Filament ${{ matrix.filament }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        package: [fin-avatar, fin-mail, fin-modal-table-select, fin-sentinel]
+        package: [fin-avatar, fin-codex, fin-mail, fin-modal-table-select, fin-sentinel]
         php: ['8.2', '8.3']
         filament: ['^4.0', '^5.0']
     steps:
@@ -29,6 +29,34 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         run: |
           composer require "filament/filament:${{ matrix.filament }}" --no-interaction --no-update
+          composer update --no-interaction --prefer-dist
+
+      - name: Run tests
+        working-directory: packages/${{ matrix.package }}
+        run: vendor/bin/pest
+
+  laravel:
+    name: ${{ matrix.package }} | PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [lin-codex]
+        php: ['8.2', '8.3']
+        laravel: ['^11.0', '^12.0']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install dependencies
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          composer require "illuminate/contracts:${{ matrix.laravel }}" --no-interaction --no-update
           composer update --no-interaction --prefer-dist
 
       - name: Run tests

@@ -1,10 +1,12 @@
-# Finity Labs Filament Components
+# Finity Labs Components
 
-Monorepo for Finity Labs' Filament packages. Each package can be installed individually.
+Monorepo for Finity Labs' Laravel and Filament packages. Each package can be installed individually. Packages named `fin-*` are Filament plugins; packages named `lin-*` are plain Laravel packages that the Filament ones build on.
 
 | Package | Install |
 |---|---|
 | [Avatar](packages/fin-avatar) | `composer require finity-labs/fin-avatar` |
+| [Codex for Filament](packages/fin-codex) | `composer require finity-labs/fin-codex` |
+| [Codex for Laravel](packages/lin-codex) | `composer require finity-labs/lin-codex` |
 | [Mail](packages/fin-mail) | `composer require finity-labs/fin-mail` |
 | [ModalTableSelect](packages/fin-modal-table-select) | `composer require finity-labs/fin-modal-table-select` |
 | [Sentinel](packages/fin-sentinel) | `composer require finity-labs/fin-sentinel` |
