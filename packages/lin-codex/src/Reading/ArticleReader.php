@@ -10,7 +10,6 @@ use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Locale\LocaleResolver;
 use FinityLabs\LinCodex\Rendering\ArticlePath;
 use FinityLabs\LinCodex\Rendering\ArticleRenderer;
-use FinityLabs\LinCodex\Sources\SlugPath;
 
 /**
  * Reads one article for one viewer in one locale. A missing slug, a hidden
@@ -65,23 +64,7 @@ final class ArticleReader
                 && $this->locales->pick($all[$other], $locale) !== null,
         ));
 
-        /*
-         * Ancestor articles are necessarily visible when the article is (the
-         * gate's ancestor rule), so only the locale pick can drop one.
-         */
-        $breadcrumbs = [];
-
-        for ($parent = SlugPath::parentOf($slug); $parent !== null; $parent = SlugPath::parentOf($parent)) {
-            if (! isset($all[$parent])) {
-                continue;
-            }
-
-            $ancestor = $this->locales->pick($all[$parent], $locale);
-
-            if ($ancestor !== null) {
-                array_unshift($breadcrumbs, ['slug' => $parent, 'title' => $ancestor->translation->title]);
-            }
-        }
+        $breadcrumbs = AncestorTitles::for($slug, $all, $locale, $this->locales);
 
         return new ReadArticle(
             $article,
