@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace FinityLabs\LinCodex\Tests;
 
 use FinityLabs\LinCodex\LinCodexServiceProvider;
+use FinityLabs\LinCodex\Rendering\ArticleRenderer;
+use FinityLabs\LinCodex\Rendering\Html\HtmlPipeline;
+use FinityLabs\LinCodex\Rendering\Markdown\MarkdownPipeline;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelSettings\LaravelSettingsServiceProvider;
+use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 
 class TestCase extends Orchestra
 {
@@ -69,6 +73,21 @@ class TestCase extends Orchestra
     public function migration(string $file): Migration
     {
         return include dirname(__DIR__).'/database/migrations/'.$file.'.php';
+    }
+
+    /**
+     * A renderer whose pipelines have not memoized any config yet. Use after
+     * config()->set(): the singletons capture app.url, the limits and the
+     * help-center prefix when first resolved.
+     */
+    protected function freshRenderer(): ArticleRenderer
+    {
+        $this->app->forgetInstance(MarkdownPipeline::class);
+        $this->app->forgetInstance(HtmlPipeline::class);
+        $this->app->forgetInstance(HtmlSanitizerInterface::class);
+        $this->app->forgetInstance(ArticleRenderer::class);
+
+        return $this->app->make(ArticleRenderer::class);
     }
 
     protected function createUsersTable(string $table): void
