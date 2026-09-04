@@ -29,4 +29,15 @@ return [
         ],
     ],
 
+    'callouts' => [
+        'note' => 'Note',
+        'tip' => 'Tip',
+        'important' => 'Important',
+        'warning' => 'Warning',
+        'caution' => 'Caution',
+    ],
+
+    'anchor_label' => 'Link to :heading',
+    'details_default' => 'Details',
+
 ];
