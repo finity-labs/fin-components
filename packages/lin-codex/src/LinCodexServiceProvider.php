@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex;
 
+use FinityLabs\LinCodex\Assets\StylesheetVersion;
 use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Livewire\HelpCenter;
 use FinityLabs\LinCodex\Livewire\HelpDrawer;
@@ -86,6 +87,7 @@ class LinCodexServiceProvider extends PackageServiceProvider
         });
 
         $this->app->scoped(PageHelpResolver::class);
+        $this->app->singleton(StylesheetVersion::class);
     }
 
     /**

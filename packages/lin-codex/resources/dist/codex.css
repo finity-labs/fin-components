@@ -1,0 +1,50 @@
+/*
+ * lin-codex prebuilt stylesheet.
+ *
+ * Every class is codex- prefixed. Override the --codex-* tokens on
+ * .codex-root to restyle; dark values apply under a .dark ancestor, or
+ * under prefers-color-scheme: dark when no .light ancestor opts out.
+ */
+
+.codex-root {
+  --codex-bg: #ffffff;
+  --codex-fg: #111827;
+  --codex-muted: #6b7280;
+  --codex-border: #e5e7eb;
+  --codex-surface: #f9fafb;
+  --codex-accent: var(--primary, #2563eb);
+  --codex-accent-fg: #ffffff;
+  --codex-radius: 8px;
+  --codex-space: 1rem;
+  --codex-drawer-width: 480px;
+  --codex-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --codex-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --codex-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  color: var(--codex-fg);
+  font-family: var(--codex-font);
+}
+
+.dark .codex-root {
+  --codex-bg: #111827;
+  --codex-fg: #f3f4f6;
+  --codex-muted: #9ca3af;
+  --codex-border: #374151;
+  --codex-surface: #1f2937;
+  --codex-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  .codex-root:not(.light *) {
+    --codex-bg: #111827;
+    --codex-fg: #f3f4f6;
+    --codex-muted: #9ca3af;
+    --codex-border: #374151;
+    --codex-surface: #1f2937;
+    --codex-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  }
+}
+
+.codex-root [x-cloak],
+.codex-root[x-cloak] {
+  display: none !important;
+}
