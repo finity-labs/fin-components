@@ -7,6 +7,7 @@ namespace FinityLabs\LinCodex\Rendering\Markdown;
 use FinityLabs\LinCodex\Rendering\Markdown\Callout\CalloutExtension;
 use FinityLabs\LinCodex\Rendering\Markdown\Container\FencedContainerExtension;
 use FinityLabs\LinCodex\Rendering\Markdown\Figure\FigureExtension;
+use FinityLabs\LinCodex\Rendering\Markdown\Links\ArticleLinkExtension;
 use FinityLabs\LinCodex\Rendering\PlainTextExtractor;
 use FinityLabs\LinCodex\Rendering\RenderedArticle;
 use League\CommonMark\Environment\Environment;
@@ -108,6 +109,7 @@ final class MarkdownPipeline
         $environment->addExtension(new CalloutExtension($this->state));
         $environment->addExtension(new FencedContainerExtension($this->state));
         $environment->addExtension(new FigureExtension);
+        $environment->addExtension(new ArticleLinkExtension($this->state));
 
         // Codex extensions are registered here by later plans.
 
