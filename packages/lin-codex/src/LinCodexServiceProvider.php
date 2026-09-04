@@ -4,10 +4,16 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex;
 
+use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Rendering\ArticleRenderer;
 use FinityLabs\LinCodex\Rendering\Html\HtmlPipeline;
 use FinityLabs\LinCodex\Rendering\Html\SanitizerFactory;
 use FinityLabs\LinCodex\Rendering\Markdown\MarkdownPipeline;
+use FinityLabs\LinCodex\Sources\CompositeSource;
+use FinityLabs\LinCodex\Sources\DatabaseSource;
+use FinityLabs\LinCodex\Sources\FilesystemSource;
+use Illuminate\Contracts\Container\Container;
+use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
@@ -40,5 +46,36 @@ class LinCodexServiceProvider extends PackageServiceProvider
         $this->app->singleton(HtmlSanitizerInterface::class, static fn (): HtmlSanitizer => SanitizerFactory::make());
         $this->app->singleton(HtmlPipeline::class);
         $this->app->singleton(ArticleRenderer::class);
+
+        $this->app->singleton(FilesystemSource::class);
+        $this->app->singleton(DatabaseSource::class);
+        $this->app->singleton(CompositeSource::class);
+
+        /*
+         * The active source is chosen when the contract is first resolved,
+         * not at boot, so a config()->set() followed by forgetInstance()
+         * takes effect in tests. Nothing here touches the schema: a
+         * files-only install that never ran the migrations sets
+         * lin-codex.source to "filesystem" (see the config comment).
+         */
+        $this->app->singleton(ContentSource::class, static function (Container $app): ContentSource {
+            $source = (string) config('lin-codex.source', 'composite');
+
+            $class = match ($source) {
+                'filesystem' => FilesystemSource::class,
+                'database' => DatabaseSource::class,
+                'composite' => CompositeSource::class,
+                default => $source,
+            };
+
+            if (! is_a($class, ContentSource::class, true)) {
+                throw new InvalidArgumentException(sprintf('lin-codex.source "%s" is not a ContentSource implementation.', $source));
+            }
+
+            /** @var ContentSource $instance */
+            $instance = $app->make($class);
+
+            return $instance;
+        });
     }
 }

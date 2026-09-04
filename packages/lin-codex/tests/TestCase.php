@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex\Tests;
 
+use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\LinCodexServiceProvider;
 use FinityLabs\LinCodex\Rendering\ArticleRenderer;
 use FinityLabs\LinCodex\Rendering\Html\HtmlPipeline;
 use FinityLabs\LinCodex\Rendering\Markdown\MarkdownPipeline;
+use FinityLabs\LinCodex\Sources\CompositeSource;
+use FinityLabs\LinCodex\Sources\DatabaseSource;
+use FinityLabs\LinCodex\Sources\FilesystemSource;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -88,6 +92,28 @@ class TestCase extends Orchestra
         $this->app->forgetInstance(ArticleRenderer::class);
 
         return $this->app->make(ArticleRenderer::class);
+    }
+
+    /**
+     * Drop the resolved source singletons so the next make() reads the
+     * current config (lin-codex.source, the docs paths) again.
+     */
+    protected function forgetSources(): void
+    {
+        $this->app->forgetInstance(FilesystemSource::class);
+        $this->app->forgetInstance(DatabaseSource::class);
+        $this->app->forgetInstance(CompositeSource::class);
+        $this->app->forgetInstance(ContentSource::class);
+    }
+
+    /**
+     * The content source the provider binds for the current config.
+     */
+    protected function freshSource(): ContentSource
+    {
+        $this->forgetSources();
+
+        return $this->app->make(ContentSource::class);
     }
 
     /** Absolute path of a docs fixture tree under tests/Fixtures ('docs' or 'docs-override'). */
