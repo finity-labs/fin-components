@@ -11,6 +11,7 @@ use FinityLabs\LinCodex\Models\ArticleContext;
 use FinityLabs\LinCodex\Models\ArticleRevision;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Models\Media;
+use FinityLabs\LinCodex\Search\SearchText;
 use Illuminate\Support\Facades\DB;
 
 it('creates an authenticated published markdown article by default', function (): void {
@@ -92,7 +93,7 @@ it('creates translations through withTranslation', function (): void {
         ->and($translation?->locale)->toBe('de')
         ->and($translation?->title)->toBe('Rollen')
         ->and($translation?->body)->not->toBe('')
-        ->and($translation?->search_text)->toBeNull();
+        ->and(SearchText::split($translation?->search_text)['title'])->toBe(SearchText::fold((string) $translation?->title));
 
     $two = Article::factory()->withTranslation()->withTranslation('hu')->create();
 

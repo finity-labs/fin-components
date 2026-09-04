@@ -7,6 +7,7 @@ namespace FinityLabs\LinCodex\Models;
 use FinityLabs\LinCodex\Database\Factories\ArticleFactory;
 use FinityLabs\LinCodex\Enums\ArticleFormat;
 use FinityLabs\LinCodex\Enums\Visibility;
+use FinityLabs\LinCodex\Search\SearchTextIndexer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -109,6 +110,29 @@ class Article extends Model
                 $article->relinkChildren();
             }
         });
+
+        static::updated(function (Article $article): void {
+            if ($article->wasChanged(['keywords', 'format'])) {
+                $article->reindexTranslations();
+            }
+        });
+    }
+
+    /**
+     * Recompute search_text for every translation after the keywords or the
+     * body format changed; the translation hook alone cannot see those.
+     * Each save() runs the translation hook, whose condition is false
+     * because search_text is dirty and non-null, so nothing indexes twice.
+     */
+    public function reindexTranslations(): void
+    {
+        $indexer = app(SearchTextIndexer::class);
+
+        foreach ($this->translations()->get() as $translation) {
+            $translation->setRelation('article', $this);
+            $indexer->index($translation);
+            $translation->save();
+        }
     }
 
     /**

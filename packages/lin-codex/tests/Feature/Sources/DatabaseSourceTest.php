@@ -11,6 +11,7 @@ use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Enums\Visibility;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
+use FinityLabs\LinCodex\Search\SearchText;
 use FinityLabs\LinCodex\Sources\DatabaseSource;
 
 /**
@@ -96,7 +97,7 @@ it('maps a row with its translations and contexts to article data', function ():
         ->and($article->translation('en')->searchText)->toBe('users people')
         ->and($article->translation('en')->sourcePath)->toBeNull()
         ->and($article->translation('de')->title)->toBe('Benutzer')
-        ->and($article->translation('de')->searchText)->toBeNull()
+        ->and(SearchText::split($article->translation('de')->searchText)['title'])->toBe('benutzer')
         ->and($article->contexts)->toEqual([
             new ContextData(ContextType::PageClass, 'App\Filament\Resources\UserResource', 'admin', 0),
             new ContextData(ContextType::Route, 'users.index', null, 1),
