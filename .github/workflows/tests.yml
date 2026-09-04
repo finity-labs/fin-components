@@ -36,7 +36,7 @@ jobs:
         run: vendor/bin/pest
 
   laravel:
-    name: ${{ matrix.package }} | PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
+    name: ${{ matrix.package }} | PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}${{ matrix.database && format(' / {0}', matrix.database) || '' }}
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.experimental == true }}
     strategy:
@@ -49,6 +49,26 @@ jobs:
           - { package: lin-codex, php: '8.2', laravel: '^12.0', testbench: '^10.0' }
           - { package: lin-codex, php: '8.3', laravel: '^12.0', testbench: '^10.0' }
           - { package: lin-codex, php: '8.2', laravel: '^11.0', testbench: '^9.0', experimental: true }
+          - { package: lin-codex, php: '8.3', laravel: '^13.0', testbench: '^11.0', database: mysql }
+          - { package: lin-codex, php: '8.3', laravel: '^13.0', testbench: '^11.0', database: pgsql }
+    services:
+      mysql:
+        image: ${{ matrix.database == 'mysql' && 'mysql:8.4' || '' }}
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: yes
+          MYSQL_DATABASE: lin_codex
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+      pgsql:
+        image: ${{ matrix.database == 'pgsql' && 'postgres:16' || '' }}
+        env:
+          POSTGRES_DB: lin_codex
+          POSTGRES_USER: codex
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        options: --health-cmd=pg_isready --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
       - uses: actions/checkout@v4
 
@@ -67,4 +87,11 @@ jobs:
 
       - name: Run tests
         working-directory: packages/${{ matrix.package }}
+        env:
+          DB_CONNECTION: ${{ matrix.database || 'sqlite' }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: ${{ matrix.database == 'pgsql' && '5432' || '3306' }}
+          DB_DATABASE: lin_codex
+          DB_USERNAME: ${{ matrix.database == 'pgsql' && 'codex' || 'root' }}
+          DB_PASSWORD: ${{ matrix.database == 'pgsql' && 'password' || '' }}
         run: vendor/bin/pest
