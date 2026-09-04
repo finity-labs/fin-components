@@ -102,7 +102,7 @@ $article->toc;        // [['level' => 2, 'text' => 'Reset a password', 'id' => '
 $article->plainText;  // search text
 ```
 
-Results are cached under a key built from the content hash, the format, the locale, the slug and a fingerprint of the renderer config, so an edit or a config change invalidates on its own; the store and TTL live under `lin-codex.render.cache`. Every class the renderer emits is prefixed `codex-`. The CSS for those classes ships in a later release.
+Results are cached under a key built from the content hash, the format, the locale, the slug and a fingerprint of the renderer config, so an edit or a config change invalidates on its own; the store and TTL live under `lin-codex.render.cache`. Every class the renderer emits is prefixed `codex-`. The CSS for those classes ships with the help drawer (a later release).
 
 ## Content sources
 
@@ -179,7 +179,7 @@ One file per language at the same relative path: `en/02-users/index.md` and `de/
 
 ### Images
 
-Reference images relative to the article file, the way any Markdown editor does: `images/users.png` or `../images/logo.png`. The file source rewrites them to `/codex/media/{locale}/{path}`, and a route serves them from the docs folders with cache headers. Images must sit inside a locale folder; a path that escapes it is left as written. Only png, jpg, jpeg, gif, webp and avif are served, since an SVG can carry scripts. The prefix lives in `lin-codex.routes.media` and the middleware in `lin-codex.routes.middleware`.
+Reference images relative to the article file, the way any Markdown editor does: `images/users.png` or `../images/logo.png`. The file source rewrites them to `/codex/media/{locale}/{path}`, and a route serves them from the docs folders with cache headers. Images must sit inside a locale folder; a path that escapes it is left as written. Only png, jpg, jpeg, gif, webp and avif are served, since an SVG can carry scripts. An image is served only when no article references it or when one of the articles that do is visible to the current viewer, so screenshots inside internal articles stay internal. The prefix lives in `lin-codex.routes.media` and the middleware in `lin-codex.routes.middleware`.
 
 ### Freshness
 
@@ -199,7 +199,57 @@ $source->allForSearch();                                     // SearchDocument[]
 $source->warnings();                                         // SourceWarning[]
 ```
 
-Every method returns plain readonly objects, never an Eloquent model. The source applies no locale, visibility or published filtering; that's the read services' job in a later release.
+Every method returns plain readonly objects, never an Eloquent model. The source applies no locale, visibility or published filtering. That's what the read services under [Reading articles](#reading-articles) do.
+
+## Reading articles
+
+Three services answer the three questions the help UI asks: which articles belong to this page, show me this article, and show me the whole tree. Each takes a `Viewer` and an optional locale, and all three apply the same visibility and language rules, so the drawer, the API and a Tinker session always see the same thing.
+
+### From Tinker
+
+```php
+use FinityLabs\LinCodex\Auth\ViewerResolver;
+use FinityLabs\LinCodex\Contexts\ContextResolver;
+use FinityLabs\LinCodex\Contexts\PageContext;
+use FinityLabs\LinCodex\Reading\ArticleReader;
+use FinityLabs\LinCodex\Reading\TreeBuilder;
+
+$viewer = app(ViewerResolver::class)->resolve();          // guest in Tinker unless you Auth::login() first
+
+app(ContextResolver::class)->resolve(new PageContext('users.index', '/users'), $viewer);   // ArticleData[] for that page, best first
+app(ArticleReader::class)->read('users/roles', $viewer, 'de');                            // ReadArticle or null
+app(TreeBuilder::class)->build($viewer);                                                   // TreeNode[] with translated labels
+```
+
+`ReadArticle` carries the `article`, the chosen `translation` and its `locale`, `isFallback`, the `rendered` result (`html` and `toc`), the `related` slugs the same viewer may read, and `breadcrumbs` for the visible ancestors. In a request, `RequestContextDetector::detect($request, $pageClass, $panelId)` builds the `PageContext` from the route name and path; hosts that know more, like a Filament panel with its resource class and panel id, pass them in. `PageContext::toArray()` and `fromArray()` let a Livewire component keep it in state, captured once at mount.
+
+### Who sees what
+
+An article is visible when it's published, when it's `public` or the viewer is signed in, and when every parent article on its slug path passes the same test. A section marked `authenticated` therefore hides everything below it, public children included; move a child out of the section if it should stay public. Folders without an index file are groups, not articles, and hide nothing. Guests only ever get public articles.
+
+Signed in means the guard in `lin-codex.auth.guard` has a user. `null` (the default) is the app's default guard, and it's one guard, not a list. `lin-codex.auth.gate` can name an invokable class `(Viewer $viewer, ArticleData $article): bool` that runs after the other checks and can only hide articles, never reveal them.
+
+Hidden, restricted and missing articles are all the same answer: `null` from the reader, absent from the tree, an empty list from the context resolver, 404 from the media route, never 403. Nothing confirms that an article exists.
+
+### Language fallback
+
+The `codex` settings decide the languages: `languages` is the list a translation may be requested in, `default_locale` the one every article must have, and `fallback` what happens when a translation is missing. Matching is exact against that list, so `de_DE` doesn't fall back to `de`, and a locale that isn't listed counts as a missing translation. With `ShowDefault` you get the default-language translation with `isFallback` set, and the UI shows `__('lin-codex::lin-codex.fallback_notice', ['language' => ...])`, or simply `LocaleResolver::fallbackNotice($read->locale)`. With `Hide` the article is missing in that language, and children of a section hidden this way move up to the nearest visible ancestor.
+
+The tree and the context lookup apply the same rule, so a page never offers an article the reader would then refuse. Folder group labels come from `lin-codex::lin-codex.groups.<full slug>` (`groups.billing/archive`) and default to the humanised folder name.
+
+### Page contexts
+
+A context key says which pages an article belongs to. There are three kinds:
+
+| Key | Matches |
+|---|---|
+| `class:App\Filament\Resources\UserResource` | the exact class name the host reports; no parent classes or interfaces |
+| `route:users.*` | the exact route name, or every name under a trailing `*` |
+| `url:/users/*/edit` | the request path without the query string; `*` is one segment, `**` any depth |
+
+The catch-alls `route:*` and `url:/**` are allowed and sort last. Prefix a key with a panel id (`admin:route:users.index`) to scope it to that panel.
+
+Resolution takes the articles for the current panel first and falls back to panel-less ones only when the panel gave nothing visible. Within that, exact keys come before wildcards, then class before route before url, then the order the author gave, then the slug. One article may list many contexts, and many articles may share one; the drawer opens the first.
 
 ## License
 

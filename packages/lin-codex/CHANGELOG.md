@@ -30,3 +30,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Media route `/codex/media/{locale}/{path}` streaming images from the docs folders with cache headers, an image-only allowlist and traversal protection.
 - Article links written with numeric file prefixes (`01-roles.md`) or pointing at `index.md` resolve to the right slug, and links inside section files resolve against their folder.
 - Lang keys `source_warnings.*` and `enums.source_warning_kind.*`.
+- `keywords`, `related` and `meta` JSON columns on articles, cast on the model, filled by the factory and mapped by the database source, so database articles carry the same metadata as file articles.
+- `Viewer` and `ViewerResolver` (guard from `auth.guard` or the app default), and `ArticleGate`, the one visibility rule: published, public or signed in, an optional `auth.gate` veto, and every parent article on the slug path visible too.
+- `LocaleResolver` with exact language matching against the settings list and the `ShowDefault`/`Hide` fallback flagged by `isFallback`.
+- `ArticleReader`, `TreeBuilder` and `ContextResolver`: read one article rendered with related links and breadcrumbs, build the visible tree with translated labels, and resolve the articles for a page (panel first, then panel-less; exact before wildcard; class, route, url; author order; slug).
+- `PageContext` and `RequestContextDetector` capturing route name, path, page class and panel id once, with an array form for component state; `url:` patterns with `*` for one segment and `**` for any depth, `route:` with a trailing `*`.
+- Media route gated by the referencing articles: an image is served when unreferenced or when a referencing article is visible; hidden owners answer 404.
+- `TreeNode::$isFallback` and `isGroup()`.
+- Config keys `auth.guard` and `auth.gate`; lang keys `fallback_notice` and `groups.*`.
+- A shared visibility dataset (`tests/Datasets/Visibility.php`) proving no read path leaks.
