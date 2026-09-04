@@ -96,3 +96,7 @@ it('opens with up to three spaces of indentation and not with four', function ()
     expect(renderContainer("   :::steps\n1. One\n:::")->html)->toContain('<ol class="codex-steps">')
         ->and(renderContainer("    :::steps\n1. One\n:::")->html)->toStartWith('<pre><code>:::steps');
 });
+
+it('keeps figure alt text and captions in the plain text', function (): void {
+    expect(renderContainer("![Alt](/storage/codex/a.png \"Caption\")\n\n![Alt](/storage/codex/b.png)")->plainText)->toBe('Alt Caption Alt');
+});
