@@ -7,7 +7,7 @@ use FinityLabs\LinCodex\Tests\CustomTableNamesTestCase;
 use FinityLabs\LinCodex\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
 
-uses(TestCase::class)->in('Unit', 'Feature/Migrations', 'Feature/Models', 'Feature/Rendering', 'Feature/Http', 'Feature/Settings', 'Feature/Sources', 'Feature/Auth', 'Feature/Contexts', 'Feature/Locale', 'Feature/Reading', 'Feature/Search', 'Feature/Api', 'Feature/Stubs');
+uses(TestCase::class)->in('Unit', 'Feature/Migrations', 'Feature/Models', 'Feature/Rendering', 'Feature/Http', 'Feature/Settings', 'Feature/Sources', 'Feature/Auth', 'Feature/Contexts', 'Feature/Locale', 'Feature/Reading', 'Feature/Search', 'Feature/Api', 'Feature/Stubs', 'Feature/Livewire', 'Feature/Views');
 uses(CustomTableNamesTestCase::class)->in('Feature/CustomTableNames');
 uses(CustomApiPrefixTestCase::class)->in('Feature/CustomApiPrefix');
 

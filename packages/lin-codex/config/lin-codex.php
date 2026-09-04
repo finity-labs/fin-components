@@ -151,8 +151,17 @@ return [
     | served when no article references it or when a referencing article is
     | visible to the viewer; hidden owners answer 404.
     |
+    | "help_center_layout" names the layout the help center page renders
+    | in. It must be a component layout, one that receives "$slot" (such as
+    | "components.layouts.app"); an @extends layout does not work. null uses
+    | the package layout.
+    |
     | "api" is the prefix of the JSON endpoints (tree, articles/{slug},
     | search, context).
+    |
+    | "assets" is the prefix the prebuilt stylesheet is served under
+    | ("{assets}/codex.css"). That route runs without the middleware group:
+    | a static file needs no session, cookies or CSRF.
     |
     | "middleware" is the middleware group the package routes run under.
     |
@@ -160,9 +169,29 @@ return [
 
     'routes' => [
         'help_center' => '/help',
+        'help_center_layout' => null,
         'media' => '/codex/media',
         'api' => '/codex/api',
+        'assets' => '/codex/assets',
         'middleware' => ['web'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | User Interface
+    |--------------------------------------------------------------------------
+    |
+    | "shortcut" opens and closes the help drawer. Cmd+/ on a Mac counts as
+    | Ctrl+/. null disables the shortcut.
+    |
+    | "drawer_width" is the drawer's width in pixels, written to the
+    | --codex-drawer-width custom property on the drawer root.
+    |
+    */
+
+    'ui' => [
+        'shortcut' => 'ctrl+/',
+        'drawer_width' => 480,
     ],
 
     /*

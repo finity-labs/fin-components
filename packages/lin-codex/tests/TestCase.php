@@ -16,6 +16,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelSettings\LaravelSettingsServiceProvider;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
@@ -54,9 +55,13 @@ class TestCase extends Orchestra
         'create_codex_media_table',
     ];
 
+    /**
+     * Testbench does not run package discovery, so Livewire is listed here.
+     */
     protected function getPackageProviders($app): array
     {
         return [
+            LivewireServiceProvider::class,
             LaravelSettingsServiceProvider::class,
             LinCodexServiceProvider::class,
         ];

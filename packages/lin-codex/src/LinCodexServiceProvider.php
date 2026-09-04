@@ -12,6 +12,7 @@ use FinityLabs\LinCodex\Rendering\Markdown\MarkdownPipeline;
 use FinityLabs\LinCodex\Sources\CompositeSource;
 use FinityLabs\LinCodex\Sources\DatabaseSource;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
+use FinityLabs\LinCodex\View\PageHelpResolver;
 use Illuminate\Contracts\Container\Container;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
@@ -77,6 +78,8 @@ class LinCodexServiceProvider extends PackageServiceProvider
 
             return $instance;
         });
+
+        $this->app->scoped(PageHelpResolver::class);
     }
 
     /**

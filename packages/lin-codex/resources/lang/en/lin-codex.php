@@ -80,6 +80,31 @@ return [
         'invalid_limit' => 'The limit parameter must be a whole number.',
     ],
 
+    'ui' => [
+        'help' => 'Help',
+        'title' => 'Help',
+        'close' => 'Close',
+        'back' => 'Back',
+        'this_page' => 'This page',
+        'also_on_this_page' => 'Also on this page',
+        'no_help_for_page' => 'No help for this page yet.',
+        'pick_a_topic' => 'Pick a topic from the list.',
+        'search' => 'Search',
+        'search_placeholder' => 'Search the help',
+        'no_results' => 'Nothing found.',
+        'rate_limited' => 'Too many searches. Try again in :seconds seconds.',
+        'browse' => 'Browse',
+        'on_this_page' => 'On this page',
+        'related' => 'Related',
+        'not_found' => 'This article is not available.',
+        'help_center' => 'Help center',
+        'back_to_app' => 'Back to :app',
+        'toggle_tree' => 'Topics',
+        'open_help_center' => 'Open the help center',
+        'lightbox_close' => 'Close image',
+        'shortcut_hint' => 'Press :shortcut',
+    ],
+
     /*
      * Labels for folder groups (folders without an index file), keyed by the
      * group's full slug: 'users' => 'Users', 'billing/archive' => 'Archive'.
