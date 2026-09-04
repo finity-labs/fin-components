@@ -10,43 +10,63 @@ use FinityLabs\LinCodex\Enums\Visibility;
 
 dataset('enum backing values', [
     'ArticleFormat' => [ArticleFormat::class, [
-        'Markdown' => 'markdown',
-        'Html' => 'html',
+        'Markdown' => [1, 'markdown'],
+        'Html' => [2, 'html'],
     ]],
     'Visibility' => [Visibility::class, [
-        'Public' => 'public',
-        'Authenticated' => 'authenticated',
+        'Public' => [1, 'public'],
+        'Authenticated' => [2, 'authenticated'],
     ]],
     'ContextType' => [ContextType::class, [
-        'PageClass' => 'class',
-        'Route' => 'route',
-        'Url' => 'url',
+        'PageClass' => [1, 'class'],
+        'Route' => [2, 'route'],
+        'Url' => [3, 'url'],
     ]],
     'RevisionReason' => [RevisionReason::class, [
-        'Manual' => 'manual',
-        'Import' => 'import',
-        'AiRewrite' => 'ai_rewrite',
+        'Manual' => [1, 'manual'],
+        'Import' => [2, 'import'],
+        'AiRewrite' => [3, 'ai_rewrite'],
     ]],
     'FallbackBehaviour' => [FallbackBehaviour::class, [
-        'ShowDefault' => 'show_default',
-        'Hide' => 'hide',
+        'ShowDefault' => [1, 'show_default'],
+        'Hide' => [2, 'hide'],
     ]],
 ]);
 
-it('exposes the locked backing values and no extra cases', function (string $enum, array $expected) {
+it('exposes the locked int backing values and string keys, and no extra cases', function (string $enum, array $expected) {
     /** @var array<int, BackedEnum> $cases */
     $cases = $enum::cases();
 
     $actual = [];
     foreach ($cases as $case) {
-        $actual[$case->name] = $case->value;
+        $actual[$case->name] = [$case->value, $case->key()];
     }
 
     expect($actual)->toBe($expected);
 })->with('enum backing values');
 
-it('resolves the class context type from its backing value', function () {
-    expect(ContextType::from('class'))->toBe(ContextType::PageClass);
+it('round-trips every case through its key', function (string $enum) {
+    /** @var array<int, BackedEnum> $cases */
+    $cases = $enum::cases();
+
+    foreach ($cases as $case) {
+        expect($enum::fromKey($case->key()))->toBe($case)
+            ->and($enum::tryFromKey($case->key()))->toBe($case);
+    }
+
+    expect($enum::tryFromKey('nope'))->toBeNull()
+        ->and(fn () => $enum::fromKey('nope'))->toThrow(ValueError::class);
+})->with([
+    ArticleFormat::class,
+    Visibility::class,
+    ContextType::class,
+    RevisionReason::class,
+    FallbackBehaviour::class,
+]);
+
+it('resolves the class context type from its front matter prefix', function () {
+    expect(ContextType::fromKey('class'))->toBe(ContextType::PageClass)
+        ->and(ContextType::keys())->toBe(['class', 'route', 'url']);
 });
 
 it('labels every case through the lin-codex translation namespace', function (string $enum) {

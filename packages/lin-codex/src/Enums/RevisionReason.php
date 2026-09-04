@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex\Enums;
 
-enum RevisionReason: string
-{
-    case Manual = 'manual';
-    case Import = 'import';
-    case AiRewrite = 'ai_rewrite';
+use FinityLabs\LinCodex\Enums\Concerns\HasKey;
 
-    public function label(): string
-    {
-        return (string) __('lin-codex::lin-codex.enums.revision_reason.'.$this->value);
-    }
+enum RevisionReason: int
+{
+    use HasKey;
+
+    case Manual = 1;
+    case Import = 2;
+    case AiRewrite = 3;
 }

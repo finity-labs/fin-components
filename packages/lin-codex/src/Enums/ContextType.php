@@ -4,14 +4,26 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex\Enums;
 
-enum ContextType: string
-{
-    case PageClass = 'class';
-    case Route = 'route';
-    case Url = 'url';
+use FinityLabs\LinCodex\Enums\Concerns\HasKey;
 
-    public function label(): string
+/**
+ * Keys are the prefixes used in front matter and context strings:
+ * `class:App\Filament\Resources\UserResource`, `route:users.index`, `url:/users/*`.
+ */
+enum ContextType: int
+{
+    use HasKey;
+
+    case PageClass = 1;
+    case Route = 2;
+    case Url = 3;
+
+    public function key(): string
     {
-        return (string) __('lin-codex::lin-codex.enums.context_type.'.$this->value);
+        return match ($this) {
+            self::PageClass => 'class',
+            self::Route => 'route',
+            self::Url => 'url',
+        };
     }
 }

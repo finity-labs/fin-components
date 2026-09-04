@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex\Enums;
 
-enum ArticleFormat: string
-{
-    case Markdown = 'markdown';
-    case Html = 'html';
+use FinityLabs\LinCodex\Enums\Concerns\HasKey;
 
-    public function label(): string
-    {
-        return (string) __('lin-codex::lin-codex.enums.article_format.'.$this->value);
-    }
+enum ArticleFormat: int
+{
+    use HasKey;
+
+    case Markdown = 1;
+    case Html = 2;
 }

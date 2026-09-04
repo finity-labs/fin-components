@@ -95,7 +95,7 @@ it('creates contexts through withContext', function (): void {
     $class = Article::factory()->withContext(ContextType::PageClass, 'App\\Filament\\Resources\\UserResource')->create();
 
     expect($class->contexts->first()?->type)->toBe(ContextType::PageClass)
-        ->and(DB::table('codex_article_contexts')->where('article_id', $class->id)->value('type'))->toBe('class');
+        ->and(DB::table('codex_article_contexts')->where('article_id', $class->id)->value('type'))->toBe(ContextType::PageClass->value);
 });
 
 it('creates revisions through withRevisions', function (): void {

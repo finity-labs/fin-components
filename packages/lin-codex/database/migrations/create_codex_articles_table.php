@@ -22,8 +22,8 @@ return new class extends Migration
             $table->foreignId('parent_id')->nullable()->constrained($articles)->nullOnDelete();
             $table->unsignedInteger('sort_order')->default(0);
             $table->string('icon')->nullable();
-            $table->string('format', 20)->default(ArticleFormat::Markdown->value);
-            $table->string('visibility', 20)->default(Visibility::Authenticated->value);
+            $table->unsignedTinyInteger('format')->default(ArticleFormat::Markdown->value);
+            $table->unsignedTinyInteger('visibility')->default(Visibility::Authenticated->value);
             $table->boolean('is_published')->default(true);
             $table->string('source_path')->nullable();
             $table->foreignId('created_by')->nullable()->constrained($users)->nullOnDelete();

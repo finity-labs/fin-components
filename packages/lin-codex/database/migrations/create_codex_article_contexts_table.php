@@ -18,7 +18,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('article_id')->constrained($articles)->cascadeOnDelete();
             $table->string('panel_id', 64)->nullable();
-            $table->string('type', 20);
+            $table->unsignedTinyInteger('type');
             $table->string('key', 255);
             $table->unsignedInteger('sort_order')->default(0);
             $table->timestamps();

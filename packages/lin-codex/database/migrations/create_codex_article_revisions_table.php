@@ -21,8 +21,8 @@ return new class extends Migration
             $table->string('locale', 10);
             $table->string('title');
             $table->longText('body');
-            $table->string('format', 20);
-            $table->string('reason', 20);
+            $table->unsignedTinyInteger('format');
+            $table->unsignedTinyInteger('reason');
             $table->foreignId('user_id')->nullable()->constrained($users)->nullOnDelete();
             $table->timestamp('created_at')->nullable();
 

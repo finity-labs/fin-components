@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use FinityLabs\LinCodex\Enums\FallbackBehaviour;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Spatie\LaravelSettings\Migrations\SettingsMigration;
 
@@ -45,7 +46,7 @@ it('seeds one language and the default locale from app.locale', function () {
             ['code' => 'en', 'display' => 'English', 'flag-icon' => 'gb'],
         ],
         'default_locale' => 'en',
-        'fallback' => 'show_default',
+        'fallback' => FallbackBehaviour::ShowDefault->value,
         'revisions_enabled' => false,
         'revisions_keep' => 10,
     ]);

@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex\Enums;
 
-enum Visibility: string
-{
-    case Public = 'public';
-    case Authenticated = 'authenticated';
+use FinityLabs\LinCodex\Enums\Concerns\HasKey;
 
-    public function label(): string
-    {
-        return (string) __('lin-codex::lin-codex.enums.visibility.'.$this->value);
-    }
+enum Visibility: int
+{
+    use HasKey;
+
+    case Public = 1;
+    case Authenticated = 2;
 }
