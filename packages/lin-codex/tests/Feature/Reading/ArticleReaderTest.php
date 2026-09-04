@@ -62,7 +62,7 @@ describe('visibility', function (): void {
             ->and($read->isFallback)->toBeFalse()
             ->and($read->rendered)->toBeInstanceOf(RenderedArticle::class)
             ->and($read->rendered->html)->toBeString()->not->toBe('')
-            ->and($read->related)->toBe(['users'])
+            ->and($read->related)->toBe([['slug' => 'users', 'title' => 'Users']])
             ->and($read->breadcrumbs)->toBe([]);
     });
 
@@ -201,6 +201,6 @@ describe('database', function (): void {
         $reader = linCodexReader();
 
         expect($reader->read('a', $this->guest)->related)->toBe([])
-            ->and($reader->read('a', $this->user)->related)->toBe(['b']);
+            ->and($reader->read('a', $this->user)->related)->toBe([['slug' => 'b', 'title' => 'B']]);
     });
 });

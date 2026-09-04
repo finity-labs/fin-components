@@ -284,6 +284,24 @@ describe('shape', function (): void {
 
         expect(($this->searcher)()->search('cap', $this->guest, null, 99)->hits)->toHaveCount(20);
     });
+
+    it('reports the effective limit it clamps to', function (): void {
+        $searcher = ($this->searcher)();
+
+        expect($searcher->effectiveLimit(null))->toBe(10)
+            ->and($searcher->effectiveLimit(3))->toBe(3)
+            ->and($searcher->effectiveLimit(99))->toBe(50)
+            ->and($searcher->effectiveLimit(0))->toBe(1)
+            ->and($searcher->effectiveLimit(-5))->toBe(1);
+
+        config()->set('lin-codex.search.limit', 7);
+
+        expect($searcher->effectiveLimit(null))->toBe(7);
+
+        config()->set('lin-codex.search.max_limit', 20);
+
+        expect($searcher->effectiveLimit(99))->toBe(20);
+    });
 });
 
 describe('sources agree', function (): void {

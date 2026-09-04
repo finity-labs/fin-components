@@ -23,8 +23,9 @@ use Illuminate\Database\Eloquent\Relations\Relation;
  *
  * The `keywords`, `related` and `meta` JSON columns map straight through,
  * null as an empty array, so a database article carries the same metadata a
- * file article would. There is no Schema::hasTable() guard: a file-only
- * install sets lin-codex.source to "filesystem" instead.
+ * file article would. Translations carry `updatedAt` from the row's
+ * `updated_at`. There is no Schema::hasTable() guard: a file-only install
+ * sets lin-codex.source to "filesystem" instead.
  */
 final class DatabaseSource implements ContentSource
 {
@@ -127,6 +128,7 @@ final class DatabaseSource implements ContentSource
                 $translation->excerpt,
                 $translation->body,
                 $translation->search_text,
+                updatedAt: $translation->updated_at?->toIso8601String(),
             );
         }
 

@@ -21,7 +21,7 @@ use FinityLabs\LinCodex\Rendering\RenderedArticle;
 final readonly class ReadArticle
 {
     /**
-     * @param  list<string>  $related  slugs the same viewer may read in the same locale, in the article's related order
+     * @param  list<array{slug: string, title: string}>  $related  related articles the same viewer may read in the same locale, in the article's related order, each with the title the locale rule picked
      * @param  list<array{slug: string, title: string}>  $breadcrumbs  visible ancestor articles root-first with their picked titles
      */
     public function __construct(

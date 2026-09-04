@@ -151,6 +151,9 @@ return [
     | served when no article references it or when a referencing article is
     | visible to the viewer; hidden owners answer 404.
     |
+    | "api" is the prefix of the JSON endpoints (tree, articles/{slug},
+    | search, context).
+    |
     | "middleware" is the middleware group the package routes run under.
     |
     */
@@ -158,6 +161,7 @@ return [
     'routes' => [
         'help_center' => '/help',
         'media' => '/codex/media',
+        'api' => '/codex/api',
         'middleware' => ['web'],
     ],
 

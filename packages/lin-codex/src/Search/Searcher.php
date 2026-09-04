@@ -94,17 +94,19 @@ final class Searcher
             default => $this->memory->find($locale, $all, $visible, false),
         };
 
-        $scored = array_slice($this->ranker->rank($candidates, $parsed), 0, $this->limitFor($limit));
+        $scored = array_slice($this->ranker->rank($candidates, $parsed), 0, $this->effectiveLimit($limit));
         $hits = array_map(fn (ScoredCandidate $scored): SearchHit => $this->hit($scored, $parsed, $all, $locale), $scored);
 
         return new SearchResult($hits, $query, count($hits), false, null);
     }
 
     /**
-     * The requested limit, else the configured default, never below one
-     * and never above the configured maximum.
+     * The limit a search with this argument runs under: the argument, else
+     * lin-codex.search.limit, never below one and never above
+     * lin-codex.search.max_limit. Public so the JSON API reports the clamp
+     * it applied in meta.limit without repeating the formula.
      */
-    private function limitFor(?int $limit): int
+    public function effectiveLimit(?int $limit): int
     {
         $default = (int) config('lin-codex.search.limit', 10);
         $max = (int) config('lin-codex.search.max_limit', 50);

@@ -101,7 +101,8 @@ describe('articles', function (): void {
             ->and($intro->translation('de')->excerpt)->toBe('Was Codex macht und wo man anfängt.')
             ->and($intro->translation('de')->body)->toContain('](/codex/media/en/images/reset.png)')
             ->and($intro->sourcePath)->toEndWith('docs/en/01-intro.md')
-            ->and($intro->translation('de')->sourcePath)->toEndWith('docs/de/01-intro.md');
+            ->and($intro->translation('de')->sourcePath)->toEndWith('docs/de/01-intro.md')
+            ->and($intro->translation('en')->updatedAt)->toBeNull();
     });
 
     it('consumes the h1 of a section file and rewrites its images', function (): void {

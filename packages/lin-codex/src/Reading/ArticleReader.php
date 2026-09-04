@@ -20,7 +20,8 @@ use FinityLabs\LinCodex\Rendering\ArticleRenderer;
  *
  * Built from a single ContentSource::all() call; the gate and the locale
  * rule are applied to the article, to its related slugs and to its ancestor
- * chain from that same map. The body is rendered under the picked
+ * chain from that same map, and the related entries carry the title the
+ * locale rule picked. The body is rendered under the picked
  * translation's own locale and under ArticlePath::renderSlug(), so the cache
  * entry warmed when the files were scanned is the one served.
  */
@@ -57,12 +58,21 @@ final class ArticleReader
             ArticlePath::renderSlug($article->slug, $article->isSection),
         );
 
-        $related = array_values(array_filter(
-            $article->related,
-            fn (string $other): bool => isset($all[$other])
-                && $this->gate->allows($all[$other], $viewer, $all)
-                && $this->locales->pick($all[$other], $locale) !== null,
-        ));
+        $related = [];
+
+        foreach ($article->related as $other) {
+            if (! isset($all[$other]) || ! $this->gate->allows($all[$other], $viewer, $all)) {
+                continue;
+            }
+
+            $otherChoice = $this->locales->pick($all[$other], $locale);
+
+            if ($otherChoice === null) {
+                continue;
+            }
+
+            $related[] = ['slug' => $other, 'title' => $otherChoice->translation->title];
+        }
 
         $breadcrumbs = AncestorTitles::for($slug, $all, $locale, $this->locales);
 

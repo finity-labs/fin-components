@@ -115,6 +115,7 @@ it('exposes users_table and media config with the locked defaults', function () 
         ->and(config('lin-codex.source'))->toBe('composite')
         ->and(config('lin-codex.sources.filesystem.paths'))->toBe([resource_path('codex')])
         ->and(config('lin-codex.routes.media'))->toBe('/codex/media')
+        ->and(config('lin-codex.routes.api'))->toBe('/codex/api')
         ->and(config('lin-codex.routes.middleware'))->toBe(['web'])
         ->and(config('lin-codex.routes.help_center'))->toBe('/help');
 });

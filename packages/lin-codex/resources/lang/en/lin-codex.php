@@ -73,6 +73,13 @@ return [
 
     'fallback_notice' => 'This article is not yet available in your language. Showing the :language version.',
 
+    'api' => [
+        'not_found' => 'Article not found.',
+        'rate_limited' => 'Too many searches. Try again in :seconds seconds.',
+        'missing_query' => 'The q parameter is required.',
+        'invalid_limit' => 'The limit parameter must be a whole number.',
+    ],
+
     /*
      * Labels for folder groups (folders without an index file), keyed by the
      * group's full slug: 'users' => 'Users', 'billing/archive' => 'Archive'.

@@ -104,6 +104,16 @@ it('maps a row with its translations and contexts to article data', function ():
         ]);
 });
 
+it('carries the translation updated_at as an ISO 8601 string', function (): void {
+    $article = Article::factory()->public()->published()->withTranslation('en', ['title' => 'Stamp'])->create();
+
+    $translation = (new DatabaseSource)->findBySlug($article->slug)->translation('en');
+    $expected = ArticleTranslation::query()->firstOrFail()->updated_at->toIso8601String();
+
+    expect($translation->updatedAt)->toBe($expected)
+        ->and($translation->updatedAt)->toMatch('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/');
+});
+
 it('maps null metadata columns to empty arrays', function (): void {
     $bare = Article::query()->create(['slug' => 'bare']);
     ArticleTranslation::factory()->create(['article_id' => $bare->id, 'locale' => 'en', 'title' => 'Bare']);
