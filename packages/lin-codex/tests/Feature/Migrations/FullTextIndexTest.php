@@ -29,6 +29,7 @@ it('creates a gin expression index on search_text on pgsql', function () {
 })->skip(fn (): bool => $this->databaseDriver() !== 'pgsql', 'needs pgsql');
 
 it('builds the pgsql index with the configured language and falls back to simple for a bad name', function () {
+    $this->markPackageSchemaDirty();
     $migration = $this->migration('create_codex_article_translations_table');
 
     config()->set('lin-codex.search.pgsql_language', 'german');

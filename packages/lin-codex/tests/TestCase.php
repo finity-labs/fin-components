@@ -26,12 +26,17 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
  * The database follows DB_CONNECTION: in-memory SQLite by default, a real
  * MySQL, MariaDB or PostgreSQL server when the CI service rows or a developer
  * set the six DB_* variables. The package migrations run through
- * include()->up(), never the framework migration loader, so custom table names and the
- * driver branches are exercised exactly as a host app would. Tests are never
- * wrapped in a transaction: InnoDB full-text indexes only see committed rows,
- * so a transaction trait would make every MATCH ... AGAINST test silently
- * fall through to the LIKE path. The schema is dropped before it is created
- * and again when the application is destroyed instead.
+ * include()->up(), never the framework migration loader, so custom table names
+ * and the driver branches are exercised exactly as a host app would.
+ *
+ * Tests are never wrapped in a transaction: InnoDB full-text indexes only see
+ * committed rows, so a refresh or transaction trait would make every
+ * MATCH ... AGAINST test silently fall through to the LIKE path. On a
+ * persistent server the schema is instead dropped and created once per PHP
+ * process (so a crashed run leaves nothing stale), every test starts by
+ * deleting the rows of the previous one inside a single committed
+ * transaction, and the connection is closed when the application is
+ * destroyed. In-memory SQLite is a fresh database per test as before.
  */
 class TestCase extends Orchestra
 {
@@ -123,38 +128,93 @@ class TestCase extends Orchestra
     }
 
     /**
-     * Runs after the providers boot: any schema a previous run left behind
-     * is dropped, then the host tables the package depends on come first,
-     * then the package schema in dependency order, then the settings seed.
+     * The schema currently live on a persistent server: its signature
+     * (driver, table names, users table) and the tables it owns. Exactly one
+     * signature is live at a time, so a custom-table-names test never sees
+     * the default tables and vice versa. Never consulted for SQLite, whose
+     * in-memory database is new for every test.
+     *
+     * @var array{signature: string, tables: list<string>}|null
+     */
+    private static ?array $liveSchema = null;
+
+    /**
+     * Runs after the providers boot. SQLite gets the full schema every time.
+     * A persistent server gets it once per schema signature (dropping whatever
+     * an earlier run or another signature left behind first); after that each
+     * test only clears the rows and re-seeds the settings.
      */
     protected function defineDatabaseMigrations(): void
     {
-        $this->dropPackageSchema();
+        if ($this->databaseDriver() === 'sqlite') {
+            $this->createPackageSchema();
 
-        $this->createUsersTable((string) config('lin-codex.users_table', 'users'));
+            return;
+        }
+
+        $signature = $this->schemaSignature();
+
+        if (self::$liveSchema !== null && self::$liveSchema['signature'] !== $signature) {
+            $this->dropTables(self::$liveSchema['tables']);
+            self::$liveSchema = null;
+        }
+
+        if (self::$liveSchema === null || $this->packageSchemaIsIncomplete()) {
+            $this->dropPackageSchema();
+            $this->createPackageSchema();
+            self::$liveSchema = ['signature' => $signature, 'tables' => $this->packageTables()];
+
+            return;
+        }
+
+        $this->clearPackageTables();
+        $this->seedSettings();
+    }
+
+    /**
+     * Close the connection so a long run never exhausts the server's
+     * connection limit; PHP only collects the cycle the connection sits in
+     * on a later GC pass. Teardown must never throw.
+     */
+    protected function destroyDatabaseMigrations(): void
+    {
+        try {
+            $this->app['db']->purge();
+        } catch (\Throwable) {
+            // A failed disconnect must not turn a passing test into a failure.
+        }
+    }
+
+    /**
+     * Ask for a drop and create before the next test on a persistent server.
+     * For tests that change the schema in a way a table listing cannot see,
+     * such as rebuilding an index with another configuration.
+     */
+    public function markPackageSchemaDirty(): void
+    {
+        self::$liveSchema = null;
+    }
+
+    /**
+     * The host tables the package depends on come first, then the package
+     * schema in dependency order, then the settings seed.
+     */
+    private function createPackageSchema(): void
+    {
+        $this->createUsersTable($this->usersTable());
         $this->createSettingsTable();
 
         foreach (self::PACKAGE_MIGRATIONS as $file) {
             $this->migration($file)->up();
         }
 
-        (include dirname(__DIR__).'/database/settings/create_codex_settings.php')->up();
-    }
-
-    protected function destroyDatabaseMigrations(): void
-    {
-        $this->dropPackageSchema();
+        $this->seedSettings();
     }
 
     /**
-     * Drop everything defineDatabaseMigrations() creates, dependents first.
-     * On in-memory SQLite this is a no-op in cost; on a persistent server it
-     * is what lets every test start from an empty schema without a
-     * transaction wrapper (InnoDB full-text indexes only see committed rows,
-     * so a refresh or transaction trait would hide every row from
-     * MATCH ... AGAINST). Runs before create as well as after destroy, so a
-     * crashed run leaves nothing behind. CustomTableNamesTestCase drops its
-     * kb_* names because down() and this method read the overridden config.
+     * Drop everything createPackageSchema() creates, dependents first, with
+     * foreign key checks off. CustomTableNamesTestCase drops its kb_* names
+     * because down() and this method read the overridden config.
      */
     private function dropPackageSchema(): void
     {
@@ -165,9 +225,93 @@ class TestCase extends Orchestra
         }
 
         Schema::dropIfExists('settings');
-        Schema::dropIfExists((string) config('lin-codex.users_table', 'users'));
+        Schema::dropIfExists($this->usersTable());
 
         Schema::enableForeignKeyConstraints();
+    }
+
+    /**
+     * Drop the tables of a signature that is no longer current, dependents
+     * first, with foreign key checks off.
+     *
+     * @param  list<string>  $tables
+     */
+    private function dropTables(array $tables): void
+    {
+        Schema::disableForeignKeyConstraints();
+
+        foreach (array_reverse($tables) as $table) {
+            Schema::dropIfExists($table);
+        }
+
+        Schema::enableForeignKeyConstraints();
+    }
+
+    /**
+     * Delete every row of the package tables, the settings and the users
+     * table in one committed transaction. DELETE is DML, so on InnoDB it
+     * costs one fsync for the lot; TRUNCATE is DROP and CREATE in disguise
+     * and takes over a second on a table with a full-text index.
+     */
+    private function clearPackageTables(): void
+    {
+        DB::transaction(function (): void {
+            Schema::disableForeignKeyConstraints();
+
+            foreach (array_reverse($this->packageTables()) as $table) {
+                DB::table($table)->delete();
+            }
+
+            Schema::enableForeignKeyConstraints();
+        });
+    }
+
+    private function seedSettings(): void
+    {
+        (include dirname(__DIR__).'/database/settings/create_codex_settings.php')->up();
+    }
+
+    /**
+     * One table listing tells whether a test dropped part of the schema; the
+     * next test then rebuilds it instead of failing on a missing table. The
+     * listing is scoped to the connection's own schema: without it MySQL
+     * reports every database the account can see.
+     */
+    private function packageSchemaIsIncomplete(): bool
+    {
+        $existing = Schema::getTableListing(Schema::getCurrentSchemaName(), schemaQualified: false);
+
+        return array_diff($this->packageTables(), $existing) !== [];
+    }
+
+    /**
+     * Every table the harness owns, dependencies first.
+     *
+     * @return list<string>
+     */
+    private function packageTables(): array
+    {
+        $names = (array) config('lin-codex.table_names', []);
+
+        return [
+            $this->usersTable(),
+            'settings',
+            (string) ($names['articles'] ?? 'codex_articles'),
+            (string) ($names['article_translations'] ?? 'codex_article_translations'),
+            (string) ($names['article_contexts'] ?? 'codex_article_contexts'),
+            (string) ($names['article_revisions'] ?? 'codex_article_revisions'),
+            (string) ($names['media'] ?? 'codex_media'),
+        ];
+    }
+
+    private function schemaSignature(): string
+    {
+        return $this->databaseDriver().'|'.implode(',', $this->packageTables());
+    }
+
+    private function usersTable(): string
+    {
+        return (string) config('lin-codex.users_table', 'users');
     }
 
     /**
