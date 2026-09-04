@@ -61,14 +61,19 @@ return [
     |--------------------------------------------------------------------------
     |
     | "cache" controls where rendered articles are kept. A null store means
-    | the default cache store. The cache key already contains the content
-    | hash, the locale, the slug and a renderer fingerprint, so a TTL is only
-    | a memory bound: null keeps entries forever, 0 disables caching, and an
-    | integer is a lifetime in seconds.
+    | the default cache store; any name from config/cache.php works. The
+    | cache key contains the content hash, the format, the locale, the slug
+    | and a renderer fingerprint (this config, the app URL host and the
+    | extension list), so an edit or a config change produces a new key on
+    | its own and nothing needs clearing. A TTL is therefore only a memory
+    | bound: null keeps entries forever, 0 disables caching, and an integer
+    | is a lifetime in seconds.
     |
-    | "limits" protect the Markdown parser against pathological input such
-    | as thousands of nested blockquotes or emphasis markers on one line.
-    | Input beyond a limit is flattened to text rather than rejected.
+    | "limits" protect the Markdown parser against pathological input:
+    | "max_nesting_level" caps nested blockquotes and lists,
+    | "max_delimiters_per_line" caps emphasis markers on one line, and
+    | "max_autocompleted_cells" caps the cells a ragged table may add. Input
+    | beyond a limit is flattened to text rather than rejected.
     |
     | "sanitizer" applies to HTML-format articles. The library default of
     | 20,000 bytes would silently truncate long articles; -1 lifts the limit.
@@ -96,8 +101,10 @@ return [
     |--------------------------------------------------------------------------
     |
     | The URL prefix article-to-article links resolve under: "[Roles](roles.md)"
-    | becomes "/help/users/roles". The help center is mounted at the same
-    | prefix. A full URL is accepted as well.
+    | in the article "users/intro" becomes "/help/users/roles". The link also
+    | carries a "data-codex-article" attribute so the help drawer can open it
+    | in place; the href works without JavaScript. The help center is mounted
+    | at the same prefix. A full URL is accepted as well.
     |
     */
 
