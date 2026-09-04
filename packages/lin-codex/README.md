@@ -6,12 +6,12 @@ In-app help for Laravel applications. Codex serves help articles from Markdown f
 
 ## What it will do
 
-- **Contextual help.** Map articles to route names, page classes, or URL patterns. The drawer opens on the article that matches the current page.
+- **Contextual help.** Map articles to route names, page classes, or URL patterns. The Livewire drawer opens on the article that matches the current page.
 - **Files, database, or both.** Ship default docs in your repo and let admins override or extend them in the database. Import and export commands move content either way.
 - **Multilingual.** One article, one translation row per language, with a configurable fallback when a translation is missing.
 - **Search.** Database full-text search per language out of the box. A Laravel Scout driver is optional.
 - **Markdown with extras.** Callouts, step-by-step blocks with screenshots, tables of contents, and image lightboxes.
-- **Works for guests.** Public articles show on login, registration, and password reset pages.
+- **Works for guests.** `<x-lin-codex::help-button>` and `<x-lin-codex::help-drawer>` show public articles on login, registration and password reset pages.
 - **Frontend stubs.** Publishable React and Vue drawer components for Inertia apps, talking to the JSON API.
 
 Filament panels get all of this plus an article editor and panel-aware contexts through [fin-codex](https://github.com/finity-labs/fin-codex).
@@ -221,7 +221,7 @@ app(ArticleReader::class)->read('users/roles', $viewer, 'de');                  
 app(TreeBuilder::class)->build($viewer);                                                   // TreeNode[] with translated labels
 ```
 
-`ReadArticle` carries the `article`, the chosen `translation` and its `locale`, `isFallback`, the `rendered` result (`html` and `toc`), `related` entries (`slug` and `title`) the same viewer may read in the same language, and `breadcrumbs` for the visible ancestors. A translation from the database carries `updatedAt`, the ISO 8601 time of its last change; file articles report `null`. In a request, `RequestContextDetector::detect($request, $pageClass, $panelId)` builds the `PageContext` from the route name and path; hosts that know more, like a Filament panel with its resource class and panel id, pass them in. `PageContext::toArray()` and `fromArray()` let a Livewire component keep it in state, captured once at mount.
+`ReadArticle` carries the `article`, the chosen `translation` and its `locale`, `isFallback`, the `rendered` result (`html` and `toc`), `related` entries (`slug` and `title`) the same viewer may read in the same language, and `breadcrumbs` for the visible ancestors. A translation from the database carries `updatedAt`, the ISO 8601 time of its last change; file articles report `null`. In a request, `RequestContextDetector::detect($request, $pageClass, $panelId)` builds the `PageContext` from the route name and path; hosts that know more, like a Filament panel with its resource class and panel id, pass them in. `PageContext::toArray()` and `fromArray()` let a Livewire component keep it in state, captured once at mount, which is exactly what the help drawer does.
 
 ### Who sees what
 
@@ -372,6 +372,82 @@ public function share(Request $request): array
 ```
 
 Then `<HelpDrawer prefix={codex.prefix} context={codex.context} />` in the React layout, or `<HelpDrawer :prefix="page.props.codex.prefix" :context="page.props.codex.context" />` in the Vue one. After publishing the files are the app's: nothing is loaded automatically, there's no npm package, and every class is prefixed `codex-` so the package stylesheet of a later release applies if you include it. The published README has the props, the client and the event.
+
+## Help drawer
+
+The drawer is a Livewire slide-over: the current page's articles first, then search and the whole tree. There is no build step; Alpine comes with Livewire and the styles are one prebuilt stylesheet the package serves itself. It reads through the same services as the JSON API, so a guest sees in the drawer exactly what the API would give a guest. Three tags in a layout:
+
+```blade
+<head>
+    <x-lin-codex::styles />
+</head>
+<body>
+    <x-lin-codex::help-button />          {{-- anywhere: a navbar, a footer --}}
+    …
+    <x-lin-codex::help-drawer />          {{-- once, before </body> --}}
+</body>
+```
+
+Both components work on guest layouts (login, registration, password reset) and show public articles only there. Nothing else needs configuring.
+
+### The button
+
+`<x-lin-codex::help-button />` renders an anchor with a question-mark icon that opens the drawer. Props:
+
+- `label` adds text next to the icon.
+- `floating` renders it as a fixed pill in the bottom-right corner.
+- `badge` shows how many articles the current page has; `:badge="false"` hides it. Zero hides it too.
+- `count` overrides the number.
+- `page-class` and `panel-id` are what fin-codex passes for a Filament resource and its panel; give the drawer the same values.
+
+Host classes and attributes merge onto the anchor. The count is resolved once per request and shared with the drawer, so the badge and the drawer's page list always agree. Without JavaScript the button is a plain link to the help center.
+
+### The drawer
+
+`<x-lin-codex::help-drawer />` mounts the `lin-codex.help-drawer` component. On open it shows the page's first article, with "Also on this page" listing the others when the page has several; a page without articles shows "No help for this page yet", the search box and the tree. Four views: this page, search, browse (the tree) and article. The back button walks the history one view at a time and the breadcrumbs go up the slug path. An article with three or more headings gets its "On this page" block expanded; below that it starts collapsed. An article served from another language carries the fallback notice.
+
+Links inside an article: `data-codex-article` links (the relative `.md` links the renderer resolves) open in place, other same-host links close the drawer and navigate, external links open in a new tab. Images with the lightbox hook open in a lightbox. Search runs as you type with a 300 ms debounce, and a refused search shows the rate-limit line with the seconds to wait.
+
+Page context, locale and page articles are captured once at mount as locked state: searching and browsing never re-read the request, and the client cannot change them. Props: `slug` opens the drawer on that article as soon as the page loads, `page-class` and `panel-id` as for the button, `locale` overrides the resolved language.
+
+### Opening it from anywhere
+
+- The keyboard shortcut in `lin-codex.ui.shortcut`, default `ctrl+/`. Cmd counts as Ctrl on a Mac. `null` disables it. It is ignored while typing in an input, textarea, select or editable element, and it toggles: pressing it again closes the drawer.
+- `window.dispatchEvent(new CustomEvent('codex:open', { detail: { slug: 'users/roles' } }))` from any script; leave `detail` out to open on the page's articles.
+- `?codex=users/roles` on any URL that renders the drawer. The parameter is read once on load and removed with `history.replaceState`.
+
+Escape and a click on the overlay close it. Focus moves to the search box on open and returns to the element that opened the drawer on close.
+
+### Help center
+
+`/help` lists the topics and `/help/{slug}` shows an article. The routes are named `lin-codex.help-center` and `lin-codex.help-center.article` and run on the `routes.middleware` group. Three columns: the tree with the search box on the left, the article with its breadcrumbs in the middle, "On this page" on the right; a query replaces the article column with up to 50 hits. Set `lin-codex.routes.help_center` to move it; the article links the renderer writes follow.
+
+`lin-codex.routes.help_center_layout` renders the page into a host layout instead of the package one. It must be a component layout that echoes `$slot` (Livewire wraps it as an anonymous component; an `@extends` layout does not work). The layout receives `$title` and adds `<x-lin-codex::styles />` itself.
+
+### Styling
+
+One prebuilt stylesheet, served at `/codex/assets/codex.css` (`lin-codex.routes.assets`) with a year-long immutable cache header and the file's hash as `?v=`, so an upgrade never serves a stale copy. To serve it from the web server instead:
+
+```bash
+php artisan vendor:publish --tag=lin-codex-assets
+```
+
+That copies it to `public/vendor/lin-codex/`, and the styles component links that copy from then on. Re-publish with `--force` after upgrading the package.
+
+Every class is prefixed `codex-`, and the look comes from `--codex-*` custom properties on `.codex-root` (and on `.codex-help-button`, which renders outside the root): `--codex-bg`, `--codex-fg`, `--codex-muted`, `--codex-border`, `--codex-surface`, `--codex-accent`, `--codex-accent-fg`, `--codex-radius`, `--codex-space`, `--codex-font` and `--codex-drawer-width`. Override them after the package stylesheet:
+
+```css
+.codex-root, .codex-help-button {
+    --codex-accent: #0f766e;
+    --codex-radius: 4px;
+}
+```
+
+`--codex-accent` defaults to `var(--primary, #2563eb)`, so a Filament panel's primary colour comes through without configuration. Dark mode applies under a `.dark` ancestor, or when the system prefers dark and no `.light` ancestor is present. The drawer width also comes from `lin-codex.ui.drawer_width` (pixels, default 480).
+
+### Livewire 3 and 4
+
+The components use only the API the two majors share, and CI runs the suite on both (`livewire/livewire ^3.0|^4.0`). If you mount them with `<livewire:…>` directly instead of through the Blade wrappers, the names are `lin-codex.help-drawer` and `lin-codex.help-center`.
 
 ## License
 

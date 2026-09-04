@@ -54,3 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Publishable React (`lin-codex-react`) and Vue (`lin-codex-vue`) help drawer stubs under `resources/js/codex`: a typed `codex.ts` client over the four endpoints, `HelpButton`, `HelpDrawer` (`Ctrl+/`, `codex:open` event, `?codex=slug` deep link) and a README.
 - Config key `routes.api`; lang keys `api.not_found`, `api.rate_limited`, `api.missing_query`, `api.invalid_limit`.
 - The shared visibility dataset now drives the JSON API too.
+- Livewire help drawer (`lin-codex.help-drawer`) with the current page's articles first, search, tree navigation, back stack and breadcrumbs, a collapsible table of contents, the fallback notice, in-place article links, an image lightbox, the `ctrl+/` shortcut, the `codex:open` window event and the `?codex=slug` deep link; page context, locale and page articles are captured once at mount as locked state.
+- Blade components `<x-lin-codex::help-button>` (icon, label, floating and badge variants), `<x-lin-codex::help-drawer>` and `<x-lin-codex::styles>`, working on guest layouts.
+- Help center page (`lin-codex.help-center`) at `routes.help_center` with tree, breadcrumbs, table of contents, article body and search, in the package layout or a host component layout (`routes.help_center_layout`).
+- Prebuilt, `codex-` prefixed stylesheet with `--codex-*` tokens and dark mode, served at `routes.assets` with immutable cache headers and a hash version, publishable under `lin-codex-assets`.
+- Config keys `routes.assets`, `routes.help_center_layout`, `ui.shortcut`, `ui.drawer_width`; lang keys `ui.*`.
+- CI runs the suite on Livewire 3 and Livewire 4.
+- The shared visibility dataset now drives the Livewire components too.
