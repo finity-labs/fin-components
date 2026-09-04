@@ -81,9 +81,9 @@ jobs:
       - name: Install dependencies
         working-directory: packages/${{ matrix.package }}
         run: |
-          composer require "illuminate/contracts:${{ matrix.laravel }}" --no-interaction --no-update
-          composer require "orchestra/testbench:${{ matrix.testbench }}" --dev --no-interaction --no-update
-          composer update --no-interaction --prefer-dist
+          composer update --no-interaction --prefer-dist \
+            --with "illuminate/contracts:${{ matrix.laravel }}" \
+            --with "orchestra/testbench:${{ matrix.testbench }}"
 
       - name: Run tests
         working-directory: packages/${{ matrix.package }}
