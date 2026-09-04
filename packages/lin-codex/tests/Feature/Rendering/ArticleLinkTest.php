@@ -38,3 +38,11 @@ it('keeps author attribute syntax out of the table of contents', function (): vo
         ->and($result->html)->not->toContain('fi-btn')
         ->not->toContain('custom');
 });
+
+it('resolves links from a section file against its folder', function (): void {
+    $html = (new MarkdownPipeline)->render('[Roles](01-roles.md) and [Up](index.md) and [Home](../index.md)', 'en', 'users/index')->html;
+
+    expect($html)->toContain('data-codex-article="users/roles"')
+        ->toContain('data-codex-article="users"')
+        ->toContain('href="../index.md"');
+});
