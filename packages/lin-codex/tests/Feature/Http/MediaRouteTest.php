@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Illuminate\Auth\GenericUser;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -89,11 +90,17 @@ it('answers 404 when the configured docs path does not exist', function (): void
     $this->get(LIN_CODEX_MEDIA_URL)->assertNotFound();
 });
 
+// The override intro replaces the public intro whole, German file included,
+// so with both paths configured reset.png is referenced only by
+// authenticated articles and the media gate hides it from guests. Sign in so
+// this test sees path precedence, not visibility.
 it('serves the later configured path first and falls back to earlier ones', function (): void {
     config()->set('lin-codex.sources.filesystem.paths', [
         $this->fixtureDocsPath(),
         $this->fixtureDocsPath('docs-override'),
     ]);
+
+    $this->actingAs(new GenericUser(['id' => 1]));
 
     $logo = $this->get('/codex/media/en/images/logo.png');
     $logo->assertOk();

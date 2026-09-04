@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex\Http\Controllers;
 
+use FinityLabs\LinCodex\Auth\ArticleGate;
+use FinityLabs\LinCodex\Auth\ViewerResolver;
+use FinityLabs\LinCodex\Contracts\ContentSource;
+use FinityLabs\LinCodex\Data\ArticleData;
+use FinityLabs\LinCodex\Reading\MediaReferences;
+use FinityLabs\LinCodex\Sources\Filesystem\ImagePathRewriter;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,8 +26,13 @@ use Symfony\Component\HttpFoundation\Response;
  * calls isNotModified() inside the SetCacheHeaders middleware, so the
  * controller calls it itself to answer a conditional GET with 304.
  *
- * Visibility gating of an image by the owning article is Phase 4's
- * concern; this controller serves any image under a docs path.
+ * An image is served when no article references it (a shared asset) or when
+ * at least one referencing article is visible to the current viewer. A
+ * hidden owner is a 404, the same answer as a missing file, so the route
+ * never confirms that a restricted article exists. The locale rule does not
+ * apply to images: one file serves every language. The gate runs after the
+ * extension check and locate(), so nothing here touches the source for a
+ * non-image or a missing file.
  */
 final class MediaController extends Controller
 {
@@ -40,6 +51,12 @@ final class MediaController extends Controller
         'avif' => 'image/avif',
     ];
 
+    public function __construct(
+        private readonly ContentSource $source,
+        private readonly ViewerResolver $viewers,
+        private readonly ArticleGate $gate,
+    ) {}
+
     public function __invoke(Request $request, string $locale, string $path): Response
     {
         $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
@@ -50,6 +67,19 @@ final class MediaController extends Controller
 
         $file = $this->locate($locale, $path) ?? abort(404);
 
+        /*
+         * The reference key is the lexically normalised "{locale}/{path}" the
+         * rewriter would have emitted, so "de/../en/images/x.png" is gated
+         * as "en/images/x.png".
+         */
+        $key = ImagePathRewriter::resolve('', $locale.'/'.$path) ?? abort(404);
+        $articles = $this->source->all();
+        $owners = MediaReferences::fromArticles($articles, (string) config('lin-codex.routes.media', '/codex/media'))->owners($key);
+
+        if ($owners !== [] && ! $this->anyOwnerVisible($owners, $articles)) {
+            abort(404);
+        }
+
         $response = response()->file($file, [
             'Content-Type' => self::MIME[$extension],
             'Cache-Control' => 'public, max-age=86400',
@@ -58,6 +88,23 @@ final class MediaController extends Controller
         $response->isNotModified($request);
 
         return $response;
+    }
+
+    /**
+     * @param  list<string>  $owners  slugs referencing the image
+     * @param  array<string, ArticleData>  $articles  the source's all() map
+     */
+    private function anyOwnerVisible(array $owners, array $articles): bool
+    {
+        $viewer = $this->viewers->resolve();
+
+        foreach ($owners as $slug) {
+            if (isset($articles[$slug]) && $this->gate->allows($articles[$slug], $viewer, $articles)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

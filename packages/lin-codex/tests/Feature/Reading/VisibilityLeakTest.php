@@ -35,7 +35,7 @@ beforeEach(function (): void {
     config()->set('lin-codex.sources.filesystem.paths', [$this->fixtureDocsPath('docs-visibility')]);
 });
 
-it('never leaks through the reader, the tree or the context resolver', function (string $source, string $viewer, string $slug, bool $guestSees, bool $userSees): void {
+it('never leaks through the reader, the tree, the context resolver or the media route', function (string $source, string $viewer, string $slug, bool $guestSees, bool $userSees): void {
     linCodexLeakUseSource($source);
 
     if ($viewer === 'user') {
@@ -48,6 +48,10 @@ it('never leaks through the reader, the tree or the context resolver', function 
     expect(app(ArticleReader::class)->read($slug, $current) !== null)->toBe($expected)
         ->and(in_array($slug, linCodexLeakTreeSlugs(app(TreeBuilder::class)->build($current)), true))->toBe($expected)
         ->and(linCodexLeakSlugs(app(ContextResolver::class)->resolve(new PageContext(null, '/leak/'.$slug), $current)))->toBe($expected ? [$slug] : []);
+
+    $response = $this->get('/codex/media/en/images/'.str_replace('/', '-', $slug).'.png');
+    $response->assertStatus($expected ? 200 : 404);
+    expect($response->getStatusCode())->not->toBe(403);
 })->with('lin-codex sources', 'lin-codex viewers', 'lin-codex leak articles');
 
 it('hides a section and its public child from the guest tree wholesale', function (string $source): void {

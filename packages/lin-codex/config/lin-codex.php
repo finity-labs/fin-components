@@ -147,7 +147,9 @@ return [
     | "media" is the prefix relative images in file articles are served
     | under ("{media}/{locale}/{path}"). Only image extensions are served
     | (png, jpg, jpeg, gif, webp, avif; svg is refused because inline SVG can
-    | carry scripts), and only from the configured docs paths.
+    | carry scripts), and only from the configured docs paths. An image is
+    | served when no article references it or when a referencing article is
+    | visible to the viewer; hidden owners answer 404.
     |
     | "middleware" is the middleware group the package routes run under.
     |
