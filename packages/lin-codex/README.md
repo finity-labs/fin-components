@@ -12,7 +12,7 @@ In-app help for Laravel applications. Codex serves help articles from Markdown f
 - **Search.** Database full-text search per language out of the box. A Laravel Scout driver is optional.
 - **Markdown with extras.** Callouts, step-by-step blocks with screenshots, tables of contents, and image lightboxes.
 - **Works for guests.** Public articles show on login, registration, and password reset pages.
-- **Frontend stubs.** Publishable React and Vue components for the Inertia starter kits.
+- **Frontend stubs.** Publishable React and Vue drawer components for Inertia apps, talking to the JSON API.
 
 Filament panels get all of this plus an article editor and panel-aware contexts through [fin-codex](https://github.com/finity-labs/fin-codex).
 
@@ -221,7 +221,7 @@ app(ArticleReader::class)->read('users/roles', $viewer, 'de');                  
 app(TreeBuilder::class)->build($viewer);                                                   // TreeNode[] with translated labels
 ```
 
-`ReadArticle` carries the `article`, the chosen `translation` and its `locale`, `isFallback`, the `rendered` result (`html` and `toc`), the `related` slugs the same viewer may read, and `breadcrumbs` for the visible ancestors. In a request, `RequestContextDetector::detect($request, $pageClass, $panelId)` builds the `PageContext` from the route name and path; hosts that know more, like a Filament panel with its resource class and panel id, pass them in. `PageContext::toArray()` and `fromArray()` let a Livewire component keep it in state, captured once at mount.
+`ReadArticle` carries the `article`, the chosen `translation` and its `locale`, `isFallback`, the `rendered` result (`html` and `toc`), `related` entries (`slug` and `title`) the same viewer may read in the same language, and `breadcrumbs` for the visible ancestors. A translation from the database carries `updatedAt`, the ISO 8601 time of its last change; file articles report `null`. In a request, `RequestContextDetector::detect($request, $pageClass, $panelId)` builds the `PageContext` from the route name and path; hosts that know more, like a Filament panel with its resource class and panel id, pass them in. `PageContext::toArray()` and `fromArray()` let a Livewire component keep it in state, captured once at mount.
 
 ### Who sees what
 
@@ -297,6 +297,81 @@ The filesystem source is searched through an in-memory index: the folded documen
 ### Rate limits
 
 `search.rate_limit.guest` (30 per minute, by IP) and `search.rate_limit.user` (120 per minute, by user id) throttle searches; `null` disables a tier. The limit lives in the search service, so the JSON API and the drawer share one counter. Over the limit the result is empty with `rateLimited` set and `retryAfterSeconds` saying how long to wait; nothing is thrown. Queries under the minimum length don't count. Behind a proxy, configure trusted proxies so the IP is the client's and not the proxy's.
+
+## JSON API
+
+Four GET endpoints under `routes.api` (`/codex/api` by default) answer the same questions the services do, as JSON. They run on the `routes.middleware` group (`web` by default), so the session identifies the viewer and an Inertia page needs no token. Every read applies the visibility and language rules described above: a guest gets public articles only, and a hidden article is a 404. The contract is frozen; later releases add keys, they don't rename or remove them.
+
+| Endpoint | Answers |
+|---|---|
+| `GET /codex/api/tree?locale=` | the tree the viewer sees |
+| `GET /codex/api/articles/{slug}?locale=` | one rendered article; the slug may contain slashes (`articles/users/roles`) |
+| `GET /codex/api/search?q=&limit=&locale=` | the hits with snippets |
+| `GET /codex/api/context?route=&path=&class=&panel=&locale=` | the ordered articles for a page, built from the query string, never from the request the API itself received |
+
+### Envelope
+
+Every success is `{ "data": ..., "meta": ... }`. `meta.locale` is the requested locale, or the app locale, and `meta.defaultLocale` the default from the settings; both are on every answer. The article adds `isFallback`; search adds `query`, `total`, `limit`, `rateLimited` and `retryAfterSeconds`; context echoes `route`, `path`, `class` and `panel` as the server understood them.
+
+```json
+{
+  "data": {
+    "slug": "intro",
+    "title": "Introduction",
+    "excerpt": "What Codex does and where to start.",
+    "locale": "en",
+    "isFallback": false,
+    "format": "markdown",
+    "html": "<p>Welcome to the help center. ...</p>",
+    "toc": [{ "level": 2, "text": "Where to start", "id": "where-to-start" }],
+    "breadcrumbs": [],
+    "related": [{ "slug": "users", "title": "Users" }, { "slug": "users/roles", "title": "Roles" }],
+    "icon": "heroicon-o-book-open",
+    "updatedAt": null
+  },
+  "meta": { "locale": "en", "defaultLocale": "en", "isFallback": false }
+}
+```
+
+Tree nodes carry `slug`, `title`, `icon`, `isGroup`, `isFallback`, `hasArticle` and `children`. Search hits carry `slug`, `title`, `sectionPath`, `snippet`, `matchedField`, `score` and `isFallback`. Context entries carry `slug`, `title`, `excerpt` and `isFallback`. `format` and `matchedField` are the enum keys: `markdown` or `html`, and `title`, `keywords`, `excerpt` or `body`.
+
+### Errors
+
+Errors are `{ "message": "..." }`: 404 for a missing, hidden or unpublished article (never 403), 422 for a missing `q` or a `limit` that isn't a whole number, and 429 with a `Retry-After` header when the search limiter refuses. A query under `search.min_length` is a 200 with empty data. A `locale` outside the settings list isn't an error either: it counts as a missing translation, so the article comes back with `isFallback` set or as a 404, by the `fallback` setting.
+
+### Config
+
+`routes.api` sets the prefix and `routes.middleware` the group. Swapping the group, for example to `api` with Sanctum, is the whole story for token auth; the endpoints don't care how the viewer was identified.
+
+## React and Vue stubs
+
+Inertia apps get a help drawer as published components:
+
+```bash
+php artisan vendor:publish --tag=lin-codex-react
+php artisan vendor:publish --tag=lin-codex-vue
+```
+
+The tags are alternatives and both land in `resources/js/codex`: `types.ts` (the payloads as TypeScript types), `codex.ts` (a fetch client over the four endpoints), `HelpButton` and `HelpDrawer` (`.tsx` or `.vue`), and a README. The drawer opens on the button, on `Ctrl+/`, on a `codex:open` window event with an optional slug and on a `?codex=slug` query parameter; it shows the current page's articles first, then search and the tree, and renders an article with the fallback notice when it came from another language.
+
+The drawer learns which page it is on from Inertia shared props. Share the prefix and the page context from `HandleInertiaRequests`:
+
+```php
+use FinityLabs\LinCodex\Contexts\RequestContextDetector;
+
+public function share(Request $request): array
+{
+    return [
+        ...parent::share($request),
+        'codex' => [
+            'prefix' => config('lin-codex.routes.api'),
+            'context' => app(RequestContextDetector::class)->detect($request)->toArray(),
+        ],
+    ];
+}
+```
+
+Then `<HelpDrawer prefix={codex.prefix} context={codex.context} />` in the React layout, or `<HelpDrawer :prefix="page.props.codex.prefix" :context="page.props.codex.context" />` in the Vue one. After publishing the files are the app's: nothing is loaded automatically, there's no npm package, and every class is prefixed `codex-` so the package stylesheet of a later release applies if you include it. The published README has the props, the client and the event.
 
 ## License
 

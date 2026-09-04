@@ -47,3 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Config block `search.*` (`engine`, `min_length`, `limit`, `max_limit`, `candidates`, `snippet_length`, `pgsql_language`, `rate_limit.guest`, `rate_limit.user`); lang keys `enums.search_field.*` and `enums.search_strategy.*`; `SearchField` and `SearchStrategy` enums.
 - The test suite runs on MySQL 8.4 and PostgreSQL 16 in CI next to SQLite (those two rows with `CODEX_SEARCH_ENGINE=fulltext`, every other row on the default), and the PostgreSQL full-text index language follows `search.pgsql_language`.
 - The shared visibility dataset now drives search too.
+- JSON API under `routes.api` (default `/codex/api`) on the `routes.middleware` group: `GET tree`, `GET articles/{slug}`, `GET search` and `GET context`, answering `{data, meta}` built from the read services' data objects, with 404 for missing or hidden articles, 422 for malformed search input and 429 with `Retry-After` when the search limiter refuses.
+- `ReadArticle::$related` now lists `{slug, title}` pairs instead of bare slugs, resolved inside `ArticleReader` from the same content map.
+- `TranslationData::$updatedAt`: the ISO 8601 time of the last change for database translations (`null` for file articles).
+- `Searcher::effectiveLimit()` reporting the clamp a search runs under.
+- Publishable React (`lin-codex-react`) and Vue (`lin-codex-vue`) help drawer stubs under `resources/js/codex`: a typed `codex.ts` client over the four endpoints, `HelpButton`, `HelpDrawer` (`Ctrl+/`, `codex:open` event, `?codex=slug` deep link) and a README.
+- Config key `routes.api`; lang keys `api.not_found`, `api.rate_limited`, `api.missing_query`, `api.invalid_limit`.
+- The shared visibility dataset now drives the JSON API too.
