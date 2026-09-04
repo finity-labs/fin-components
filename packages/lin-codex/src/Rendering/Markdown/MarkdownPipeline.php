@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex\Rendering\Markdown;
 
+use FinityLabs\LinCodex\Rendering\Markdown\Attributes\CodexClassFilter;
 use FinityLabs\LinCodex\Rendering\Markdown\Callout\CalloutExtension;
 use FinityLabs\LinCodex\Rendering\Markdown\Container\FencedContainerExtension;
 use FinityLabs\LinCodex\Rendering\Markdown\Figure\FigureExtension;
@@ -11,6 +12,7 @@ use FinityLabs\LinCodex\Rendering\Markdown\Links\ArticleLinkExtension;
 use FinityLabs\LinCodex\Rendering\PlainTextExtractor;
 use FinityLabs\LinCodex\Rendering\RenderedArticle;
 use League\CommonMark\Environment\Environment;
+use League\CommonMark\Event\DocumentParsedEvent;
 use League\CommonMark\Extension\Attributes\AttributesExtension;
 use League\CommonMark\Extension\Autolink\AutolinkExtension;
 use League\CommonMark\Extension\CommonMark\CommonMarkCoreExtension;
@@ -111,8 +113,7 @@ final class MarkdownPipeline
         $environment->addExtension(new FigureExtension);
         $environment->addExtension(new ArticleLinkExtension($this->state));
 
-        // Codex extensions are registered here by later plans.
-
+        $environment->addEventListener(DocumentParsedEvent::class, [new CodexClassFilter, 'onDocumentParsed'], -10);
         $environment->addRenderer(HeadingPermalink::class, new HeadingAnchorRenderer($this->state), 10);
 
         return $this->environment = $environment;

@@ -30,3 +30,11 @@ it('keeps the link text and not the href in the plain text', function (): void {
     expect($result->plainText)->toContain('Roles')
         ->not->toContain('/help');
 });
+
+it('keeps author attribute syntax out of the table of contents', function (): void {
+    $result = (new MarkdownPipeline)->render("## Heading {#custom}\n\nText {.fi-btn}", 'en', 'intro');
+
+    expect($result->toc)->toBe([['level' => 2, 'text' => 'Heading', 'id' => 'heading']])
+        ->and($result->html)->not->toContain('fi-btn')
+        ->not->toContain('custom');
+});
