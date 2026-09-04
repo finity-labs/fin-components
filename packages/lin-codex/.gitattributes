@@ -4,6 +4,10 @@
 # Source
 *.php diff=php
 
+# Fixtures
+*.png binary
+tests/Fixtures/docs/en/04-crlf.md -text
+
 # Exclude from dist packages
 /.github            export-ignore
 /tests              export-ignore

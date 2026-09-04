@@ -90,6 +90,12 @@ class TestCase extends Orchestra
         return $this->app->make(ArticleRenderer::class);
     }
 
+    /** Absolute path of a docs fixture tree under tests/Fixtures ('docs' or 'docs-override'). */
+    public function fixtureDocsPath(string $name = 'docs'): string
+    {
+        return __DIR__.'/Fixtures/'.$name;
+    }
+
     protected function createUsersTable(string $table): void
     {
         Schema::create($table, function (Blueprint $table): void {
