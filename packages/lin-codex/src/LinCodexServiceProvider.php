@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace FinityLabs\LinCodex;
 
 use FinityLabs\LinCodex\Contracts\ContentSource;
+use FinityLabs\LinCodex\Livewire\HelpCenter;
+use FinityLabs\LinCodex\Livewire\HelpDrawer;
 use FinityLabs\LinCodex\Rendering\ArticleRenderer;
 use FinityLabs\LinCodex\Rendering\Html\HtmlPipeline;
 use FinityLabs\LinCodex\Rendering\Html\SanitizerFactory;
@@ -14,7 +16,9 @@ use FinityLabs\LinCodex\Sources\DatabaseSource;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
 use FinityLabs\LinCodex\View\PageHelpResolver;
 use Illuminate\Contracts\Container\Container;
+use Illuminate\Support\Facades\Blade;
 use InvalidArgumentException;
+use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
@@ -30,6 +34,8 @@ class LinCodexServiceProvider extends PackageServiceProvider
             ->name(static::$name)
             ->hasConfigFile()
             ->hasTranslations()
+            ->hasViews()
+            ->hasAssets()
             ->hasRoute('web')
             ->hasMigrations([
                 'create_codex_articles_table',
@@ -83,7 +89,18 @@ class LinCodexServiceProvider extends PackageServiceProvider
     }
 
     /**
-     * The React and the Vue help drawer stubs, published into
+     * The Livewire components and the Blade component namespace, then the
+     * console-only stub publishes.
+     *
+     * The Livewire names are dotted: Livewire 4 reserves the double colon
+     * for its own component namespaces, and the plain alias form is what
+     * Livewire 3 consults first. One name per class, because a test by
+     * class resolves the first registered name.
+     *
+     * <x-lin-codex::name> resolves a class under View\Components when one
+     * exists and otherwise the anonymous view resources/views/components/name.
+     *
+     * The React and the Vue help drawer stubs are published into
      * resources/js/codex under the lin-codex-react and lin-codex-vue tags.
      * The two sets are alternatives and share codex.ts and types.ts, so
      * publishing both leaves both component pairs next to one client.
@@ -93,13 +110,15 @@ class LinCodexServiceProvider extends PackageServiceProvider
      */
     public function packageBooted(): void
     {
-        if (! $this->app->runningInConsole()) {
-            return;
+        Livewire::component('lin-codex.help-drawer', HelpDrawer::class);
+        Livewire::component('lin-codex.help-center', HelpCenter::class);
+        Blade::componentNamespace('FinityLabs\\LinCodex\\View\\Components', 'lin-codex');
+
+        if ($this->app->runningInConsole()) {
+            $stubs = $this->package->basePath('/../resources/stubs');
+
+            $this->publishes([$stubs.'/react' => resource_path('js/codex')], 'lin-codex-react');
+            $this->publishes([$stubs.'/vue' => resource_path('js/codex')], 'lin-codex-vue');
         }
-
-        $stubs = $this->package->basePath('/../resources/stubs');
-
-        $this->publishes([$stubs.'/react' => resource_path('js/codex')], 'lin-codex-react');
-        $this->publishes([$stubs.'/vue' => resource_path('js/codex')], 'lin-codex-vue');
     }
 }

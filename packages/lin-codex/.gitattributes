@@ -17,4 +17,5 @@ tests/Fixtures/docs/en/04-crlf.md -text
 /phpstan.neon       export-ignore
 /phpunit.xml        export-ignore
 /pint.json          export-ignore
+/testbench.yaml     export-ignore
 /CHANGELOG.md       export-ignore
