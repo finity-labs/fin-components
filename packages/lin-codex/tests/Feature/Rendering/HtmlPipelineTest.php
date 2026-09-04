@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use FinityLabs\LinCodex\Rendering\Html\HtmlPipeline;
 use FinityLabs\LinCodex\Rendering\Html\SanitizerFactory;
+use FinityLabs\LinCodex\Rendering\RenderedArticle;
 
 describe('sanitizer', function (): void {
     it('drops event handlers, style attributes and foreign classes', function (): void {
@@ -68,5 +70,55 @@ describe('sanitizer', function (): void {
         config()->set('lin-codex.render.sanitizer.max_input_length', 100);
 
         expect(SanitizerFactory::make()->sanitize($body))->not->toContain('END');
+    });
+});
+
+describe('pipeline', function (): void {
+    it('returns a rendered article with search text and empty metadata', function (): void {
+        $dir = dirname(__DIR__, 2).'/Fixtures/render/html';
+        $result = app(HtmlPipeline::class)->render((string) file_get_contents("$dir/headings.input.html"), 'en', 'users/permissions');
+
+        expect($result)->toBeInstanceOf(RenderedArticle::class)
+            ->and($result->metadata)->toBe(['front_matter' => null, 'warnings' => []])
+            ->and($result->plainText)->toBe('Title Reset a password Step one Reset a password Author id Deep Ärger über Straße x');
+    });
+
+    it('renders an empty body to nothing', function (): void {
+        $result = app(HtmlPipeline::class)->render('', 'en', 'x');
+
+        expect($result->html)->toBe('')
+            ->and($result->toc)->toBe([])
+            ->and($result->plainText)->toBe('')
+            ->and($result->metadata['warnings'])->toBe([]);
+    });
+
+    it('round-trips utf-8 and entities', function (): void {
+        $result = app(HtmlPipeline::class)->render('<p>é &amp; ü</p>', 'en', 'x');
+
+        expect($result->html)->toContain('é')->toContain('&amp;')->toContain('ü');
+    });
+
+    it('slugs heading ids for the requested locale', function (): void {
+        $result = app(HtmlPipeline::class)->render('<h2>Ärger</h2>', 'de', 'x');
+
+        expect($result->html)->toContain('<h2 id="aerger">');
+    });
+
+    it('treats the app url host as internal', function (): void {
+        config()->set('app.url', 'https://app.test');
+        $pipeline = new HtmlPipeline(SanitizerFactory::make());
+
+        $result = $pipeline->render('<p><a href="https://app.test/x">in</a><a href="http://localhost/x">out</a></p>', 'en', 'x');
+
+        expect($result->html)->toContain('<a href="https://app.test/x">in</a>')
+            ->and($result->html)->toContain('<a href="http://localhost/x" target="_blank" rel="noopener noreferrer" class="codex-external">out</a>');
+    });
+
+    it('exposes scalar fingerprint input', function (): void {
+        $input = app(HtmlPipeline::class)->fingerprintInput();
+
+        expect($input)->toHaveKeys(['sanitizer', 'help_center', 'internal_host'])
+            ->and($input['internal_host'])->toBe('localhost')
+            ->and(json_encode($input))->toBeString();
     });
 });

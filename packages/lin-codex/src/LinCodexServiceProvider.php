@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex;
 
+use FinityLabs\LinCodex\Rendering\Html\HtmlPipeline;
 use FinityLabs\LinCodex\Rendering\Html\SanitizerFactory;
 use FinityLabs\LinCodex\Rendering\Markdown\MarkdownPipeline;
 use Spatie\LaravelPackageTools\Package;
@@ -35,5 +36,6 @@ class LinCodexServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(MarkdownPipeline::class);
         $this->app->singleton(HtmlSanitizerInterface::class, static fn (): HtmlSanitizer => SanitizerFactory::make());
+        $this->app->singleton(HtmlPipeline::class);
     }
 }
