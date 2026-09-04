@@ -78,4 +78,25 @@ class LinCodexServiceProvider extends PackageServiceProvider
             return $instance;
         });
     }
+
+    /**
+     * The React and the Vue help drawer stubs, published into
+     * resources/js/codex under the lin-codex-react and lin-codex-vue tags.
+     * The two sets are alternatives and share codex.ts and types.ts, so
+     * publishing both leaves both component pairs next to one client.
+     * Registered only in console because publishes() is a console concern;
+     * package-tools has no directory-publish helper, so this is the same
+     * primitive it uses for its own views and migrations.
+     */
+    public function packageBooted(): void
+    {
+        if (! $this->app->runningInConsole()) {
+            return;
+        }
+
+        $stubs = $this->package->basePath('/../resources/stubs');
+
+        $this->publishes([$stubs.'/react' => resource_path('js/codex')], 'lin-codex-react');
+        $this->publishes([$stubs.'/vue' => resource_path('js/codex')], 'lin-codex-vue');
+    }
 }
