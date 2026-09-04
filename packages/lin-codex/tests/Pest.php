@@ -7,6 +7,7 @@ use FinityLabs\LinCodex\Tests\CustomHelpCenterTestCase;
 use FinityLabs\LinCodex\Tests\CustomTableNamesTestCase;
 use FinityLabs\LinCodex\Tests\TestCase;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Testing\TestView;
 
 uses(TestCase::class)->in('Unit', 'Feature/Migrations', 'Feature/Models', 'Feature/Rendering', 'Feature/Http', 'Feature/Settings', 'Feature/Sources', 'Feature/Auth', 'Feature/Contexts', 'Feature/Locale', 'Feature/Reading', 'Feature/Search', 'Feature/Api', 'Feature/Stubs', 'Feature/Livewire', 'Feature/Views');
 uses(CustomTableNamesTestCase::class)->in('Feature/CustomTableNames');
@@ -39,5 +40,19 @@ function linCodexAssertNoModels(mixed $value): void
 
     foreach ((new ReflectionObject($value))->getProperties() as $property) {
         linCodexAssertNoModels($property->getValue($value));
+    }
+}
+
+/*
+ * Laravel 11's TestView lacks the *SeeHtml assertions that Laravel 12 added.
+ * Register them as macros there so the view tests read the same on every
+ * supported version; on Laravel 12+ the real methods win and these are inert.
+ */
+foreach (['assertSeeHtml' => 'assertSee', 'assertDontSeeHtml' => 'assertDontSee', 'assertSeeHtmlInOrder' => 'assertSeeInOrder'] as $htmlMethod => $escapedMethod) {
+    if (! method_exists(TestView::class, $htmlMethod)) {
+        TestView::macro($htmlMethod, function (mixed $value) use ($escapedMethod): TestView {
+            /** @var TestView $this */
+            return $this->{$escapedMethod}($value, false);
+        });
     }
 }
