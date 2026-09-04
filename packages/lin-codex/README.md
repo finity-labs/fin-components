@@ -195,7 +195,7 @@ $source = app(ContentSource::class);
 $source->findBySlug('users/roles');                          // ArticleData or null
 $source->findByContext(ContextType::Route, 'users.index');   // ArticleData[] for that page
 $source->tree();                                             // TreeNode[] roots
-$source->allForSearch();                                     // SearchDocument[], one per language
+$source->allForSearch();                                     // SearchDocument[], one per language; the searcher builds its index from these
 $source->warnings();                                         // SourceWarning[]
 ```
 
@@ -250,6 +250,53 @@ A context key says which pages an article belongs to. There are three kinds:
 The catch-alls `route:*` and `url:/**` are allowed and sort last. Prefix a key with a panel id (`admin:route:users.index`) to scope it to that panel.
 
 Resolution takes the articles for the current panel first and falls back to panel-less ones only when the panel gave nothing visible. Within that, exact keys come before wildcards, then class before route before url, then the order the author gave, then the slug. One article may list many contexts, and many articles may share one; the drawer opens the first.
+
+## Searching
+
+Users find articles by typing words in their own language. Results follow the same visibility and language rules as everything else, so a search never lists an article the reader would then refuse. The same query returns the same hits in the same order on MySQL, MariaDB, PostgreSQL, SQLite and on a file-only install, because the database only pre-filters rows; PHP decides what matches and how it ranks.
+
+### From code
+
+```php
+use FinityLabs\LinCodex\Auth\ViewerResolver;
+use FinityLabs\LinCodex\Search\Searcher;
+
+$viewer = app(ViewerResolver::class)->resolve();
+$result = app(Searcher::class)->search('passwort zurück', $viewer, 'de', 10);   // SearchResult
+
+$result->hits;                // SearchHit[]: slug, title, sectionPath, snippet, matchedField, score, isFallback
+$result->total;               // number of hits returned (no pagination)
+$result->rateLimited;         // true when the viewer is over the limit; hits is empty then
+$result->retryAfterSeconds;   // seconds until the next allowed search, or null
+```
+
+The locale defaults to the app locale. `limit` defaults to `search.limit` (10) and is capped at `search.max_limit` (50). `snippet` is HTML: the matched word prefixes are wrapped in `<mark>` and everything else is escaped, so it's safe to print with `{!! !!}`. `sectionPath` holds the ancestor article titles, root first, for a "Users › Roles" line. `isFallback` and the fallback notice work as they do for `ReadArticle`. `matchedField->key()` is `title`, `keywords`, `excerpt` or `body`.
+
+### What gets indexed
+
+Every translation row has a `search_text` column holding the title, the article's keywords, the excerpt and the plain text of the body, lowercased and accent-folded. That's why `uber` finds `über`, `strasse` finds `Straße` and `hoseg` finds `hőség`. The column is filled when a translation is saved and refreshed when the article's keywords or format change. Rows written with the query builder skip the model hooks and stay unindexed. File articles get the same text when their folder is scanned.
+
+Folding transliterates to ASCII, so scripts without a Latin transliteration (Chinese, Japanese, Korean) fold to nothing and aren't searchable in this release.
+
+### How matching works
+
+A query needs at least two characters (`search.min_length`); anything shorter returns an empty result without touching the rate limit. The query is folded the same way as the text and split into words. Every word must match (AND), and a word matches the start of a word in the text, so `pass` finds `password` but `word` doesn't.
+
+Ranking happens in PHP. A hit in the title beats one in the keywords, which beats the excerpt, which beats the body. Within a tier the exact phrase and repeated words earn a bonus, and ties break by title, then slug.
+
+### Engines
+
+MySQL and MariaDB use the full-text index in boolean mode. PostgreSQL uses `to_tsquery` with the text search configuration in `search.pgsql_language`; the index is built with the same configuration, so keep `simple` for a manual written in several languages. SQLite uses `LIKE`.
+
+Words shorter than three characters and MySQL stopwords (`the`, `und`, ...) would be dropped by the full-text engines, so a query containing one takes the `LIKE` path on every engine. A full-text query that finds nothing is retried once with `LIKE`. Setting `search.driver` to `like` forces the portable path everywhere, and `search.candidates` (200) caps the rows the pre-filter hands to PHP.
+
+### File-only installs
+
+The filesystem source is searched through an in-memory index: the folded documents are cached under one key and rebuilt when the content changes, so an edit shows on the next search. A composite install searches the database and the file-only articles and merges them; a slug that exists in the database wins. `codex:cache-clear` (a later release) drops the index.
+
+### Rate limits
+
+`search.rate_limit.guest` (30 per minute, by IP) and `search.rate_limit.user` (120 per minute, by user id) throttle searches; `null` disables a tier. The limit lives in the search service, so the JSON API and the drawer share one counter. Over the limit the result is empty with `rateLimited` set and `retryAfterSeconds` saying how long to wait; nothing is thrown. Queries under the minimum length don't count. Behind a proxy, configure trusted proxies so the IP is the client's and not the proxy's.
 
 ## License
 

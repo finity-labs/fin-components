@@ -39,3 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TreeNode::$isFallback` and `isGroup()`.
 - Config keys `auth.guard` and `auth.gate`; lang keys `fallback_notice` and `groups.*`.
 - A shared visibility dataset (`tests/Datasets/Visibility.php`) proving no read path leaks.
+- Search: `Searcher::search()` returning readonly `SearchResult`/`SearchHit` objects with highlighted snippets, section paths, the matched field, a score and the language fallback flag; results are scoped by visibility, published state and locale before any full-text clause.
+- Accent-folded `search_text` on translations, kept current by the model hooks (title, keywords, excerpt and body plain text) and refreshed when an article's keywords or format change.
+- Driver-aware matching: MySQL/MariaDB boolean full-text, PostgreSQL `to_tsquery` with the configured language, `LIKE` on SQLite and for short or stopword tokens, with a `LIKE` retry when full-text finds nothing; ranking and snippets in PHP so every engine returns the same results.
+- A cached in-memory search index for filesystem installs and for the file-only articles of a composite install.
+- In-service rate limiting for searches (guests by IP, users by id) returning `rateLimited` and `retryAfterSeconds` instead of throwing.
+- Config block `search.*` (`driver`, `min_length`, `limit`, `max_limit`, `candidates`, `snippet_length`, `pgsql_language`, `rate_limit.guest`, `rate_limit.user`); lang keys `enums.search_field.*` and `enums.search_strategy.*`; `SearchField` and `SearchStrategy` enums.
+- The test suite runs on MySQL 8.4 and PostgreSQL 16 in CI next to SQLite, and the PostgreSQL full-text index language follows `search.pgsql_language`.
+- The shared visibility dataset now drives search too.
