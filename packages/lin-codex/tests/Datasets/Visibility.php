@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * The shared visibility matrix: which sources, which viewers, and which
  * articles of tests/Fixtures/docs-visibility each viewer may see. Every read
- * path (reader, tree, context resolver, media route, later search and the
+ * path (reader, tree, context resolver, media route, search and later the
  * JSON API) is driven through the same rows so none of them can drift.
  *
  * Dataset closures run while Pest collects tests, before the application
@@ -32,19 +32,21 @@ dataset('lin-codex viewers', [
 ]);
 
 /*
- * name => [slug, guest sees?, user sees?], read under the "en" locale with
- * the seeded settings (languages [en], default en, ShowDefault).
+ * name => [slug, guest sees?, user sees?, search query], read under the "en"
+ * locale with the seeded settings (languages [en], default en, ShowDefault).
+ * The query is the row's title, which the fixture files and the database
+ * twins both carry in their search text.
  */
 dataset('lin-codex leak articles', [
-    'public published' => ['public-published', true, true],
-    'public unpublished' => ['public-unpublished', false, false],
-    'authenticated published' => ['auth-published', false, true],
-    'authenticated unpublished' => ['auth-unpublished', false, false],
-    'public child of an authenticated section' => ['internal/public-child', false, true],
-    'public child of an unpublished section' => ['draft/child', false, false],
-    'public child of a folder group' => ['group/public-child', true, true],
-    'article that exists only in de, read under en' => ['only-de', false, false],
-    'missing slug' => ['does-not-exist', false, false],
+    'public published' => ['public-published', true, true, 'Public published'],
+    'public unpublished' => ['public-unpublished', false, false, 'Public unpublished'],
+    'authenticated published' => ['auth-published', false, true, 'Authenticated published'],
+    'authenticated unpublished' => ['auth-unpublished', false, false, 'Authenticated unpublished'],
+    'public child of an authenticated section' => ['internal/public-child', false, true, 'Public child of internal'],
+    'public child of an unpublished section' => ['draft/child', false, false, 'Draft child'],
+    'public child of a folder group' => ['group/public-child', true, true, 'Public child of a group'],
+    'article that exists only in de, read under en' => ['only-de', false, false, 'Nur auf Deutsch'],
+    'missing slug' => ['does-not-exist', false, false, 'does not exist'],
 ]);
 
 /**

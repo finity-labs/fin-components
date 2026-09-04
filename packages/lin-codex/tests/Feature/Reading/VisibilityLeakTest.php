@@ -8,6 +8,8 @@ use FinityLabs\LinCodex\Contexts\PageContext;
 use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Reading\ArticleReader;
 use FinityLabs\LinCodex\Reading\TreeBuilder;
+use FinityLabs\LinCodex\Search\Searcher;
+use FinityLabs\LinCodex\Search\SearchHit;
 use FinityLabs\LinCodex\Sources\CompositeSource;
 use FinityLabs\LinCodex\Sources\DatabaseSource;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
@@ -31,11 +33,21 @@ function linCodexLeakUseSource(string $source): void
     app()->forgetInstance(ContentSource::class);
 }
 
+/**
+ * @param  list<SearchHit>  $hits
+ *
+ * @return list<string>
+ */
+function linCodexLeakHitSlugs(array $hits): array
+{
+    return array_map(static fn (SearchHit $hit): string => $hit->slug, $hits);
+}
+
 beforeEach(function (): void {
     config()->set('lin-codex.sources.filesystem.paths', [$this->fixtureDocsPath('docs-visibility')]);
 });
 
-it('never leaks through the reader, the tree, the context resolver or the media route', function (string $source, string $viewer, string $slug, bool $guestSees, bool $userSees): void {
+it('never leaks through the reader, the tree, the context resolver, the media route or search', function (string $source, string $viewer, string $slug, bool $guestSees, bool $userSees, string $query): void {
     linCodexLeakUseSource($source);
 
     if ($viewer === 'user') {
@@ -47,7 +59,8 @@ it('never leaks through the reader, the tree, the context resolver or the media 
 
     expect(app(ArticleReader::class)->read($slug, $current) !== null)->toBe($expected)
         ->and(in_array($slug, linCodexLeakTreeSlugs(app(TreeBuilder::class)->build($current)), true))->toBe($expected)
-        ->and(linCodexLeakSlugs(app(ContextResolver::class)->resolve(new PageContext(null, '/leak/'.$slug), $current)))->toBe($expected ? [$slug] : []);
+        ->and(linCodexLeakSlugs(app(ContextResolver::class)->resolve(new PageContext(null, '/leak/'.$slug), $current)))->toBe($expected ? [$slug] : [])
+        ->and(in_array($slug, linCodexLeakHitSlugs(app(Searcher::class)->search($query, $current)->hits), true))->toBe($expected);
 
     $response = $this->get('/codex/media/en/images/'.str_replace('/', '-', $slug).'.png');
     $response->assertStatus($expected ? 200 : 404);
@@ -80,10 +93,12 @@ it('answers a hidden and a missing slug identically', function (string $source):
         ->and($reader->read('does-not-exist', $guest))->toBeNull()
         ->and($reader->read('internal/public-child', $guest))->toBeNull()
         ->and($resolver->resolve(new PageContext(null, '/leak/auth-published'), $guest))->toBe([])
-        ->and($resolver->resolve(new PageContext(null, '/leak/does-not-exist'), $guest))->toBe([]);
+        ->and($resolver->resolve(new PageContext(null, '/leak/does-not-exist'), $guest))->toBe([])
+        ->and(app(Searcher::class)->search('Authenticated published', $guest)->hits)->toBe([])
+        ->and(app(Searcher::class)->search('does not exist', $guest)->hits)->toBe([]);
 })->with('lin-codex sources');
 
-it('keeps the reader, tree and resolver output free of models', function (): void {
+it('keeps the reader, tree, resolver and search output free of models', function (): void {
     linCodexLeakUseSource('filesystem');
 
     $this->actingAs(new GenericUser(['id' => 1]));
@@ -92,4 +107,29 @@ it('keeps the reader, tree and resolver output free of models', function (): voi
     linCodexAssertNoModels(app(ArticleReader::class)->read('public-published', $user));
     linCodexAssertNoModels(app(TreeBuilder::class)->build($user));
     linCodexAssertNoModels(app(ContextResolver::class)->resolve(new PageContext(null, '/leak/public-published'), $user));
+    linCodexAssertNoModels(app(Searcher::class)->search('Public published', $user));
 });
+
+it('scopes search before matching on every source', function (string $source): void {
+    linCodexLeakUseSource($source);
+
+    $guest = app(ViewerResolver::class)->resolve();
+    $guestSlugs = linCodexLeakHitSlugs(app(Searcher::class)->search('Public', $guest)->hits);
+
+    // shared.md's body says "A public article", so the file source adds it;
+    // every hit must still be one the guest tree shows.
+    expect($guestSlugs)->toContain('public-published')
+        ->and($guestSlugs)->toContain('group/public-child')
+        ->and($guestSlugs)->not->toContain('public-unpublished')
+        ->and($guestSlugs)->not->toContain('internal/public-child')
+        ->and(array_values(array_diff($guestSlugs, ['group/public-child', 'public-published', 'shared'])))->toBe([]);
+
+    $this->actingAs(new GenericUser(['id' => 1]));
+    $user = app(ViewerResolver::class)->resolve();
+    $userSlugs = linCodexLeakHitSlugs(app(Searcher::class)->search('Public', $user)->hits);
+
+    expect($userSlugs)->toContain('internal/public-child')
+        ->and($userSlugs)->not->toContain('public-unpublished')
+        ->and($userSlugs)->toContain('public-published')
+        ->and($userSlugs)->toContain('group/public-child');
+})->with('lin-codex sources');
