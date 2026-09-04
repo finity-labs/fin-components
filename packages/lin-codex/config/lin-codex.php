@@ -57,6 +57,44 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Content Source
+    |--------------------------------------------------------------------------
+    |
+    | Where articles come from: "filesystem", "database", "composite", or the
+    | name of a class implementing FinityLabs\LinCodex\Contracts\ContentSource.
+    | "composite" (the default) reads both, and a slug that exists in the
+    | database hides the file version for every locale. It assumes the
+    | "codex_*" tables exist, so an install that only ships files and never
+    | runs the migrations must set this to "filesystem"; the provider does
+    | not check the schema on every request.
+    |
+    */
+
+    'source' => 'composite',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Filesystem Source
+    |--------------------------------------------------------------------------
+    |
+    | "paths" is an ordered list of docs folders, each holding one folder per
+    | locale ("resources/codex/en/intro.md"). A later path replaces an
+    | earlier one per slug, whole article, so a package can register its
+    | folder first and the application override single articles. A missing
+    | folder is simply empty.
+    |
+    */
+
+    'sources' => [
+        'filesystem' => [
+            'paths' => [
+                resource_path('codex'),
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Rendering
     |--------------------------------------------------------------------------
     |
@@ -106,10 +144,19 @@ return [
     | in place; the href works without JavaScript. The help center is mounted
     | at the same prefix. A full URL is accepted as well.
     |
+    | "media" is the prefix relative images in file articles are served
+    | under ("{media}/{locale}/{path}"). Only image extensions are served
+    | (png, jpg, jpeg, gif, webp, avif; svg is refused because inline SVG can
+    | carry scripts), and only from the configured docs paths.
+    |
+    | "middleware" is the middleware group the package routes run under.
+    |
     */
 
     'routes' => [
         'help_center' => '/help',
+        'media' => '/codex/media',
+        'middleware' => ['web'],
     ],
 
 ];

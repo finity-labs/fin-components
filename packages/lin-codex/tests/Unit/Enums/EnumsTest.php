@@ -6,6 +6,7 @@ use FinityLabs\LinCodex\Enums\ArticleFormat;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Enums\FallbackBehaviour;
 use FinityLabs\LinCodex\Enums\RevisionReason;
+use FinityLabs\LinCodex\Enums\SourceWarningKind;
 use FinityLabs\LinCodex\Enums\Visibility;
 
 dataset('enum backing values', [
@@ -30,6 +31,16 @@ dataset('enum backing values', [
     'FallbackBehaviour' => [FallbackBehaviour::class, [
         'ShowDefault' => [1, 'show_default'],
         'Hide' => [2, 'hide'],
+    ]],
+    'SourceWarningKind' => [SourceWarningKind::class, [
+        'InvalidFrontMatter' => [1, 'invalid_front_matter'],
+        'SharedKeyIgnored' => [2, 'shared_key_ignored'],
+        'MissingDefaultLocale' => [3, 'missing_default_locale'],
+        'UnknownValue' => [4, 'unknown_value'],
+        'InvalidContext' => [5, 'invalid_context'],
+        'DuplicateSlug' => [6, 'duplicate_slug'],
+        'UnknownKey' => [7, 'unknown_key'],
+        'InvalidSlug' => [8, 'invalid_slug'],
     ]],
 ]);
 
@@ -62,6 +73,7 @@ it('round-trips every case through its key', function (string $enum) {
     ContextType::class,
     RevisionReason::class,
     FallbackBehaviour::class,
+    SourceWarningKind::class,
 ]);
 
 it('resolves the class context type from its front matter prefix', function () {
@@ -85,6 +97,7 @@ it('labels every case through the lin-codex translation namespace', function (st
     ContextType::class,
     RevisionReason::class,
     FallbackBehaviour::class,
+    SourceWarningKind::class,
 ]);
 
 it('spot-checks known English labels', function () {
@@ -98,7 +111,12 @@ it('spot-checks known English labels', function () {
 it('exposes users_table and media config with the locked defaults', function () {
     expect(config('lin-codex.users_table'))->toBe('users')
         ->and(config('lin-codex.media.disk'))->toBe('public')
-        ->and(config('lin-codex.media.directory'))->toBe('codex');
+        ->and(config('lin-codex.media.directory'))->toBe('codex')
+        ->and(config('lin-codex.source'))->toBe('composite')
+        ->and(config('lin-codex.sources.filesystem.paths'))->toBe([resource_path('codex')])
+        ->and(config('lin-codex.routes.media'))->toBe('/codex/media')
+        ->and(config('lin-codex.routes.middleware'))->toBe(['web'])
+        ->and(config('lin-codex.routes.help_center'))->toBe('/help');
 });
 
 it('keeps the five codex_ table names untouched', function () {
