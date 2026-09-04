@@ -12,33 +12,6 @@ use FinityLabs\LinCodex\Enums\Visibility;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Sources\DatabaseSource;
-use Illuminate\Database\Eloquent\Model;
-
-/**
- * Walk a value recursively and fail on any Eloquent model or any non-readonly
- * object; enums are skipped.
- */
-function linCodexAssertNoModels(mixed $value): void
-{
-    if (is_array($value)) {
-        foreach ($value as $item) {
-            linCodexAssertNoModels($item);
-        }
-
-        return;
-    }
-
-    if (! is_object($value) || $value instanceof UnitEnum) {
-        return;
-    }
-
-    expect($value)->not->toBeInstanceOf(Model::class)
-        ->and((new ReflectionClass($value))->isReadOnly())->toBeTrue($value::class.' is not readonly');
-
-    foreach ((new ReflectionObject($value))->getProperties() as $property) {
-        linCodexAssertNoModels($property->getValue($value));
-    }
-}
 
 /**
  * The "users" article with two translations, two contexts and one child.
