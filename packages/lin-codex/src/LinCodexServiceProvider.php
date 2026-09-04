@@ -15,6 +15,7 @@ class LinCodexServiceProvider extends PackageServiceProvider
     {
         $package
             ->name(static::$name)
-            ->hasConfigFile();
+            ->hasConfigFile()
+            ->hasTranslations();
     }
 }
