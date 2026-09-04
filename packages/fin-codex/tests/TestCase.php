@@ -6,6 +6,7 @@ namespace FinityLabs\FinCodex\Tests;
 
 use FinityLabs\FinCodex\FinCodexServiceProvider;
 use FinityLabs\LinCodex\LinCodexServiceProvider;
+use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelSettings\LaravelSettingsServiceProvider;
 
@@ -15,6 +16,7 @@ class TestCase extends Orchestra
     {
         return [
             LaravelSettingsServiceProvider::class,
+            LivewireServiceProvider::class,
             LinCodexServiceProvider::class,
             FinCodexServiceProvider::class,
         ];
