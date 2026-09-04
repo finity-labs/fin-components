@@ -159,4 +159,26 @@ return [
         'middleware' => ['web'],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication
+    |--------------------------------------------------------------------------
+    |
+    | "guard" is the auth guard that decides whether a viewer is signed in;
+    | null means the application's default guard. Articles with the
+    | "authenticated" visibility are shown only when this guard has a user.
+    |
+    | "gate" is an optional veto: the class name of an invokable receiving
+    | (Viewer $viewer, ArticleData $article) and returning a bool. It runs
+    | after the published and visibility checks and can only hide articles.
+    | A closure set at runtime works too, but a closure in this file breaks
+    | "config:cache".
+    |
+    */
+
+    'auth' => [
+        'guard' => null,
+        'gate' => null,
+    ],
+
 ];
