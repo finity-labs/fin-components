@@ -23,3 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ArticleRenderer` façade with a render cache keyed by content hash, format, locale, slug and a renderer fingerprint, so edits and config changes invalidate without a manual cache clear.
 - Config keys `render.cache.store`, `render.cache.ttl`, `render.limits.*`, `render.sanitizer.max_input_length` and `routes.help_center`.
 - Lang keys `callouts.*`, `anchor_label` and `details_default`.
+- `ContentSource` contract (`all`, `findBySlug`, `tree`, `findByContext`, `allForSearch`, `warnings`) returning readonly `ArticleData`, `TranslationData`, `ContextData`, `TreeNode`, `SearchDocument` and `SourceWarning` objects, never Eloquent models.
+- Filesystem source: Markdown and HTML articles under `{path}/{locale}/`, numeric prefixes for ordering, `index.md` sections, groups for folders without one, YAML front matter (`title`, `excerpt`, `slug`, `icon`, `order`, `visibility`, `published`, `contexts`, `related`, `keywords`, `format`, unknown keys kept in `meta`), title from the first heading, default-language precedence for shared keys, relative image rewriting, search text at scan time, a fingerprint-checked cache that needs no manual clear, and collected warnings.
+- Database source over the `codex_*` tables, and a composite source where a database slug hides the file version for every language.
+- Config keys `source`, `sources.filesystem.paths`, `routes.media` and `routes.middleware`.
+- Media route `/codex/media/{locale}/{path}` streaming images from the docs folders with cache headers, an image-only allowlist and traversal protection.
+- Article links written with numeric file prefixes (`01-roles.md`) or pointing at `index.md` resolve to the right slug, and links inside section files resolve against their folder.
+- Lang keys `source_warnings.*` and `enums.source_warning_kind.*`.

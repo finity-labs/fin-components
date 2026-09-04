@@ -22,7 +22,7 @@ Articles are Markdown. Everything below degrades to plain CommonMark on GitHub o
 
 ### Front matter
 
-A YAML block at the top of the file holds the article's metadata. The renderer strips it from the body; the file source reads it.
+A YAML block at the top of the file holds the article's metadata. The renderer strips it from the body; the file source reads it. The full key list is under [Content sources](#content-sources).
 
 ```markdown
 ---
@@ -103,6 +103,103 @@ $article->plainText;  // search text
 ```
 
 Results are cached under a key built from the content hash, the format, the locale, the slug and a fingerprint of the renderer config, so an edit or a config change invalidates on its own; the store and TTL live under `lin-codex.render.cache`. Every class the renderer emits is prefixed `codex-`. The CSS for those classes ships in a later release.
+
+## Content sources
+
+Articles come from Markdown and HTML files, from the database, or from both. `lin-codex.source` picks which: `filesystem`, `database` or `composite` (the default). In composite mode a slug that exists in the database hides the file version for every language, so an admin can take over any article you ship. Composite assumes the `codex_*` tables exist; an install that only ships files sets `filesystem`.
+
+### Folder layout
+
+Files live under `resources/codex/{locale}/` by default. The locale folder is required even when you only write one language. `lin-codex.sources.filesystem.paths` is an ordered list of such folders; a later path replaces an earlier one per slug, whole article, so a package can ship its docs and the app can override single files.
+
+```
+resources/codex/
+├── en/
+│   ├── 01-intro.md            # slug "intro", order 1
+│   ├── 02-users/
+│   │   ├── index.md           # slug "users": the section's own article
+│   │   ├── 01-roles.md        # slug "users/roles"
+│   │   └── images/users.png
+│   └── billing/
+│       └── invoices.md        # slug "billing/invoices"; "billing" is a group with no article
+└── de/
+    ├── 01-intro.md
+    └── 02-users/index.md
+```
+
+The slug is the path without the locale folder, the numeric prefixes and the extension. `01-intro.md` is `intro` with order 1. A prefix needs a separator, so `2fa.md` stays `2fa`. A folder with an `index.md` is a section: the index file is the section's own article and the other files are its children. A folder without one is a group, shown in the tree by its name. Both `.md` and `.html` files are articles; the extension sets the format.
+
+### Front matter
+
+Front matter is optional. Everything except `title` and `excerpt` is read from the default-language file only. Other languages contribute their title and excerpt; any other key in them is ignored with a warning.
+
+```markdown
+---
+title: Users
+excerpt: Who can sign in and what they may do.
+icon: heroicon-o-users
+order: 2
+visibility: public
+published: true
+contexts:
+  - route:users.index
+  - url:/admin/users/*
+  - class:App\Filament\Resources\UserResource
+  - admin:class:App\Filament\Resources\UserResource
+related:
+  - users/roles
+  - billing/invoices
+keywords:
+  - accounts
+  - sign in
+---
+```
+
+| Key | What it does |
+|---|---|
+| `title` | Falls back to the first level-one heading, which is then removed from the body, and then to the file name (`reset-password` becomes `Reset password`). |
+| `excerpt` | A short summary for lists and search results. |
+| `slug` | Replaces the last segment of the slug. The folder still decides the parent. |
+| `icon` | An icon name for the tree and the drawer. |
+| `order` | Sort position among siblings. Defaults to the numeric prefix, else 0. |
+| `visibility` | `public` or `authenticated` (default). |
+| `published` | Defaults to `true`. |
+| `contexts` | Pages this article belongs to: `route:name`, `url:/pattern/*` or `class:Fully\Qualified\Page`, each with an optional `panel:` prefix. |
+| `related` | Slugs of related articles. |
+| `keywords` | Extra words folded into the search text. |
+| `format` | `markdown` or `html`. Defaults to the extension. |
+
+There's no `parent` key; the folder is the parent. Unknown keys are kept in the article's `meta` bag and survive export.
+
+A few YAML rules worth knowing: quote a title with a colon in it (`title: "Users: overview"`), `published: no` reads as false, quote a date you want kept as text, and keys are case-sensitive. A file with invalid front matter is skipped and reported; the rest of the folder still loads. Everything reported ends up in `ContentSource::warnings()`.
+
+### Languages
+
+One file per language at the same relative path: `en/02-users/index.md` and `de/02-users/index.md` are the same article. An article that only exists in a non-default language still loads, with a warning, and takes its metadata from that file.
+
+### Images
+
+Reference images relative to the article file, the way any Markdown editor does: `images/users.png` or `../images/logo.png`. The file source rewrites them to `/codex/media/{locale}/{path}`, and a route serves them from the docs folders with cache headers. Images must sit inside a locale folder; a path that escapes it is left as written. Only png, jpg, jpeg, gif, webp and avif are served, since an SVG can carry scripts. The prefix lives in `lin-codex.routes.media` and the middleware in `lin-codex.routes.middleware`.
+
+### Freshness
+
+Every read checks a cheap fingerprint per docs folder: the file count and the newest modification time. When it changes, the folder is rescanned and re-cached, so an edit shows on the next request without clearing anything. An edit that keeps the modification time isn't detected; `codex:cache-clear` (a later release) is the manual override.
+
+### Reading from code
+
+```php
+use FinityLabs\LinCodex\Contracts\ContentSource;
+use FinityLabs\LinCodex\Enums\ContextType;
+
+$source = app(ContentSource::class);
+$source->findBySlug('users/roles');                          // ArticleData or null
+$source->findByContext(ContextType::Route, 'users.index');   // ArticleData[] for that page
+$source->tree();                                             // TreeNode[] roots
+$source->allForSearch();                                     // SearchDocument[], one per language
+$source->warnings();                                         // SourceWarning[]
+```
+
+Every method returns plain readonly objects, never an Eloquent model. The source applies no locale, visibility or published filtering; that's the read services' job in a later release.
 
 ## License
 
