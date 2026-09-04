@@ -7,8 +7,9 @@ namespace FinityLabs\LinCodex\Rendering;
 /**
  * Turns rendered article HTML into whitespace-normalised search text. Alt
  * text, captions, callout and step titles, and code stay in; the permalink
- * "#" characters and task-list checkboxes drop out. Accent folding is the
- * search layer's job, not this class's.
+ * "#" characters, aria-hidden decoration such as step number badges, and
+ * task-list checkboxes drop out. Accent folding is the search layer's job,
+ * not this class's.
  */
 final class PlainTextExtractor
 {
@@ -17,6 +18,7 @@ final class PlainTextExtractor
     public function fromHtml(string $html): string
     {
         $text = preg_replace('~<a\b[^>]*\bclass="codex-anchor"[^>]*>#</a>~', '', $html) ?? '';
+        $text = preg_replace('~<span\b[^>]*\baria-hidden="true"[^>]*>[^<]*</span>~', '', $text) ?? '';
         $text = preg_replace('~<img\b[^>]*\balt="([^"]*)"[^>]*>~i', ' $1 ', $text) ?? '';
         $text = preg_replace('~</?(?:'.self::BLOCK_TAGS.')\b[^>]*>~i', ' ', $text) ?? '';
         $text = strip_tags($text);

@@ -27,5 +27,9 @@ it('turns rendered html into search text', function (string $html, string $expec
         '<aside class="codex-callout codex-callout--note" role="note"><p class="codex-callout__title"><span class="codex-callout__icon" aria-hidden="true"></span>Note</p><div class="codex-callout__body"><p>Hi</p></div></aside>',
         'Note Hi',
     ],
+    'step number badge dropped, step title and body kept' => [
+        '<ol class="codex-steps"><li class="codex-step"><span class="codex-step__number" aria-hidden="true">1</span><div class="codex-step__title">Open</div><div class="codex-step__body"><p>Then</p></div></li></ol>',
+        'Open Then',
+    ],
     'empty input' => ['', ''],
 ]);
