@@ -174,15 +174,7 @@ final readonly class ArticleSet
             ksort($translations);
 
             foreach ($translations as $translation) {
-                $documents[] = new SearchDocument(
-                    $article->slug,
-                    $translation->locale,
-                    $translation->title,
-                    $translation->excerpt,
-                    trim(($translation->searchText ?? '').' '.implode(' ', $article->keywords)),
-                    $article->visibility,
-                    $article->published,
-                );
+                $documents[] = SearchDocument::fromTranslation($article, $translation);
             }
         }
 

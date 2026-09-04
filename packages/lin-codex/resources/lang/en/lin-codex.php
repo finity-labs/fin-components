@@ -37,6 +37,16 @@ return [
             'unknown_key' => 'Unknown key',
             'invalid_slug' => 'Invalid slug',
         ],
+        'search_field' => [
+            'title' => 'Title',
+            'keywords' => 'Keywords',
+            'excerpt' => 'Excerpt',
+            'body' => 'Body',
+        ],
+        'search_strategy' => [
+            'full_text' => 'Full text',
+            'like' => 'LIKE',
+        ],
     ],
 
     'source_warnings' => [

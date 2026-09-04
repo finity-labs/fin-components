@@ -183,4 +183,44 @@ return [
         'gate' => null,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Search
+    |--------------------------------------------------------------------------
+    |
+    | "driver" is "auto" (full-text on MySQL, MariaDB and PostgreSQL, LIKE
+    | elsewhere) or "like" to force the portable LIKE path everywhere.
+    | Queries shorter than "min_length" folded characters return nothing
+    | and do not count against the rate limit. "limit" is the default
+    | number of hits, "max_limit" the most a caller may ask for.
+    |
+    | "candidates" caps the rows the database pre-filter hands to the PHP
+    | matcher; a help manual never has hundreds of articles matching one
+    | query, and the cap keeps a pathological query cheap.
+    |
+    | "snippet_length" is the rough size of a highlighted snippet in
+    | characters. "pgsql_language" is the PostgreSQL text search
+    | configuration used by both the index and the query; keep it "simple"
+    | unless every article is in one language.
+    |
+    | "rate_limit" is per minute: guests by IP, signed-in users by user id.
+    | null disables a tier. The limiter lives in the search service, so the
+    | JSON API and the drawer share one counter.
+    |
+    */
+
+    'search' => [
+        'driver' => 'auto',
+        'min_length' => 2,
+        'limit' => 10,
+        'max_limit' => 50,
+        'candidates' => 200,
+        'snippet_length' => 160,
+        'pgsql_language' => 'simple',
+        'rate_limit' => [
+            'guest' => 30,
+            'user' => 120,
+        ],
+    ],
+
 ];
