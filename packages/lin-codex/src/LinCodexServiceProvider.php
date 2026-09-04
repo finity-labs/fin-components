@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex;
 
+use FinityLabs\LinCodex\Rendering\Markdown\MarkdownPipeline;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -25,5 +26,10 @@ class LinCodexServiceProvider extends PackageServiceProvider
                 'create_codex_media_table',
                 '../settings/create_codex_settings',
             ]);
+    }
+
+    public function packageRegistered(): void
+    {
+        $this->app->singleton(MarkdownPipeline::class);
     }
 }
