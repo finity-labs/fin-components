@@ -276,7 +276,8 @@ describe('database', function (): void {
         DB::enableQueryLog();
         $builder->build($this->user, 'en');
 
-        $articleQueries = array_filter(DB::getQueryLog(), fn (array $entry): bool => str_contains($entry['query'], '"codex_articles"'));
+        $articlesTable = DB::connection()->getQueryGrammar()->wrapTable('codex_articles');
+        $articleQueries = array_filter(DB::getQueryLog(), fn (array $entry): bool => str_contains($entry['query'], $articlesTable));
 
         expect($articleQueries)->toHaveCount(1);
     });

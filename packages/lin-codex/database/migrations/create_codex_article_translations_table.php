@@ -14,8 +14,10 @@ return new class extends Migration
         $articles = config('lin-codex.table_names.articles') ?? 'codex_articles';
         $translations = config('lin-codex.table_names.article_translations') ?? 'codex_article_translations';
         $driver = $schema->getConnection()->getDriverName();
+        $language = config('lin-codex.search.pgsql_language');
+        $language = is_string($language) && preg_match('/^[a-z_]+$/', $language) === 1 ? $language : 'simple';
 
-        $schema->create($translations, function (Blueprint $table) use ($articles, $driver): void {
+        $schema->create($translations, function (Blueprint $table) use ($articles, $driver, $language): void {
             $table->id();
             $table->foreignId('article_id')->constrained($articles)->cascadeOnDelete();
             $table->string('locale', 10);
@@ -28,14 +30,17 @@ return new class extends Migration
             $table->unique(['article_id', 'locale']);
 
             // The base grammar throws on drivers without full-text support (SQLite), so the
-            // index must be driver-branched. PostgreSQL uses the 'simple' configuration
-            // because one index serves every locale; per-language indexes are a v2 item.
+            // index must be driver-branched. PostgreSQL builds its GIN expression index
+            // with the language from lin-codex.search.pgsql_language ('simple' by
+            // default, one index for every locale); the search query uses the same
+            // value, so this is the index the planner picks. Anything that is not a
+            // bare lowercase name falls back to 'simple'.
             if (in_array($driver, ['mysql', 'mariadb'], true)) {
                 $table->fullText('search_text');
             }
 
             if ($driver === 'pgsql') {
-                $table->fullText('search_text')->language('simple');
+                $table->fullText('search_text')->language($language);
             }
         });
     }

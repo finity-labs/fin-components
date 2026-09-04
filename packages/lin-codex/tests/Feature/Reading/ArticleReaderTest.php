@@ -186,7 +186,8 @@ describe('database', function (): void {
         DB::enableQueryLog();
         $read = $reader->read('users/roles', $this->guest);
 
-        $articleQueries = array_filter(DB::getQueryLog(), fn (array $entry): bool => str_contains($entry['query'], '"codex_articles"'));
+        $articlesTable = DB::connection()->getQueryGrammar()->wrapTable('codex_articles');
+        $articleQueries = array_filter(DB::getQueryLog(), fn (array $entry): bool => str_contains($entry['query'], $articlesTable));
 
         expect($read)->toBeInstanceOf(ReadArticle::class)
             ->and($articleQueries)->toHaveCount(1);

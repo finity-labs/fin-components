@@ -53,7 +53,7 @@ it('fills keywords, related and meta through the factory states', function (): v
         ->and($article->keywords)->toBe(['rbac', 'roles'])
         ->and($article->related)->toBe(['users/roles'])
         ->and($article->meta)->toBe(['owner' => 'ops'])
-        ->and(DB::table('codex_articles')->value('meta'))->toBe('{"owner":"ops"}');
+        ->and(json_decode((string) DB::table('codex_articles')->value('meta'), true))->toBe(['owner' => 'ops']);
 });
 
 it('applies the simple factory states', function (): void {

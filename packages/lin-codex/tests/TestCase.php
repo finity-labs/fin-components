@@ -14,11 +14,25 @@ use FinityLabs\LinCodex\Sources\DatabaseSource;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelSettings\LaravelSettingsServiceProvider;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerInterface;
 
+/**
+ * Package test harness.
+ *
+ * The database follows DB_CONNECTION: in-memory SQLite by default, a real
+ * MySQL, MariaDB or PostgreSQL server when the CI service rows or a developer
+ * set the six DB_* variables. The package migrations run through
+ * include()->up(), never the framework migration loader, so custom table names and the
+ * driver branches are exercised exactly as a host app would. Tests are never
+ * wrapped in a transaction: InnoDB full-text indexes only see committed rows,
+ * so a transaction trait would make every MATCH ... AGAINST test silently
+ * fall through to the LIKE path. The schema is dropped before it is created
+ * and again when the application is destroyed instead.
+ */
 class TestCase extends Orchestra
 {
     /**
@@ -46,21 +60,77 @@ class TestCase extends Orchestra
     protected function defineEnvironment($app): void
     {
         $app['config']->set('database.default', 'testing');
-        $app['config']->set('database.connections.testing', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-            'foreign_key_constraints' => true,
-        ]);
+        $app['config']->set('database.connections.testing', self::databaseConnectionConfig());
     }
 
     /**
-     * Runs after the providers boot: the host tables the package depends on
-     * come first, then the package schema in dependency order, then the
-     * settings seed.
+     * The testing connection for env('DB_CONNECTION', 'sqlite'): in-memory
+     * SQLite by default, a MySQL, MariaDB or PostgreSQL server when the CI
+     * service rows or a developer set DB_CONNECTION and the DB_* variables.
+     * phpunit.xml's <env> defaults never overwrite a variable that is already
+     * in the shell, so the exported variables win.
+     *
+     * @return array<string, mixed>
+     */
+    public static function databaseConnectionConfig(): array
+    {
+        $driver = (string) env('DB_CONNECTION', 'sqlite');
+
+        return match ($driver) {
+            'mysql', 'mariadb' => [
+                'driver' => $driver,
+                'host' => (string) env('DB_HOST', '127.0.0.1'),
+                'port' => (string) env('DB_PORT', '3306'),
+                'database' => (string) env('DB_DATABASE', 'lin_codex'),
+                'username' => (string) env('DB_USERNAME', 'root'),
+                'password' => (string) env('DB_PASSWORD', ''),
+                'charset' => 'utf8mb4',
+                'collation' => 'utf8mb4_unicode_ci',
+                'prefix' => '',
+                'prefix_indexes' => true,
+                'strict' => true,
+                'engine' => null,
+            ],
+            'pgsql' => [
+                'driver' => 'pgsql',
+                'host' => (string) env('DB_HOST', '127.0.0.1'),
+                'port' => (string) env('DB_PORT', '5432'),
+                'database' => (string) env('DB_DATABASE', 'lin_codex'),
+                'username' => (string) env('DB_USERNAME', 'codex'),
+                'password' => (string) env('DB_PASSWORD', 'password'),
+                'charset' => 'utf8',
+                'prefix' => '',
+                'prefix_indexes' => true,
+                'search_path' => 'public',
+                'sslmode' => 'prefer',
+            ],
+            default => [
+                'driver' => 'sqlite',
+                'database' => ':memory:',
+                'prefix' => '',
+                'foreign_key_constraints' => true,
+            ],
+        };
+    }
+
+    /**
+     * The driver name of the testing connection: 'sqlite', 'mysql', 'mariadb'
+     * or 'pgsql'. Meant for ->skip() closures on engine-specific tests.
+     */
+    public function databaseDriver(): string
+    {
+        return DB::connection()->getDriverName();
+    }
+
+    /**
+     * Runs after the providers boot: any schema a previous run left behind
+     * is dropped, then the host tables the package depends on come first,
+     * then the package schema in dependency order, then the settings seed.
      */
     protected function defineDatabaseMigrations(): void
     {
+        $this->dropPackageSchema();
+
         $this->createUsersTable((string) config('lin-codex.users_table', 'users'));
         $this->createSettingsTable();
 
@@ -69,6 +139,35 @@ class TestCase extends Orchestra
         }
 
         (include dirname(__DIR__).'/database/settings/create_codex_settings.php')->up();
+    }
+
+    protected function destroyDatabaseMigrations(): void
+    {
+        $this->dropPackageSchema();
+    }
+
+    /**
+     * Drop everything defineDatabaseMigrations() creates, dependents first.
+     * On in-memory SQLite this is a no-op in cost; on a persistent server it
+     * is what lets every test start from an empty schema without a
+     * transaction wrapper (InnoDB full-text indexes only see committed rows,
+     * so a refresh or transaction trait would hide every row from
+     * MATCH ... AGAINST). Runs before create as well as after destroy, so a
+     * crashed run leaves nothing behind. CustomTableNamesTestCase drops its
+     * kb_* names because down() and this method read the overridden config.
+     */
+    private function dropPackageSchema(): void
+    {
+        Schema::disableForeignKeyConstraints();
+
+        foreach (array_reverse(self::PACKAGE_MIGRATIONS) as $file) {
+            $this->migration($file)->down();
+        }
+
+        Schema::dropIfExists('settings');
+        Schema::dropIfExists((string) config('lin-codex.users_table', 'users'));
+
+        Schema::enableForeignKeyConstraints();
     }
 
     /**

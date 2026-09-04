@@ -20,11 +20,34 @@ it('enforces foreign keys on the sqlite testing connection', function () {
     $pragma = DB::select('PRAGMA foreign_keys');
 
     expect((int) $pragma[0]->foreign_keys)->toBe(1);
-});
+})->skip(fn (): bool => $this->databaseDriver() !== 'sqlite', 'sqlite only');
 
 it('creates no index on search_text for sqlite', function () {
     expect(Schema::hasIndex('codex_article_translations', ['search_text']))->toBeFalse()
         ->and(Schema::hasIndex('codex_article_translations', ['search_text'], 'fulltext'))->toBeFalse();
+})->skip(fn (): bool => $this->databaseDriver() !== 'sqlite', 'sqlite only');
+
+it('describes the in-memory sqlite connection by default', function () {
+    expect(TestCase::databaseConnectionConfig())->toBe([
+        'driver' => 'sqlite',
+        'database' => ':memory:',
+        'prefix' => '',
+        'foreign_key_constraints' => true,
+    ]);
+})->skip(fn (): bool => $this->databaseDriver() !== 'sqlite', 'sqlite only');
+
+it('reports the driver of the testing connection', function () {
+    expect($this->databaseDriver())->toBe(DB::connection()->getDriverName());
+});
+
+it('drops and recreates the package schema between tests without leftovers', function () {
+    $this->migration('create_codex_media_table')->down();
+
+    expect(Schema::hasTable('codex_media'))->toBeFalse();
+
+    Schema::dropIfExists('codex_media');
+
+    expect(Schema::hasTable('codex_media'))->toBeFalse();
 });
 
 it('creates the unique indexes', function () {
