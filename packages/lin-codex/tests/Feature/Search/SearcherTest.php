@@ -381,14 +381,31 @@ describe('sources agree', function (): void {
         expect(Cache::has(InMemoryIndex::CACHE_KEY))->toBeTrue();
     });
 
-    it('returns the same hits and snippets from the full-text branch and the LIKE branch', function (): void {
+    it('returns the same hits and snippets on SQLite whichever engine is configured', function (): void {
         linCodexSearcherUseDatabase();
 
-        config()->set('lin-codex.search.driver', 'auto');
+        config()->set('lin-codex.search.engine', 'fulltext');
         $fullText = ($this->searcher)()->search('reset token', $this->guest);
         $fullTextTiers = linCodexSearcherSlugs(($this->searcher)()->search('zephyr', $this->guest));
 
-        config()->set('lin-codex.search.driver', 'like');
+        config()->set('lin-codex.search.engine', 'like');
+        $like = ($this->searcher)()->search('reset token', $this->guest);
+        $likeTiers = linCodexSearcherSlugs(($this->searcher)()->search('zephyr', $this->guest));
+
+        expect(linCodexSearcherSlugs($fullText))->toBe(['password-reset'])
+            ->and(linCodexSearcherSnippets($like))->toBe(linCodexSearcherSnippets($fullText))
+            ->and($fullTextTiers)->toBe(['tier-title', 'tier-keywords', 'tier-excerpt', 'tier-body'])
+            ->and($likeTiers)->toBe($fullTextTiers);
+    })->skip(fn (): bool => $this->databaseDriver() !== 'sqlite', 'sqlite only');
+
+    it('returns the same hits and snippets from the full-text branch and the LIKE branch', function (): void {
+        linCodexSearcherUseDatabase();
+
+        config()->set('lin-codex.search.engine', 'fulltext');
+        $fullText = ($this->searcher)()->search('reset token', $this->guest);
+        $fullTextTiers = linCodexSearcherSlugs(($this->searcher)()->search('zephyr', $this->guest));
+
+        config()->set('lin-codex.search.engine', 'like');
         $like = ($this->searcher)()->search('reset token', $this->guest);
         $likeTiers = linCodexSearcherSlugs(($this->searcher)()->search('zephyr', $this->guest));
 
@@ -397,7 +414,7 @@ describe('sources agree', function (): void {
             ->and($fullTextTiers)->toBe(['tier-title', 'tier-keywords', 'tier-excerpt', 'tier-body'])
             ->and($likeTiers)->toBe($fullTextTiers);
 
-        config()->set('lin-codex.search.driver', 'auto');
+        config()->set('lin-codex.search.engine', 'fulltext');
 
         expect(linCodexSearcherSlugs(($this->searcher)()->search('ui', $this->guest)))->toBe(['short-tokens']);
     })->skip(fn (): bool => $this->databaseDriver() === 'sqlite', 'needs a full-text engine');

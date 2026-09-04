@@ -19,7 +19,7 @@ use Illuminate\Database\Query\Builder;
  * joined to their articles that returns the (slug, locale) pairs whose
  * search_text may match the query. SQL is a superset filter only; the PHP
  * matcher (Matcher::matches()) re-verifies every candidate, which is why
- * the driver switch and the LIKE retry can change the cost of a search but
+ * the engine switch and the LIKE retry can change the cost of a search but
  * never its result set.
  *
  * The clause order is the locked scoping rule: is_published, then
@@ -31,7 +31,7 @@ use Illuminate\Database\Query\Builder;
  * entries with an id (database articles) are considered and no candidate
  * is ever built from a model.
  *
- * The match clause per driver:
+ * The match clause per driver, when lin-codex.search.engine is "fulltext":
  * - MySQL and MariaDB: MATCH ... AGAINST ('+token* ...' IN BOOLEAN MODE)
  *   through whereFullText(['mode' => 'boolean']).
  * - PostgreSQL: to_tsvector('lang', search_text) @@ to_tsquery('lang', 'token:* & ...')
@@ -39,9 +39,12 @@ use Illuminate\Database\Query\Builder;
  *   and the language must be interpolated (after validation, see
  *   pgsqlLanguage()) rather than bound, because a bound regconfig would
  *   not match the GIN expression index the migration built.
- * - SQLite, lin-codex.search.driver = like, or a query that needsLike():
- *   one LIKE '% token%' per token; the leading space in every segment of
- *   search_text makes this a word-start match.
+ * - SQLite, or a query that needsLike(): one LIKE '% token%' per token;
+ *   the leading space in every segment of search_text makes this a
+ *   word-start match.
+ * With the default engine ("like", or any value other than "fulltext")
+ * every driver takes the LIKE clause; the index the migration built simply
+ * sits unused until the engine is switched.
  * Tokens are [a-z0-9]+ by construction (SearchText::fold()), so boolean
  * mode operators and to_tsquery syntax errors are impossible.
  *
@@ -91,14 +94,15 @@ final class DatabaseCandidates
     }
 
     /**
-     * The strategy the driver and the query call for before any retry:
-     * Like when lin-codex.search.driver is "like", when the query has a
-     * short or stopword token, or when the model's connection is not a
-     * full-text engine; FullText otherwise.
+     * The strategy the engine, the driver and the query call for before any
+     * retry: FullText only when lin-codex.search.engine is "fulltext", the
+     * query has no short or stopword token and the model's connection is
+     * MySQL, MariaDB or PostgreSQL; Like otherwise, including for an
+     * unknown engine value.
      */
     public function strategyFor(ParsedQuery $query): SearchStrategy
     {
-        if (config('lin-codex.search.driver') === 'like' || $query->needsLike()) {
+        if (config('lin-codex.search.engine', 'like') !== 'fulltext' || $query->needsLike()) {
             return SearchStrategy::Like;
         }
 

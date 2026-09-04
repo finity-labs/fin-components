@@ -286,9 +286,9 @@ Ranking happens in PHP. A hit in the title beats one in the keywords, which beat
 
 ### Engines
 
-MySQL and MariaDB use the full-text index in boolean mode. PostgreSQL uses `to_tsquery` with the text search configuration in `search.pgsql_language`; the index is built with the same configuration, so keep `simple` for a manual written in several languages. SQLite uses `LIKE`.
+`search.engine` picks the database pre-filter. The default, `like`, runs a word-start `LIKE` per token and works the same on every database. `fulltext` uses the index: MySQL and MariaDB match in boolean mode, PostgreSQL uses `to_tsquery` with the text search configuration in `search.pgsql_language` (the index is built with the same configuration, so keep `simple` for a manual written in several languages), and SQLite stays on `LIKE`. The migration creates the index whichever engine is set, so switching is a config change, `CODEX_SEARCH_ENGINE=fulltext` in `.env`, not a migration.
 
-Words shorter than three characters and MySQL stopwords (`the`, `und`, ...) would be dropped by the full-text engines, so a query containing one takes the `LIKE` path on every engine. A full-text query that finds nothing is retried once with `LIKE`. Setting `search.driver` to `like` forces the portable path everywhere, and `search.candidates` (200) caps the rows the pre-filter hands to PHP.
+Words shorter than three characters and MySQL stopwords (`the`, `und`, ...) would be dropped by the full-text engines, so with `fulltext` a query containing one takes the `LIKE` path, and a full-text query that finds nothing is retried once with `LIKE`. Either way the hits, their order and the snippets are the same, because the matcher re-checks every candidate in PHP. `search.candidates` (200) caps the rows the pre-filter hands to PHP.
 
 ### File-only installs
 

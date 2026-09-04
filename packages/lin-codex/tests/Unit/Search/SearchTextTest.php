@@ -109,8 +109,15 @@ it('exposes the search field and strategy enums with keys and labels', function 
 });
 
 it('ships the search config block with the locked defaults', function (): void {
-    expect(config('lin-codex.search'))->toBe([
-        'driver' => 'auto',
+    /** @var array<string, mixed> $search */
+    $search = config('lin-codex.search');
+
+    expect(array_keys($search))->toBe(['engine', 'min_length', 'limit', 'max_limit', 'candidates', 'snippet_length', 'pgsql_language', 'rate_limit'])
+        ->and($search['engine'])->toBeIn(['like', 'fulltext']);
+
+    unset($search['engine']);
+
+    expect($search)->toBe([
         'min_length' => 2,
         'limit' => 10,
         'max_limit' => 50,
@@ -123,6 +130,15 @@ it('ships the search config block with the locked defaults', function (): void {
         ],
     ]);
 });
+
+/**
+ * The engine follows CODEX_SEARCH_ENGINE, so the MySQL and PostgreSQL CI
+ * rows export "fulltext" and this default check only runs when the
+ * variable is absent from the process.
+ */
+it('defaults the search engine to like', function (): void {
+    expect(config('lin-codex.search.engine'))->toBe('like');
+})->skip(fn (): bool => env('CODEX_SEARCH_ENGINE') !== null, 'CODEX_SEARCH_ENGINE is set in this process');
 
 it('bridges an article translation into a search document', function (): void {
     $article = linCodexFoldArticle('x', ['rbac', 'roles'], 7);

@@ -94,4 +94,5 @@ jobs:
           DB_DATABASE: lin_codex
           DB_USERNAME: ${{ matrix.database == 'pgsql' && 'codex' || 'root' }}
           DB_PASSWORD: ${{ matrix.database == 'pgsql' && 'password' || '' }}
+          CODEX_SEARCH_ENGINE: ${{ matrix.database && 'fulltext' || 'like' }}
         run: vendor/bin/pest

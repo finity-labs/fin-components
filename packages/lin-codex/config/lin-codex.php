@@ -188,8 +188,12 @@ return [
     | Search
     |--------------------------------------------------------------------------
     |
-    | "driver" is "auto" (full-text on MySQL, MariaDB and PostgreSQL, LIKE
-    | elsewhere) or "like" to force the portable LIKE path everywhere.
+    | "engine" is "like" (the default) or "fulltext". "like" runs the portable
+    | LIKE pre-filter on every database. "fulltext" uses the full-text index
+    | on MySQL, MariaDB and PostgreSQL, falling back to LIKE for queries with
+    | a short or stopword token and when the index answers no rows; on SQLite
+    | it is plain LIKE. The migration creates the index either way, so
+    | switching is a config change (CODEX_SEARCH_ENGINE), never a migration.
     | Queries shorter than "min_length" folded characters return nothing
     | and do not count against the rate limit. "limit" is the default
     | number of hits, "max_limit" the most a caller may ask for.
@@ -210,7 +214,7 @@ return [
     */
 
     'search' => [
-        'driver' => 'auto',
+        'engine' => env('CODEX_SEARCH_ENGINE', 'like'),
         'min_length' => 2,
         'limit' => 10,
         'max_limit' => 50,

@@ -263,22 +263,64 @@ it('caps the candidate rows in slug order', function (): void {
     expect(linCodexDbSearchSlugs(linCodexDbSearchFind('zephyr', $this->guest)))->toHaveCount(4);
 });
 
-it('answers with the LIKE strategy on SQLite', function (): void {
-    expect(linCodexDbSearchFind('reset', $this->guest)->strategy)->toBe(SearchStrategy::Like);
+it('answers with the LIKE strategy and the same slugs on SQLite whichever engine is configured', function (): void {
+    $cases = [
+        ['reset token', $this->guest, ['password-reset']],
+        ['zephyr', $this->guest, ['tier-body', 'tier-excerpt', 'tier-keywords', 'tier-title']],
+        ['escalation', $this->user, ['internal', 'internal/pub', 'notes']],
+    ];
+
+    foreach ($cases as [$query, $viewer, $expected]) {
+        config()->set('lin-codex.search.engine', 'fulltext');
+        $fullText = linCodexDbSearchFind($query, $viewer);
+
+        config()->set('lin-codex.search.engine', 'like');
+        $like = linCodexDbSearchFind($query, $viewer);
+
+        expect($fullText->strategy)->toBe(SearchStrategy::Like)
+            ->and($like->strategy)->toBe(SearchStrategy::Like)
+            ->and(linCodexDbSearchSlugs($fullText))->toBe($expected)
+            ->and(linCodexDbSearchSlugs($like))->toBe($expected);
+    }
 })->skip(fn (): bool => $this->databaseDriver() !== 'sqlite', 'sqlite only');
 
-it('routes short tokens, stopwords and the like driver to LIKE on every engine', function (): void {
+it('routes the like engine, an unknown engine, short tokens and stopwords to LIKE on every driver', function (): void {
     $parser = app(QueryParser::class);
     $candidates = app(DatabaseCandidates::class);
+
+    config()->set('lin-codex.search.engine', 'fulltext');
 
     expect($candidates->strategyFor($parser->parse('ui toggle')))->toBe(SearchStrategy::Like)
         ->and($candidates->strategyFor($parser->parse('und')))->toBe(SearchStrategy::Like)
         ->and($candidates->strategyFor($parser->parse('the password')))->toBe(SearchStrategy::Like);
 
-    config()->set('lin-codex.search.driver', 'like');
+    config()->set('lin-codex.search.engine', 'like');
+
+    expect($candidates->strategyFor($parser->parse('reset')))->toBe(SearchStrategy::Like);
+
+    config()->set('lin-codex.search.engine', 'elasticsearch');
+
+    expect($candidates->strategyFor($parser->parse('reset')))->toBe(SearchStrategy::Like);
+
+    config()->set('lin-codex.search.engine', null);
 
     expect($candidates->strategyFor($parser->parse('reset')))->toBe(SearchStrategy::Like);
 });
+
+it('keeps the LIKE clause with the like engine on a full-text driver', function (): void {
+    config()->set('lin-codex.search.engine', 'like');
+    DB::enableQueryLog();
+
+    $set = linCodexDbSearchFind('password', $this->guest);
+    $queries = linCodexDbSearchLoggedMatches();
+
+    expect($set->strategy)->toBe(SearchStrategy::Like)
+        ->and(linCodexDbSearchSlugs($set))->toBe(['password-reset'])
+        ->and($queries)->toHaveCount(1)
+        ->and($queries[0]['query'])->toContain('like')
+        ->and($queries[0]['query'])->not->toContain('in boolean mode')
+        ->and($queries[0]['query'])->not->toContain('to_tsquery');
+})->skip(fn (): bool => $this->databaseDriver() === 'sqlite', 'needs a full-text engine');
 
 it('validates the PostgreSQL language', function (): void {
     expect(DatabaseCandidates::pgsqlLanguage())->toBe('simple');
@@ -298,6 +340,8 @@ it('validates the PostgreSQL language', function (): void {
  * harness would cause: InnoDB full-text only sees committed rows.
  */
 it('answers from the full-text index on a full-text engine', function (): void {
+    config()->set('lin-codex.search.engine', 'fulltext');
+
     $set = linCodexDbSearchFind('password', $this->guest);
 
     expect($set->strategy)->toBe(SearchStrategy::FullText)
@@ -312,10 +356,10 @@ it('returns the same slugs from the full-text branch and the LIKE branch', funct
     ];
 
     foreach ($cases as [$query, $viewer, $expected]) {
-        config()->set('lin-codex.search.driver', 'auto');
+        config()->set('lin-codex.search.engine', 'fulltext');
         $fullText = linCodexDbSearchFind($query, $viewer);
 
-        config()->set('lin-codex.search.driver', 'like');
+        config()->set('lin-codex.search.engine', 'like');
         $like = linCodexDbSearchFind($query, $viewer);
 
         expect($fullText->strategy)->toBe(SearchStrategy::FullText)
@@ -326,6 +370,8 @@ it('returns the same slugs from the full-text branch and the LIKE branch', funct
 })->skip(fn (): bool => $this->databaseDriver() === 'sqlite', 'needs a full-text engine');
 
 it('takes the LIKE path for short tokens and stopwords on a full-text engine too', function (): void {
+    config()->set('lin-codex.search.engine', 'fulltext');
+
     $short = linCodexDbSearchFind('ui', $this->guest);
     $stopword = linCodexDbSearchFind('und', $this->guest);
 
@@ -336,6 +382,7 @@ it('takes the LIKE path for short tokens and stopwords on a full-text engine too
 })->skip(fn (): bool => $this->databaseDriver() === 'sqlite', 'needs a full-text engine');
 
 it('emits the engine grammar for the full-text strategy', function (): void {
+    config()->set('lin-codex.search.engine', 'fulltext');
     DB::enableQueryLog();
     linCodexDbSearchFind('reset token', $this->guest);
 
@@ -357,6 +404,7 @@ it('emits the engine grammar for the full-text strategy', function (): void {
 })->skip(fn (): bool => $this->databaseDriver() === 'sqlite', 'needs a full-text engine');
 
 it('retries with LIKE when the full-text query returns no rows', function (): void {
+    config()->set('lin-codex.search.engine', 'fulltext');
     DB::enableQueryLog();
 
     $set = linCodexDbSearchFind(str_repeat('q', 10), $this->guest);
