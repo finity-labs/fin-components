@@ -21,10 +21,10 @@ use Illuminate\Database\Eloquent\Relations\Relation;
  * memoized on purpose, so a save earlier in the same request is visible on
  * the next read. Callers that want one snapshot call set() once and keep it.
  *
- * `related`, `keywords` and `meta` are empty because the Phase 1 schema has
- * no columns for them; that is a Phase 8 (import/export) concern. There is
- * no Schema::hasTable() guard: a file-only install sets lin-codex.source to
- * "filesystem" instead.
+ * The `keywords`, `related` and `meta` JSON columns map straight through,
+ * null as an empty array, so a database article carries the same metadata a
+ * file article would. There is no Schema::hasTable() guard: a file-only
+ * install sets lin-codex.source to "filesystem" instead.
  */
 final class DatabaseSource implements ContentSource
 {
@@ -139,13 +139,24 @@ final class DatabaseSource implements ContentSource
             visibility: $row->visibility,
             published: $row->is_published,
             contexts: $contexts,
-            related: [],
-            keywords: [],
+            related: $this->stringList($row->related),
+            keywords: $this->stringList($row->keywords),
             translations: $translations,
-            meta: [],
+            meta: is_array($row->meta) ? $row->meta : [],
             isSection: $isSection,
             sourcePath: $row->source_path,
             id: $row->id,
         );
+    }
+
+    /**
+     * The string entries of a JSON list column, reindexed; null or anything
+     * that is not an array is an empty list.
+     *
+     * @return list<string>
+     */
+    private function stringList(mixed $value): array
+    {
+        return is_array($value) ? array_values(array_filter($value, 'is_string')) : [];
     }
 }

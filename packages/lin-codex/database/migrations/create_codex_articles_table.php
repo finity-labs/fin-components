@@ -26,6 +26,9 @@ return new class extends Migration
             $table->unsignedTinyInteger('visibility')->default(Visibility::Authenticated->value);
             $table->boolean('is_published')->default(true);
             $table->string('source_path')->nullable();
+            $table->json('keywords')->nullable();
+            $table->json('related')->nullable();
+            $table->json('meta')->nullable();
             $table->foreignId('created_by')->nullable()->constrained($users)->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained($users)->nullOnDelete();
             $table->timestamps();

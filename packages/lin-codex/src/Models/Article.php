@@ -33,6 +33,9 @@ use Illuminate\Support\Str;
  * @property Visibility $visibility
  * @property bool $is_published
  * @property string|null $source_path
+ * @property array<int, string>|null $keywords
+ * @property array<int, string>|null $related
+ * @property array<string, mixed>|null $meta
  * @property int|null $created_by
  * @property int|null $updated_by
  * @property Carbon|null $created_at
@@ -60,6 +63,9 @@ class Article extends Model
         'visibility',
         'is_published',
         'source_path',
+        'keywords',
+        'related',
+        'meta',
         'created_by',
         'updated_by',
     ];
@@ -80,6 +86,9 @@ class Article extends Model
             'visibility' => Visibility::class,
             'is_published' => 'boolean',
             'sort_order' => 'integer',
+            'keywords' => 'array',
+            'related' => 'array',
+            'meta' => 'array',
         ];
     }
 

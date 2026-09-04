@@ -31,6 +31,9 @@ class ArticleFactory extends Factory
             'visibility' => Visibility::Authenticated,
             'is_published' => true,
             'source_path' => null,
+            'keywords' => [],
+            'related' => [],
+            'meta' => [],
         ];
     }
 
@@ -68,6 +71,30 @@ class ArticleFactory extends Factory
     public function html(): static
     {
         return $this->state(fn (): array => ['format' => ArticleFormat::Html]);
+    }
+
+    /**
+     * @param  list<string>  $keywords
+     */
+    public function withKeywords(array $keywords): static
+    {
+        return $this->state(fn (): array => ['keywords' => $keywords]);
+    }
+
+    /**
+     * @param  list<string>  $related  slugs
+     */
+    public function withRelated(array $related): static
+    {
+        return $this->state(fn (): array => ['related' => $related]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $meta
+     */
+    public function withMeta(array $meta): static
+    {
+        return $this->state(fn (): array => ['meta' => $meta]);
     }
 
     /**

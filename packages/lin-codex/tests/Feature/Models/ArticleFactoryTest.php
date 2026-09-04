@@ -23,7 +23,10 @@ it('creates an authenticated published markdown article by default', function ()
         ->and($article->sort_order)->toBe(0)
         ->and($article->parent_id)->toBeNull()
         ->and($article->slug)->toMatch('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-        ->and($article->slug)->not->toContain('/');
+        ->and($article->slug)->not->toContain('/')
+        ->and($article->keywords)->toBe([])
+        ->and($article->related)->toBe([])
+        ->and($article->meta)->toBe([]);
 });
 
 it('defaults to authenticated and published from the schema when created without the factory', function (): void {
@@ -32,7 +35,25 @@ it('defaults to authenticated and published from the schema when created without
     expect($article)->not->toBeNull()
         ->and($article->visibility)->toBe(Visibility::Authenticated)
         ->and($article->is_published)->toBeTrue()
-        ->and($article->format)->toBe(ArticleFormat::Markdown);
+        ->and($article->format)->toBe(ArticleFormat::Markdown)
+        ->and($article->keywords)->toBeNull()
+        ->and($article->related)->toBeNull()
+        ->and($article->meta)->toBeNull();
+});
+
+it('fills keywords, related and meta through the factory states', function (): void {
+    $article = Article::factory()
+        ->withKeywords(['rbac', 'roles'])
+        ->withRelated(['users/roles'])
+        ->withMeta(['owner' => 'ops'])
+        ->create()
+        ->fresh();
+
+    expect($article)->not->toBeNull()
+        ->and($article->keywords)->toBe(['rbac', 'roles'])
+        ->and($article->related)->toBe(['users/roles'])
+        ->and($article->meta)->toBe(['owner' => 'ops'])
+        ->and(DB::table('codex_articles')->value('meta'))->toBe('{"owner":"ops"}');
 });
 
 it('applies the simple factory states', function (): void {

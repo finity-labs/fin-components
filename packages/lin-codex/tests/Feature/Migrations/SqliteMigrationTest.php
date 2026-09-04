@@ -32,6 +32,10 @@ it('creates the unique indexes', function () {
         ->and(Schema::hasIndex('codex_article_translations', ['article_id', 'locale'], 'unique'))->toBeTrue();
 });
 
+it('adds the json metadata columns to articles', function () {
+    expect(Schema::hasColumns('codex_articles', ['keywords', 'related', 'meta']))->toBeTrue();
+});
+
 it('creates the context lookup indexes', function () {
     expect(Schema::hasIndex('codex_article_contexts', ['type', 'key']))->toBeTrue()
         ->and(Schema::hasIndex('codex_article_contexts', ['panel_id', 'type', 'key']))->toBeTrue()

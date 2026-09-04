@@ -37,6 +37,9 @@ function linCodexSeedUsers(): Article
         ->withTranslation('de', ['title' => 'Benutzer', 'search_text' => null])
         ->withContext(ContextType::Route, 'users.index', null, 1)
         ->withContext(ContextType::PageClass, 'App\Filament\Resources\UserResource', 'admin', 0)
+        ->withKeywords(['rbac', 'roles'])
+        ->withRelated(['users/roles'])
+        ->withMeta(['owner' => 'ops'])
         ->create();
 
     Article::factory()->childOf($users, 'roles')->withTranslation('en', ['title' => 'Roles'])->create();
@@ -79,9 +82,9 @@ it('maps a row with its translations and contexts to article data', function ():
         ->and($article->published)->toBeFalse()
         ->and($article->isSection)->toBeTrue()
         ->and($article->sourcePath)->toBe('en/02-users/index.md')
-        ->and($article->related)->toBe([])
-        ->and($article->keywords)->toBe([])
-        ->and($article->meta)->toBe([]);
+        ->and($article->related)->toBe(['users/roles'])
+        ->and($article->keywords)->toBe(['rbac', 'roles'])
+        ->and($article->meta)->toBe(['owner' => 'ops']);
 
     $locales = $article->locales();
     sort($locales);
@@ -98,6 +101,33 @@ it('maps a row with its translations and contexts to article data', function ():
             new ContextData(ContextType::PageClass, 'App\Filament\Resources\UserResource', 'admin', 0),
             new ContextData(ContextType::Route, 'users.index', null, 1),
         ]);
+});
+
+it('maps null metadata columns to empty arrays', function (): void {
+    $bare = Article::query()->create(['slug' => 'bare']);
+    ArticleTranslation::factory()->create(['article_id' => $bare->id, 'locale' => 'en', 'title' => 'Bare']);
+
+    $article = (new DatabaseSource)->findBySlug('bare');
+
+    expect($article)->toBeInstanceOf(ArticleData::class)
+        ->and($article->keywords)->toBe([])
+        ->and($article->related)->toBe([])
+        ->and($article->meta)->toBe([]);
+});
+
+it('drops non-string entries from keywords and related', function (): void {
+    Article::factory()
+        ->state(['slug' => 'mixed'])
+        ->withKeywords(['a', 1, null, 'b'])
+        ->withRelated(['x', ['nested']])
+        ->withTranslation('en', ['title' => 'Mixed'])
+        ->create();
+
+    $article = (new DatabaseSource)->findBySlug('mixed');
+
+    expect($article)->toBeInstanceOf(ArticleData::class)
+        ->and($article->keywords)->toBe(['a', 'b'])
+        ->and($article->related)->toBe(['x']);
 });
 
 it('derives the parent slug from the slug and marks leaves as non-sections', function (): void {
@@ -142,7 +172,7 @@ it('emits one search document per translation ordered by slug then locale', func
     expect($documents)->toHaveCount(3)
         ->and(array_map(fn (SearchDocument $document): string => $document->slug.'#'.$document->locale, $documents))
         ->toBe(['users#de', 'users#en', 'users/roles#en'])
-        ->and($documents[1]->text)->toBe('users people')
+        ->and($documents[1]->text)->toBe('users people rbac roles')
         ->and($documents[1]->title)->toBe('Users')
         ->and($documents[1]->visibility)->toBe(Visibility::Public)
         ->and($documents[1]->published)->toBeFalse();
