@@ -11,9 +11,14 @@ use Spatie\LaravelSettings\Settings;
 class CodexSettings extends Settings
 {
     /**
-     * Languages articles may be translated into.
+     * Languages articles may be translated into, each built by languageEntry().
      *
-     * @var array<int, array{code: string, display: string, 'flag-icon': string}>
+     * Typed with the phpstan-only tag on purpose: spatie/laravel-settings resolves
+     * the standard var tag through phpdocumentor/type-resolver, which cannot parse
+     * array shapes or nested generics and would fail to build a cast for this
+     * property. The native array type is all the settings store needs.
+     *
+     * @phpstan-var array<int, array{code: string, display: string, 'flag-icon': string}>
      */
     public array $languages;
 
