@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\LinCodex\Rendering\Markdown;
 
+use FinityLabs\LinCodex\Rendering\Markdown\Callout\CalloutExtension;
 use FinityLabs\LinCodex\Rendering\PlainTextExtractor;
 use FinityLabs\LinCodex\Rendering\RenderedArticle;
 use League\CommonMark\Environment\Environment;
@@ -101,6 +102,8 @@ final class MarkdownPipeline
         $environment->addExtension(new AttributesExtension);
         $environment->addExtension(new DefaultAttributesExtension);
         $environment->addExtension(new ExternalLinkExtension);
+
+        $environment->addExtension(new CalloutExtension($this->state));
 
         // Codex extensions are registered here by later plans.
 
