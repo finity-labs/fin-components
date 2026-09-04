@@ -23,6 +23,7 @@ class LinCodexServiceProvider extends PackageServiceProvider
             ->name(static::$name)
             ->hasConfigFile()
             ->hasTranslations()
+            ->hasRoute('web')
             ->hasMigrations([
                 'create_codex_articles_table',
                 'create_codex_article_translations_table',
