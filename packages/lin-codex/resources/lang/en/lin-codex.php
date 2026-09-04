@@ -61,4 +61,13 @@ return [
     'anchor_label' => 'Link to :heading',
     'details_default' => 'Details',
 
+    'fallback_notice' => 'This article is not yet available in your language. Showing the :language version.',
+
+    /*
+     * Labels for folder groups (folders without an index file), keyed by the
+     * group's full slug: 'users' => 'Users', 'billing/archive' => 'Archive'.
+     * A missing key falls back to the humanised last folder name.
+     */
+    'groups' => [],
+
 ];
