@@ -10,6 +10,7 @@ use Filament\Panel;
 use Filament\Support\Concerns\EvaluatesClosures;
 use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\Enums\NavigationGroup;
+use FinityLabs\FinCodex\Panel\HelpMount;
 use Illuminate\Support\HtmlString;
 use UnitEnum;
 
@@ -70,21 +71,22 @@ class FinCodexPlugin implements Plugin
     }
 
     /**
-     * Hooks are registered on the panel, never app-wide through the facade: Panel::boot() flushes
-     * them for the current panel only, so two panels never see each other's output.
-     * The hidden marker is Phase 1's stand-in for the drawer mount; it renders from
-     * this instance, so each panel carries its own option values.
+     * Hooks are registered on the panel, never app-wide through the facade: Panel::boot()
+     * flushes them for the current panel only and before plugins boot, so they must be
+     * added here and two panels never see each other's output. Hook names are fixed
+     * here; panel state (dark mode, topbar, guard) is read lazily in HelpMount at
+     * render time.
      */
     public function register(Panel $panel): void
     {
-        $panel->renderHook(
-            PanelsRenderHook::BODY_END,
-            fn (array $scopes = []): HtmlString => new HtmlString(sprintf(
-                '<span data-fin-codex-panel="%s" data-fin-codex-shortcut="%s" hidden></span>',
-                e($panel->getId()),
-                e((string) $this->getShortcut()),
-            )),
-        );
+        $panel->renderHook(PanelsRenderHook::HEAD_END, fn (array $scopes = []): HtmlString => $this->mount()->head($panel));
+        $panel->renderHook(PanelsRenderHook::BODY_END, fn (array $scopes = []): HtmlString => $this->mount()->drawer($this, $panel));
+    }
+
+    /** Resolved per call so the scoped CurrentPage is the current request's. */
+    private function mount(): HelpMount
+    {
+        return app(HelpMount::class);
     }
 
     /** Panel state (guard, global search provider, topbar) is read here or lazily, never in register(). */
