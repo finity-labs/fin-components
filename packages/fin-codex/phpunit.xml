@@ -7,7 +7,7 @@
     colors="true"
     processIsolation="false"
     stopOnFailure="false"
-    executionOrder="random"
+    executionOrder="default"
     failOnWarning="true"
     failOnRisky="true"
     failOnEmptyTestSuite="true"
@@ -15,6 +15,9 @@
     cacheDirectory=".phpunit.cache"
 >
     <testsuites>
+        <testsuite name="Harness">
+            <directory suffix="Test.php">./tests/Harness</directory>
+        </testsuite>
         <testsuite name="Unit">
             <directory suffix="Test.php">./tests/Unit</directory>
         </testsuite>
