@@ -314,7 +314,7 @@ A revision doesn't hold the excerpt, keywords, contexts or any other metadata. N
 
 ### Reasons and authors
 
-The reason is `manual` (the default), `import` (`codex:import --force` overwriting an existing article) or `ai_rewrite` (reserved for fin-codex). The author is the authenticated user of the configured guard when there is one, and `null` otherwise, which is what a console command records unless it's given `--user`. Host code that saves translations on someone's behalf says so explicitly:
+The reason is `manual` (the default), `import` (`codex:import --force` overwriting an existing article), `restore` (the snapshot `restore()` takes of the current content before swapping a revision in) or `ai_rewrite` (reserved for fin-codex). The author is the authenticated user of the configured guard when there is one, and `null` otherwise, which is what a console command records unless it's given `--user`. Host code that saves translations on someone's behalf says so explicitly:
 
 ```php
 use FinityLabs\LinCodex\Enums\RevisionReason;
@@ -332,7 +332,7 @@ The scopes nest and the innermost wins: an `attributing()` inside `withoutRevisi
 app(RevisionManager::class)->restore($revision, $userId);
 ```
 
-`restore()` snapshots the current content first, with reason `manual` and the given author, then puts the revision's title, body and format back. A translation deleted since the revision was taken is recreated from it. Because of that snapshot a restore is itself undoable: restore the newest revision to go back.
+`restore()` snapshots the current content first, with reason `restore` and the given author, then puts the revision's title, body and format back. A translation deleted since the revision was taken is recreated from it. Because of that snapshot a restore is itself undoable: restore the newest revision to go back.
 
 ### Commands
 
