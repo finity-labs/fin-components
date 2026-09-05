@@ -11,6 +11,7 @@ use FinityLabs\LinCodex\Sources\CompositeSource;
 use FinityLabs\LinCodex\Sources\DatabaseSource;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
 use Illuminate\Auth\GenericUser;
+use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
@@ -338,5 +339,45 @@ it('shows the back button only with history', function (): void {
 
 it('locks the page articles against the client', function (): void {
     expect(fn () => Livewire::test(HelpDrawer::class, linCodexDrawerOnDashboard())->set('pageArticles', []))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
+});
+
+/**
+ * A second guard with a user while the default web guard stays a guest.
+ * The user is set on the guard directly: actingAs() calls shouldUse() and
+ * moves auth.defaults.guard, which would let the "omitted guard falls back"
+ * half pass for the wrong reason.
+ */
+function linCodexDrawerSignInOnStaff(): void
+{
+    config()->set('auth.guards.staff', ['driver' => 'session', 'provider' => 'users']);
+    app(AuthFactory::class)->guard('staff')->setUser(new GenericUser(['id' => 2]));
+}
+
+it('resolves the viewer through the guard prop and falls back to the configured guard without it', function (): void {
+    linCodexDrawerSignInOnStaff();
+
+    Livewire::test(HelpDrawer::class, linCodexDrawerOnDashboard())
+        ->call('open', 'users/permissions')
+        ->assertSee(__('lin-codex::lin-codex.ui.not_found'))
+        ->assertDontSeeHtml('data-codex-slug="users/permissions"');
+
+    Livewire::test(HelpDrawer::class, linCodexDrawerOnDashboard() + ['guard' => 'staff'])
+        ->assertSet('guard', 'staff')
+        ->call('open', 'users/permissions')
+        ->assertDontSee(__('lin-codex::lin-codex.ui.not_found'))
+        ->assertSeeHtml('data-codex-slug="users/permissions"')
+        ->call('goTo', 'page')
+        ->assertSet('slug', 'intro')
+        ->call('open', 'users/permissions')
+        ->assertSet('guard', 'staff')
+        ->assertDontSee(__('lin-codex::lin-codex.ui.not_found'))
+        ->assertSeeHtml('data-codex-slug="users/permissions"');
+});
+
+it('locks the guard against the client', function (): void {
+    linCodexDrawerSignInOnStaff();
+
+    expect(fn () => Livewire::test(HelpDrawer::class, ['guard' => 'staff'])->set('guard', 'web'))
         ->toThrow(CannotUpdateLockedPropertyException::class);
 });

@@ -54,9 +54,9 @@ final class HelpDrawer extends Component
 
     public ?string $slug = null;
 
-    public function mount(PageHelpResolver $resolver, ?string $slug = null, ?string $pageClass = null, ?string $panelId = null, ?string $locale = null): void
+    public function mount(PageHelpResolver $resolver, ?string $slug = null, ?string $pageClass = null, ?string $panelId = null, ?string $locale = null, ?string $guard = null): void
     {
-        $this->capturePageHelp($resolver, $pageClass, $panelId, $locale);
+        $this->capturePageHelp($resolver, $pageClass, $panelId, $locale, $guard);
 
         if ($slug !== null) {
             $this->open($slug);
