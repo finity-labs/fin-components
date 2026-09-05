@@ -138,6 +138,38 @@ final class RevisionManager
     }
 
     /**
+     * Put a revision's title, body and format back on its article.
+     *
+     * The current content is snapshotted first with reason Manual and the
+     * given author, so the restore itself can be undone; then the swap runs
+     * under withoutRevisions(), because the translation save and the format
+     * save would each record the content just snapshotted. A translation
+     * that was deleted since the revision was taken is recreated from it,
+     * with nothing to snapshot. The translation save re-indexes search_text
+     * through the model's own hook.
+     */
+    public function restore(ArticleRevision $revision, ?int $userId): ArticleTranslation
+    {
+        $article = $revision->article;
+        $translation = ArticleTranslation::query()->firstOrNew(['article_id' => $revision->article_id, 'locale' => $revision->locale]);
+
+        if ($translation->exists) {
+            $this->snapshot($translation, RevisionReason::Manual, $userId);
+        }
+
+        return $this->withoutRevisions(function () use ($translation, $revision, $article): ArticleTranslation {
+            $translation->fill(['title' => $revision->title, 'body' => $revision->body])->save();
+
+            if ($article->format !== $revision->format) {
+                $article->format = $revision->format;
+                $article->save();
+            }
+
+            return $translation;
+        });
+    }
+
+    /**
      * Delete every revision of the article beyond the keep count, locale by
      * locale, newest kept. $keep overrides the settings value for this call.
      * Returns the number of rows deleted.
