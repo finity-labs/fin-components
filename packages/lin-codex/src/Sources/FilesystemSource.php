@@ -33,8 +33,9 @@ use Illuminate\Support\Facades\Cache;
  * locale (it decides which file supplies the shared metadata), the renderer
  * fingerprint (search text is derived through the renderer) and the media
  * prefix (it is baked into the bodies), so a change to any of them starts
- * a fresh entry on its own. The codex:cache-clear command (Phase 8) forgets
- * cacheKeys() to force a rescan when the fingerprint's blind spot is hit.
+ * a fresh entry on its own. flush() forgets cacheKeys() and the memo to
+ * force a rescan when the fingerprint's blind spot is hit; codex:cache-clear
+ * calls it.
  */
 final class FilesystemSource implements ContentSource
 {
@@ -95,6 +96,28 @@ final class FilesystemSource implements ContentSource
             fn (string $docsPath): string => $this->keyFor($docsPath, $defaultLocale),
             $this->paths(),
         );
+    }
+
+    /**
+     * Forget every cached set (one per configured path) on the default store
+     * and drop the instance memo. Returns the number of cache entries that
+     * existed. codex:cache-clear calls this; a same-second edit that keeps
+     * the newest mtime is the one case the fingerprint cannot see, and this
+     * is the manual override for it.
+     */
+    public function flush(): int
+    {
+        $count = 0;
+
+        foreach ($this->cacheKeys() as $key) {
+            if (Cache::forget($key)) {
+                $count++;
+            }
+        }
+
+        $this->memo = [];
+
+        return $count;
     }
 
     /**
