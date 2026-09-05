@@ -61,3 +61,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Config keys `routes.assets`, `routes.help_center_layout`, `ui.shortcut`, `ui.drawer_width`; lang keys `ui.*`.
 - CI runs the suite on Livewire 3 and Livewire 4.
 - The shared visibility dataset now drives the Livewire components too.
+- Revision history for database articles: with `revisions_enabled` on, every change to a translation's title or body (and every article format change) stores the previous content with its format, reason (`manual`, `import`, `ai_rewrite`), author and timestamp, and prunes each article and language to `revisions_keep` in the same save; `RevisionManager` with `snapshot()`, `restore()` (snapshot first, then swap), `prune()`, `attributing()` and `withoutRevisions()` for host code.
+- Commands `codex:revisions:prune [--keep]` and `codex:revisions:restore {id} [--user]`.
+- `codex:install` (config, settings table, package migrations only, settings seed, `--assets`, reindex, next steps) and `codex:uninstall` (tables, settings rows, migration records, caches; `--files` for the published files; docs folders never touched).
+- `codex:import` (files to database through the models, skip or `--force` with import revisions, `--only`, `--locale`, `--dry-run`, `--user`, docs-relative `source_path`) and `codex:export` (database to files at the recorded or derived path, relativised image paths, copied images, `--path`, `--only`, `--locale`, `--dry-run`), with `FrontMatterWriter` emitting canonical front matter that round-trips losslessly.
+- `codex:coverage` listing the named routes without a help article (route, url and class contexts in any panel; Filament panel routes included; `--json`, `--no-fail`), with config keys `coverage.ignore` and `coverage.vendor_namespaces`.
+- `codex:cache-clear` dropping rendered HTML through a render cache generation, the file source caches and the in-memory search index, and `codex:reindex` rebuilding `search_text` and the in-memory index.
+- `codex:make` scaffolding an article file with front matter hints and a starter body; lang keys `make.*`.
+- Console commands are discovered from `src/Commands`.

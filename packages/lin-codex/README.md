@@ -7,7 +7,7 @@ In-app help for Laravel applications. Codex serves help articles from Markdown f
 ## What it will do
 
 - **Contextual help.** Map articles to route names, page classes, or URL patterns. The Livewire drawer opens on the article that matches the current page.
-- **Files, database, or both.** Ship default docs in your repo and let admins override or extend them in the database. Import and export commands move content either way.
+- **Files, database, or both.** Ship default docs in your repo and let admins override or extend them in the database. `codex:import` and `codex:export` move content either way without losing front matter.
 - **Multilingual.** One article, one translation row per language, with a configurable fallback when a translation is missing.
 - **Search.** Database full-text search per language out of the box. A Laravel Scout driver is optional.
 - **Markdown with extras.** Callouts, step-by-step blocks with screenshots, tables of contents, and image lightboxes.
@@ -102,7 +102,7 @@ $article->toc;        // [['level' => 2, 'text' => 'Reset a password', 'id' => '
 $article->plainText;  // search text
 ```
 
-Results are cached under a key built from the content hash, the format, the locale, the slug and a fingerprint of the renderer config, so an edit or a config change invalidates on its own; the store and TTL live under `lin-codex.render.cache`. Every class the renderer emits is prefixed `codex-`. The CSS for those classes ships with the help drawer (a later release).
+Results are cached under a key built from the content hash, the format, the locale, the slug and a fingerprint of the renderer config, so an edit or a config change invalidates on its own; the store and TTL live under `lin-codex.render.cache`. Every class the renderer emits is prefixed `codex-`. The CSS for those classes is the prebuilt stylesheet (see [Help drawer](#help-drawer)).
 
 ## Content sources
 
@@ -171,6 +171,8 @@ keywords:
 
 There's no `parent` key; the folder is the parent. Unknown keys are kept in the article's `meta` bag and survive export.
 
+`codex:export` writes front matter in a fixed key order (title, excerpt, slug, icon, order, visibility, published, contexts, related, keywords, format, then your own keys), always writes `title`, quotes values the way symfony/yaml does, and omits keys the path already implies, so an exported file may differ in form from the one you wrote while meaning the same thing. Keys without a value are left out too: `published` only appears as `false`, and an empty list is never written.
+
 A few YAML rules worth knowing: quote a title with a colon in it (`title: "Users: overview"`), `published: no` reads as false, quote a date you want kept as text, and keys are case-sensitive. A file with invalid front matter is skipped and reported; the rest of the folder still loads. Everything reported ends up in `ContentSource::warnings()`.
 
 ### Languages
@@ -183,7 +185,7 @@ Reference images relative to the article file, the way any Markdown editor does:
 
 ### Freshness
 
-Every read checks a cheap fingerprint per docs folder: the file count and the newest modification time. When it changes, the folder is rescanned and re-cached, so an edit shows on the next request without clearing anything. An edit that keeps the modification time isn't detected; `codex:cache-clear` (a later release) is the manual override.
+Every read checks a cheap fingerprint per docs folder: the file count and the newest modification time. When it changes, the folder is rescanned and re-cached, so an edit shows on the next request without clearing anything. An edit that keeps the modification time isn't detected; `codex:cache-clear` is the manual override.
 
 ### Reading from code
 
@@ -251,6 +253,57 @@ The catch-alls `route:*` and `url:/**` are allowed and sort last. Prefix a key w
 
 Resolution takes the articles for the current panel first and falls back to panel-less ones only when the panel gave nothing visible. Within that, exact keys come before wildcards, then class before route before url, then the order the author gave, then the slug. One article may list many contexts, and many articles may share one; the drawer opens the first.
 
+## Revisions
+
+Database articles can keep a history of their previous content. File articles don't need one; git already versions them. Revisions are off by default. Turn them on in the settings and pick how many to keep:
+
+```php
+use FinityLabs\LinCodex\Settings\CodexSettings;
+
+$settings = app(CodexSettings::class);
+$settings->revisions_enabled = true;
+$settings->revisions_keep = 10;      // the default
+$settings->save();
+```
+
+With the switch on, every save of an existing translation whose title or body changed first stores the previous title, body and article format, with a reason, an author and a timestamp. Changing an article's format (Markdown to HTML or back) stores one revision per translation, since the old content was written in the old format. The keep count applies per article and language, in the same save, so ten English edits never evict a German revision.
+
+A revision doesn't hold the excerpt, keywords, contexts or any other metadata. Nothing is stored when a translation is created, when only the excerpt changes, when revisions are off, or when the settings group hasn't been seeded yet; an unseeded group counts as off, so a save never fails on the switch.
+
+### Reasons and authors
+
+The reason is `manual` (the default), `import` (`codex:import --force` overwriting an existing article) or `ai_rewrite` (reserved for fin-codex). The author is the authenticated user of the configured guard when there is one, and `null` otherwise, which is what a console command records unless it's given `--user`. Host code that saves translations on someone's behalf says so explicitly:
+
+```php
+use FinityLabs\LinCodex\Enums\RevisionReason;
+use FinityLabs\LinCodex\Revisions\RevisionManager;
+
+app(RevisionManager::class)->attributing(RevisionReason::AiRewrite, $userId, fn () => $translation->save());
+app(RevisionManager::class)->withoutRevisions(fn () => $translation->save());   // bulk fixes, migrations
+```
+
+The scopes nest and the innermost wins: an `attributing()` inside `withoutRevisions()` records. `snapshot($translation, $reason, $userId)` stores the current content on request, whatever the switch says.
+
+### Restoring
+
+```php
+app(RevisionManager::class)->restore($revision, $userId);
+```
+
+`restore()` snapshots the current content first, with reason `manual` and the given author, then puts the revision's title, body and format back. A translation deleted since the revision was taken is recreated from it. Because of that snapshot a restore is itself undoable: restore the newest revision to go back.
+
+### Commands
+
+`codex:revisions:prune [--keep=N]` prunes every article to the keep count, or to `--keep` for that run; it runs whether revisions are enabled or not. `codex:revisions:restore {id} [--user=ID]` restores a revision by id. Both are listed under [Commands](#commands).
+
+```
+$ php artisan codex:revisions:prune --keep=5
+Removed 42 revisions from 7 articles (keeping 5 per language).
+
+$ php artisan codex:revisions:restore 118 --user=1
+Restored revision 118 (de) of users/roles.
+```
+
 ## Searching
 
 Users find articles by typing words in their own language. Results follow the same visibility and language rules as everything else, so a search never lists an article the reader would then refuse. The same query returns the same hits in the same order on MySQL, MariaDB, PostgreSQL, SQLite and on a file-only install, because the database only pre-filters rows; PHP decides what matches and how it ranks.
@@ -292,7 +345,7 @@ Words shorter than three characters and MySQL stopwords (`the`, `und`, ...) woul
 
 ### File-only installs
 
-The filesystem source is searched through an in-memory index: the folded documents are cached under one key and rebuilt when the content changes, so an edit shows on the next search. A composite install searches the database and the file-only articles and merges them; a slug that exists in the database wins. `codex:cache-clear` (a later release) drops the index.
+The filesystem source is searched through an in-memory index: the folded documents are cached under one key and rebuilt when the content changes, so an edit shows on the next search. A composite install searches the database and the file-only articles and merges them; a slug that exists in the database wins. `codex:cache-clear` drops the index and `codex:reindex` rebuilds it.
 
 ### Rate limits
 
@@ -371,7 +424,7 @@ public function share(Request $request): array
 }
 ```
 
-Then `<HelpDrawer prefix={codex.prefix} context={codex.context} />` in the React layout, or `<HelpDrawer :prefix="page.props.codex.prefix" :context="page.props.codex.context" />` in the Vue one. After publishing the files are the app's: nothing is loaded automatically, there's no npm package, and every class is prefixed `codex-` so the package stylesheet of a later release applies if you include it. The published README has the props, the client and the event.
+Then `<HelpDrawer prefix={codex.prefix} context={codex.context} />` in the React layout, or `<HelpDrawer :prefix="page.props.codex.prefix" :context="page.props.codex.context" />` in the Vue one. After publishing the files are the app's: nothing is loaded automatically, there's no npm package, and every class is prefixed `codex-` so the package stylesheet applies if you include it. The published README has the props, the client and the event.
 
 ## Help drawer
 
@@ -448,6 +501,259 @@ Every class is prefixed `codex-`, and the look comes from `--codex-*` custom pro
 ### Livewire 3 and 4
 
 The components use only the API the two majors share, and CI runs the suite on both (`livewire/livewire ^3.0|^4.0`). If you mount them with `<livewire:…>` directly instead of through the Blade wrappers, the names are `lin-codex.help-drawer` and `lin-codex.help-center`.
+
+## Commands
+
+Every command is `php artisan codex:…`, and `--help` prints its options. The package registers them itself; there's nothing to add to the host.
+
+### codex:install
+
+```
+codex:install [--force] [--assets]
+```
+
+| Option | What it does |
+|---|---|
+| `--force` | Overwrite an existing `config/lin-codex.php`. |
+| `--assets` | Publish the stylesheet to `public/vendor/lin-codex/codex.css`. |
+
+Takes an app from `composer require` to a working package in one run, in this order: publish the config unless it's already there; create the `settings` table of spatie/laravel-settings when the app has none; publish the package migrations (the five `codex_*` tables and the settings seed under `database/settings`) and run exactly those files; seed the `lin-codex` settings group if the seed didn't; publish the stylesheet with `--assets`; run `codex:reindex`; print the next steps.
+
+```
+$ php artisan codex:install
+Installing lin-codex...
+
+Publishing the config...
+  Config published to config/lin-codex.php
+Publishing the migrations...
+  Migrations published
+Running the package migrations...
+  2026_09_05_000001_create_codex_articles_table ........ DONE
+  ...
+  Migrations complete
+  Settings seeded (lin-codex group, 10 revisions kept per language)
+Re-indexing translations...
+  0 translations indexed
+  In-memory index rebuilt with 0 documents
+
+lin-codex installed.
+
++-------------------------------+------------------------------------------------------------------------------------------+
+| Next steps                    | Details                                                                                  |
++-------------------------------+------------------------------------------------------------------------------------------+
+| Add the styles                | <x-lin-codex::styles /> in <head>                                                        |
+| Add the button and the drawer | <x-lin-codex::help-button /> anywhere, <x-lin-codex::help-drawer /> once before </body>  |
+| Write the first article       | php artisan codex:make intro --title="Introduction" (resources/codex/en/ is created for you) |
+| Find pages without help       | php artisan codex:coverage                                                               |
++-------------------------------+------------------------------------------------------------------------------------------+
+```
+
+Every step is safe to repeat: a second run reports `Config already published (pass --force to overwrite)` and `Nothing to migrate`. The migrations run by path, so the app's own pending migrations stay out of an install that only asked for the package's; they're recorded in the migrations table like any other, and the next plain `migrate` skips them.
+
+### codex:uninstall
+
+```
+codex:uninstall [--force] [--files]
+```
+
+| Option | What it does |
+|---|---|
+| `--force` | Skip the confirmation. |
+| `--files` | Also delete the published config, stylesheet, React and Vue stubs and migration files. |
+
+Reverses `codex:install`; run it before `composer remove finity-labs/lin-codex`. It lists what will go and asks `Remove everything listed?` (declining exits 1 and removes nothing), then drops the five tables under the names in `lin-codex.table_names`, deletes the `lin-codex` settings rows, deletes the `create_codex_*` records from the migrations table so a reinstall migrates again, and clears the settings cache and the package caches. `--files` adds `config/lin-codex.php`, `public/vendor/lin-codex`, `resources/js/codex` and the published `create_codex_*` migration and settings files. Docs folders are content you wrote and are never touched.
+
+```
+$ php artisan codex:uninstall --force
+This will remove:
+  - table codex_media
+  - table codex_article_revisions
+  - table codex_article_contexts
+  - table codex_article_translations
+  - table codex_articles
+  - the lin-codex settings rows
+  - the create_codex_* rows in the migrations table
+  - the package caches
+Docs folders are never touched.
+  Dropped codex_media
+  Dropped codex_article_revisions
+  Dropped codex_article_contexts
+  Dropped codex_article_translations
+  Dropped codex_articles
+  Settings rows deleted
+  6 migration records deleted
+  Caches cleared
+
+lin-codex uninstalled. Remove the package with: composer remove finity-labs/lin-codex
+```
+
+### codex:import
+
+```
+codex:import [--only=SLUG]... [--locale=XX] [--force] [--dry-run] [--user=ID]
+```
+
+| Option | What it does |
+|---|---|
+| `--only=slug` | Import only these slugs; repeat the option for several. |
+| `--locale=xx` | Import one language only. |
+| `--force` | Overwrite articles that already exist in the database. |
+| `--dry-run` | Print the summary without writing. |
+| `--user=id` | Record this user id as the author of the articles and of the revisions. |
+
+Reads every folder in `lin-codex.sources.filesystem.paths` through the file source, whatever `lin-codex.source` is set to, and writes the articles into the database through the models, so parent links, `search_text` and revisions come from the same hooks an editor's save goes through. An article whose slug already exists in the database is skipped and listed: a re-import never silently destroys an admin's edits. `--force` overwrites it and, when revisions are on, records an `import` revision for each translation whose title or body changed; an unchanged translation records nothing. Each article is written in its own transaction, so one failure (an unknown `--user`, a constraint) lands under `Failed` for its languages and the run carries on with the next slug. The article's `source_path` is stored relative to its docs folder (`en/02-users/index.md`), which is how `codex:export` finds the file again.
+
+```
+$ php artisan codex:import
+Importing articles from /srv/app/resources/codex...
++--------+---------+---------+---------+--------+
+| Locale | Created | Updated | Skipped | Failed |
++--------+---------+---------+---------+--------+
+| de     | 2       | 0       | 1       | 0      |
+| en     | 5       | 0       | 1       | 0      |
++--------+---------+---------+---------+--------+
+Skipped: intro
+  Pass --force to overwrite articles that already exist in the database.
+```
+
+Failures print under `Failed:` with their reason and the warnings the file source raised (invalid front matter, duplicate slugs) under `Warnings:`. The exit code is 1 only when an article failed; skipped articles and warnings are normal. With `--locale`, an article that has no file in that language is neither written nor listed.
+
+### codex:export
+
+```
+codex:export [--only=SLUG]... [--locale=XX] [--path=DIR] [--dry-run]
+```
+
+| Option | What it does |
+|---|---|
+| `--only=slug` | Export only these slugs; repeat the option for several. |
+| `--locale=xx` | Export one language only. |
+| `--path=dir` | Write under this folder instead of the configured docs path. |
+| `--dry-run` | Print the summary without writing. |
+
+Writes every database article back to files, published or not, in every language it has. An article with a recorded `source_path` goes there, under the first configured docs path that already holds that file (else the first configured path). An article without one goes to `{locale}/{slug}.md`, or `{locale}/{slug}/index.md` when it has children, and `.html` for an HTML article. Other languages reuse the default language's path with the locale segment swapped, which is where the file source looks for them. `--path` writes everything under that folder instead, the safe way to look at an export before it lands in your repo. A file counts as created when it didn't exist and updated when it did.
+
+Bodies carry media-route URLs in the database; they're turned back into paths relative to the file being written, and the images they name are copied from the docs path that holds them when the target is a different folder. Nothing is fetched from the media disk: only file articles can have images beside them, and an image no docs path holds is a warning. The front matter comes out in the canonical form described under [Front matter](#front-matter-1), so the round trip through the database keeps every key while the file may look a little different from the one you wrote.
+
+```
+$ php artisan codex:export --path=/tmp/codex-export
++--------+---------+---------+---------+--------+
+| Locale | Created | Updated | Skipped | Failed |
++--------+---------+---------+---------+--------+
+| de     | 3       | 0       | 0       | 0      |
+| en     | 6       | 0       | 0       | 0      |
++--------+---------+---------+---------+--------+
+```
+
+Without a configured docs path and without `--path` the command exits 1 and says so. A file that can't be written lands under `Failed` and the run carries on.
+
+### codex:coverage
+
+```
+codex:coverage [--json] [--no-fail]
+```
+
+| Option | What it does |
+|---|---|
+| `--json` | Print JSON instead of a table. |
+| `--no-fail` | Exit 0 even when routes lack coverage. |
+
+Lists the pages of the app and which help article each one maps to. A route is a page when it answers GET, has a name, and runs in the `web` middleware group or carries the session middleware somewhere in its expanded stack, which is how Filament panel routes qualify (they list their middleware classes and never name the group). Two config lists leave the noise out: `lin-codex.coverage.ignore` holds route-name globs (by default `livewire.*`, `ignition.*`, `telescope.*`, `horizon.*`, `lin-codex.*`, `sanctum.*`, `debugbar.*`, `filament.*.auth.*` and `storage.*`) and `lin-codex.coverage.vendor_namespaces` holds class prefixes of actions to skip (Livewire, Telescope, Horizon, Ignition, Sanctum, Debugbar, this package and Filament's own pages). Add your own entries to either.
+
+A route is covered when a context matches it in any panel: its name against `route:` keys (exact or with a trailing `*`), its URI template against `url:` patterns (a placeholder such as `{user}` is one segment), and its page class against `class:` keys, where the page class is the route's controller or, for a Livewire route, the component behind it. Contexts are read from the content source without the viewer gate and without the published filter: an unpublished or members-only article still counts as coverage, because the question is whether a mapping exists, not whether a guest would see it.
+
+```
+$ php artisan codex:coverage
++-------------+---------------+-----------------+---------+
+| Route       | URI           | Matched by      | Article |
++-------------+---------------+-----------------+---------+
+| dashboard   | /             | route:dashboard | intro   |
+| users.edit  | /users/{user} | url:/users/*    | users   |
+| users.index | /users        | none            |         |
++-------------+---------------+-----------------+---------+
+1 of 3 routes have no help article.
+```
+
+The exit code is 1 when any route lacks an article, so the command can gate a deploy; `--no-fail` keeps the output and exits 0. `--json` prints `{"routes": [...], "uncovered": N, "warnings": [...]}` where every route carries `name`, `uri`, `pageClass`, `matchedBy`, `slug` and `covered`. Source warnings print under `Warnings:` before the summary line.
+
+### codex:cache-clear
+
+```
+codex:cache-clear
+```
+
+Drops everything the package caches and prints one line per cache:
+
+```
+$ php artisan codex:cache-clear
+  Rendered HTML ...................... generation 2 (old entries expire with their ttl)
+  File sources ....................... 2 entries forgotten
+  Search index ....................... forgotten
+  Context index ...................... not cached (rebuilt per request)
+  Stylesheet hash .................... not cached (in memory only)
+```
+
+- **Rendered HTML.** The render store can't be enumerated, so the command bumps a generation number that is part of every render cache key. Every rendered article is orphaned at once and expires with its TTL; the line names the new generation. The counter lives on the render store (`lin-codex.render.cache.store`), so a queue worker picks it up on its next render.
+- **File sources.** The fingerprint and parsed set of every docs folder, forgotten and counted. This is the override for an edit that kept the file's modification time.
+- **Search index.** The in-memory index of a file-only or composite install; the next search rebuilds it, or `codex:reindex` does.
+- **Context index** and **stylesheet hash** are listed so you know there's nothing to clear: one is rebuilt per request, the other lives in memory only.
+
+### codex:reindex
+
+```
+codex:reindex
+```
+
+Recomputes `search_text` for every translation row, in chunks, saving with timestamps off so `updated_at` (what editors and the export see) doesn't move. That's the fix for rows written with the query builder (seeders, migrations), which skip the model hooks, and for rows indexed before a `SearchText::VERSION` bump in a package upgrade. Then it rebuilds the in-memory index for the configured source mode: every article in `filesystem` mode, the file-only articles in `composite` mode, skipped in `database` mode where a search never reads it. `codex:install` ends with it.
+
+```
+$ php artisan codex:reindex
+Re-indexing translations...
+  14 translations indexed
+  In-memory index rebuilt with 6 documents
+```
+
+### codex:make
+
+```
+codex:make {slug} [--locale=XX] [--title=TITLE] [--section] [--format=markdown|html] [--force]
+```
+
+| Option | What it does |
+|---|---|
+| `--locale=xx` | Language folder; defaults to the settings' default locale. |
+| `--title=…` | Article title; defaults to the humanised last segment of the slug. |
+| `--section` | Create `slug/index.md` for a folder that will hold children. |
+| `--format=` | `markdown` (the default) or `html`. |
+| `--force` | Overwrite an existing file. |
+
+Writes the first file of a new article under the first configured docs path: `{locale}/{slug}.md`, `{locale}/{slug}/index.md` with `--section`, `.html` with `--format=html`. The slug may contain folders (`users/roles`) and every segment must be lowercase letters, digits and dashes. The locale must be a locale folder name (`en`, `de`, `pt-BR`), so the option can't write outside the docs root. An existing file is refused unless `--force`.
+
+The scaffold doubles as the syntax cheat sheet: front matter with `title`, an empty `excerpt` to fill in, `order`, `visibility`, `published`, an empty `contexts` list and commented examples of `contexts`, `related` and `keywords`; then a level-two heading, a paragraph, a `:::steps` block with two steps and a figure placeholder, and a `> [!TIP]` callout. The HTML form uses an ordered list and a plain paragraph in place of the two Markdown-only blocks.
+
+```
+$ php artisan codex:make users/roles --title="Roles"
+Created en/users/roles.md
+  Add contexts to show it on a page; the file comments show the syntax.
+```
+
+The body text comes from the `make.*` lang group in the file's language. Only English ships: to scaffold in another language, publish the translations (`php artisan vendor:publish --tag=lin-codex-translations`) and translate the `make` group in `lang/vendor/lin-codex/{locale}/lin-codex.php`. A language without one gets the English text in the right folder.
+
+### codex:revisions:prune
+
+```
+codex:revisions:prune [--keep=N]
+```
+
+Removes every article's revisions beyond the keep count, language by language, newest kept; `--keep` overrides `revisions_keep` for this run and leaves the settings untouched. Runs whether revisions are enabled or not. See [Revisions](#revisions).
+
+### codex:revisions:restore
+
+```
+codex:revisions:restore {revision} [--user=ID]
+```
+
+Restores a revision by id after snapshotting the current content, so the restore can itself be undone; `--user` records the author of that snapshot, which a console run otherwise leaves empty. See [Revisions](#revisions).
 
 ## License
 
