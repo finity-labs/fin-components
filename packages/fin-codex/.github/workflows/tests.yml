@@ -40,7 +40,7 @@ jobs:
             --with "filament/filament:${{ matrix.filament }}" \
             --with "illuminate/contracts:${{ matrix.laravel }}" \
             --with "orchestra/testbench:${{ matrix.testbench }}"
-          composer show filament/filament livewire/livewire laravel/framework
+          composer show | grep -E '^(filament/filament|livewire/livewire|laravel/framework) '
 
       - name: Run tests
         run: vendor/bin/pest

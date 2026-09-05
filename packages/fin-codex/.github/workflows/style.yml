@@ -44,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: |
           composer update --no-interaction --no-progress --prefer-dist --with "filament/filament:${{ matrix.filament }}"
-          composer show filament/filament livewire/livewire laravel/framework
+          composer show | grep -E '^(filament/filament|livewire/livewire|laravel/framework) '
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --no-progress
