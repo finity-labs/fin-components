@@ -2,19 +2,60 @@
 
 In-app help for Laravel applications. Codex serves help articles from Markdown files, the database, or both, and shows the right article for the page the user is on. It ships a Livewire help drawer, a JSON API for Inertia frontends, per-language content, and search.
 
-> Early development. Nothing here is usable yet. Watch the [CHANGELOG](CHANGELOG.md) for the first release.
+[![Laravel 11 to 13](https://img.shields.io/badge/LARAVEL-11%20%7C%2012%20%7C%2013-FF2D20?style=flat-square)](https://laravel.com)
+[![Livewire 3 and 4](https://img.shields.io/badge/LIVEWIRE-3%20%7C%204-FB70A9?style=flat-square)](https://livewire.laravel.com)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/finity-labs/lin-codex.svg?style=flat-square)](https://packagist.org/packages/finity-labs/lin-codex)
+[![Tests](https://github.com/finity-labs/lin-codex/actions/workflows/tests.yml/badge.svg)](https://github.com/finity-labs/lin-codex/actions/workflows/tests.yml)
+[![License](https://img.shields.io/packagist/l/finity-labs/lin-codex.svg?style=flat-square)](https://packagist.org/packages/finity-labs/lin-codex)
 
-## What it will do
+## What it does
 
 - **Contextual help.** Map articles to route names, page classes, or URL patterns. The Livewire drawer opens on the article that matches the current page.
 - **Files, database, or both.** Ship default docs in your repo and let admins override or extend them in the database. `codex:import` and `codex:export` move content either way without losing front matter.
 - **Multilingual.** One article, one translation row per language, with a configurable fallback when a translation is missing.
-- **Search.** Database full-text search per language out of the box. A Laravel Scout driver is optional.
+- **Search.** Accent-insensitive search on every database, with optional full-text search on MySQL, MariaDB and PostgreSQL.
 - **Markdown with extras.** Callouts, step-by-step blocks with screenshots, tables of contents, and image lightboxes.
 - **Works for guests.** `<x-lin-codex::help-button>` and `<x-lin-codex::help-drawer>` show public articles on login, registration and password reset pages.
 - **Frontend stubs.** Publishable React and Vue drawer components for Inertia apps, talking to the JSON API.
+- **No build step.** The drawer, the help center page and the stylesheet ship ready to use.
 
 Filament panels get all of this plus an article editor and panel-aware contexts through [fin-codex](https://github.com/finity-labs/fin-codex).
+
+## Requirements
+
+- PHP 8.2 or newer
+- Laravel 11, 12 or 13
+- Livewire 3 or 4
+- MySQL, MariaDB, PostgreSQL or SQLite
+
+## Installation
+
+```bash
+composer require finity-labs/lin-codex
+php artisan codex:install
+```
+
+`codex:install` publishes the config file, runs the migrations, seeds the settings and builds the search index. Add `--assets` to publish the stylesheet to `public/vendor/lin-codex` instead of serving it from the package route.
+
+Then add the components to your layout:
+
+```blade
+<head>
+    <x-lin-codex::styles />
+</head>
+<body>
+    <x-lin-codex::help-button />
+    <x-lin-codex::help-drawer />
+</body>
+```
+
+Create your first article and open the drawer with `Ctrl+/`:
+
+```bash
+php artisan codex:make getting-started --title="Getting started"
+```
+
+Articles live in `resources/codex/{locale}/`. The help center page is at `/help`.
 
 ## Writing articles
 
