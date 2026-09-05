@@ -12,6 +12,8 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\FinCodexPlugin;
+use FinityLabs\FinCodex\Tests\Fixtures\Pages\Reports;
+use FinityLabs\FinCodex\Tests\Fixtures\Resources\UserResource;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -24,6 +26,9 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
  * The default panel: id admin, path /admin, the web guard, FinCodexPlugin
  * registered with literal option values (the staff panel uses closures). The middleware stack is the one Filament's own panel provider
  * generator emits; SetUpPanel is prepended automatically as panel:admin.
+ * Carries the fixture resource, the Reports page and the registration and
+ * password-reset pages so Phase 3 can prove page identity and the guest auth
+ * pages.
  */
 final class AdminPanelProvider extends PanelProvider
 {
@@ -34,7 +39,10 @@ final class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->pages([Dashboard::class])
+            ->registration()
+            ->passwordReset()
+            ->pages([Dashboard::class, Reports::class])
+            ->resources([UserResource::class])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
