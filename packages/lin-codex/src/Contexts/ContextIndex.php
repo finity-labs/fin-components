@@ -99,6 +99,27 @@ final readonly class ContextIndex
     }
 
     /**
+     * Every panel id that appears in a context, first-seen order, so coverage
+     * can ask "matched in any panel".
+     *
+     * @return list<string>
+     */
+    public function panelIds(): array
+    {
+        $ids = [];
+
+        foreach ($this->entries as $entry) {
+            $panelId = $entry['context']->panelId;
+
+            if ($panelId !== null && ! in_array($panelId, $ids, true)) {
+                $ids[] = $panelId;
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
      * Class keys lose their leading backslash and url keys take the canonical
      * path form; route keys are kept as written.
      */

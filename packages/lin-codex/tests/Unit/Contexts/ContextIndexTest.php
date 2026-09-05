@@ -212,3 +212,14 @@ it('survives serialize() and yields no models', function (): void {
 
     linCodexAssertNoModels($index->candidates(linCodexIndexPage(), null));
 });
+
+it('lists the distinct panel ids in first-seen order', function (): void {
+    $index = linCodexIndex([
+        'a' => ['route:home', 'admin:route:home'],
+        'b' => ['billing:url:/billing', 'admin:url:/admin'],
+    ]);
+
+    expect($index->panelIds())->toBe(['admin', 'billing'])
+        ->and(linCodexIndex(['a' => ['route:home']])->panelIds())->toBe([])
+        ->and(ContextIndex::fromArticles([])->panelIds())->toBe([]);
+});

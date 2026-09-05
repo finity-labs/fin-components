@@ -260,4 +260,51 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Coverage
+    |--------------------------------------------------------------------------
+    |
+    | What "codex:coverage" considers: every named GET route that runs in
+    | the "web" middleware group or whose expanded middleware stack starts
+    | a session. The second rule is how Filament panel routes qualify; a
+    | panel lists its middleware classes explicitly and never names the
+    | "web" group.
+    |
+    | "ignore" are route-name globs to leave out, where "*" also crosses
+    | dots ("filament.*.auth.*" covers "filament.admin.auth.login").
+    |
+    | "vendor_namespaces" are class-name prefixes of route actions to skip:
+    | package routes with no page of their own. "Filament\" as a whole is
+    | not listed because the default dashboard page is a vendor class and
+    | one you want covered.
+    |
+    */
+
+    'coverage' => [
+        'ignore' => [
+            'livewire.*',
+            'ignition.*',
+            'telescope.*',
+            'horizon.*',
+            'lin-codex.*',
+            'sanctum.*',
+            'debugbar.*',
+            'filament.*.auth.*',
+            'storage.*',
+        ],
+        'vendor_namespaces' => [
+            'Livewire\\',
+            'Laravel\\Telescope\\',
+            'Laravel\\Horizon\\',
+            'Spatie\\LaravelIgnition\\',
+            'Spatie\\Ignition\\',
+            'Laravel\\Sanctum\\',
+            'Barryvdh\\Debugbar\\',
+            'FinityLabs\\LinCodex\\',
+            'Filament\\Http\\',
+            'Filament\\Auth\\',
+        ],
+    ],
+
 ];
