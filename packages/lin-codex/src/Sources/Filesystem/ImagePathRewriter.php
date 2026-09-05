@@ -15,6 +15,12 @@ use FinityLabs\LinCodex\Enums\ArticleFormat;
  * again by canonical path in the media controller. Absolute, scheme, protocol-relative
  * and fragment targets stay as written; reference-style Markdown images are
  * left alone. Pure.
+ *
+ * rewrite() and relativise() are a pair: the scanner rewrites a file's
+ * relative image paths to media URLs on the way in, and the exporter turns
+ * those media URLs back into paths relative to the file it writes on the
+ * way out. Both match the same image syntax per format, so a body that
+ * went through one comes back unchanged through the other.
  */
 final class ImagePathRewriter
 {
@@ -52,6 +58,67 @@ final class ImagePathRewriter
                 $body,
             ) ?? $body,
         };
+    }
+
+    /**
+     * The inverse of rewrite(): media route targets under the prefix become
+     * paths relative to $relativeDir, anything else is left as written. The
+     * second element lists the docs-relative image paths that were rewritten
+     * (without query or fragment), in document order, once each, so an export
+     * can copy them next to the file.
+     *
+     * @param  string  $relativeDir  the folder of the file being written, relative to the docs root: "en", "en/02-users"
+     * @param  string  $mediaPrefix  config('lin-codex.routes.media'), e.g. "/codex/media"
+     *
+     * @return array{body: string, images: list<string>}
+     */
+    public static function relativise(string $body, ArticleFormat $format, string $relativeDir, string $mediaPrefix): array
+    {
+        $prefix = rtrim($mediaPrefix, '/').'/';
+
+        /** @var list<string> $images */
+        $images = [];
+
+        /** @var array<string, true> $seen */
+        $seen = [];
+
+        $relativise = static function (string $target) use ($relativeDir, $prefix, &$images, &$seen): string {
+            $cut = strcspn($target, '?#');
+            $path = substr($target, 0, $cut);
+            $suffix = substr($target, $cut);
+
+            if (! str_starts_with($path, $prefix)) {
+                return $target;
+            }
+
+            $docsRelative = substr($path, strlen($prefix));
+
+            if ($docsRelative === '') {
+                return $target;
+            }
+
+            if (! isset($seen[$docsRelative])) {
+                $seen[$docsRelative] = true;
+                $images[] = $docsRelative;
+            }
+
+            return self::relativePath($relativeDir, $docsRelative).$suffix;
+        };
+
+        $body = match ($format) {
+            ArticleFormat::Markdown => preg_replace_callback(
+                self::MARKDOWN_IMAGE,
+                static fn (array $matches): string => $matches[1].$relativise($matches[2]).$matches[3],
+                $body,
+            ) ?? $body,
+            ArticleFormat::Html => preg_replace_callback(
+                self::HTML_IMAGE,
+                static fn (array $matches): string => $matches[1].$matches[2].$relativise($matches[3]).$matches[2],
+                $body,
+            ) ?? $body,
+        };
+
+        return ['body' => $body, 'images' => $images];
     }
 
     /**
@@ -99,5 +166,24 @@ final class ImagePathRewriter
         }
 
         return implode('/', $segments).$suffix;
+    }
+
+    /**
+     * The path of $toFile relative to $fromDir, both docs-relative: drop the
+     * folder segments the two share (never the file name itself), then one
+     * ".." per remaining folder of $fromDir followed by the rest of $toFile.
+     */
+    private static function relativePath(string $fromDir, string $toFile): string
+    {
+        $from = array_values(array_filter(explode('/', $fromDir), static fn (string $segment): bool => $segment !== ''));
+        $to = explode('/', $toFile);
+        $common = 0;
+        $limit = min(count($from), count($to) - 1);
+
+        while ($common < $limit && $from[$common] === $to[$common]) {
+            $common++;
+        }
+
+        return str_repeat('../', count($from) - $common).implode('/', array_slice($to, $common));
     }
 }
