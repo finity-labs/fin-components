@@ -7,6 +7,7 @@ namespace FinityLabs\FinCodex\Panel;
 use Filament\Panel;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Js;
 
 /**
  * The bodies of the render hooks FinCodexPlugin::register() wires. Every body
@@ -28,6 +29,53 @@ final class HelpMount
     public function head(Panel $panel): HtmlString
     {
         return $this->render('fin-codex::panel.head', []);
+    }
+
+    /**
+     * The topbar (or sidebar-footer) button: skipped when the option is off
+     * or no panel is current; badge-less when the request is not a page
+     * render (a refresh-topbar update), which wire:ignore keeps invisible on
+     * the client.
+     */
+    public function button(FinCodexPlugin $plugin, Panel $panel): HtmlString
+    {
+        $identity = $this->currentPage->identity();
+
+        if (! $plugin->hasHelpButton() || ! $identity->hasPanel()) {
+            return new HtmlString('');
+        }
+
+        $label = (string) __('fin-codex::fin-codex.button.tooltip');
+
+        return $this->render('fin-codex::panel.button', [
+            'pageClass' => $identity->pageClass(),
+            'resourceClass' => $identity->resourceClass,
+            'panelId' => $identity->panelId,
+            'guard' => $identity->guard,
+            'hasDarkMode' => $panel->hasDarkMode(),
+            'tooltip' => '{ content: '.Js::from($label).', theme: $store.theme }',
+        ]);
+    }
+
+    /**
+     * The "Need help?" link under simple-layout forms at SIMPLE_PAGE_END;
+     * badge-less, so it needs no page identity and costs nothing on form
+     * re-renders.
+     */
+    public function guestLink(FinCodexPlugin $plugin, Panel $panel): HtmlString
+    {
+        $identity = $this->currentPage->identity();
+
+        if (! $plugin->hasGuestDrawer() || ! $identity->hasPanel()) {
+            return new HtmlString('');
+        }
+
+        return $this->render('fin-codex::panel.guest-link', [
+            'panelId' => $identity->panelId,
+            'guard' => $identity->guard,
+            'hasDarkMode' => $panel->hasDarkMode(),
+            'label' => (string) __('fin-codex::fin-codex.guest.link'),
+        ]);
     }
 
     /**

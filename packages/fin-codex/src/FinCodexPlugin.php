@@ -76,10 +76,24 @@ class FinCodexPlugin implements Plugin
      * added here and two panels never see each other's output. Hook names are fixed
      * here; panel state (dark mode, topbar, guard) is read lazily in HelpMount at
      * render time.
+     *
+     * Evaluating a Closure-valued helpButtonRenderHook here is fine: the plugin instance
+     * is fully configured before ->plugin() runs and the closure must not read panel
+     * state. The hasTopbar() decision cannot be made here (the host may chain
+     * ->topbar(false) after ->plugin()), so the sidebar closure makes it at render time.
      */
     public function register(Panel $panel): void
     {
         $panel->renderHook(PanelsRenderHook::HEAD_END, fn (array $scopes = []): HtmlString => $this->mount()->head($panel));
+
+        if ($this->hasExplicitHelpButtonRenderHook()) {
+            $panel->renderHook($this->getHelpButtonRenderHook(), fn (array $scopes = []): HtmlString => $this->mount()->button($this, $panel));
+        } else {
+            $panel->renderHook(PanelsRenderHook::TOPBAR_END, fn (array $scopes = []): HtmlString => $this->mount()->button($this, $panel));
+            $panel->renderHook(PanelsRenderHook::SIDEBAR_FOOTER, fn (array $scopes = []): HtmlString => $panel->hasTopbar() ? new HtmlString('') : $this->mount()->button($this, $panel));
+        }
+
+        $panel->renderHook(PanelsRenderHook::SIMPLE_PAGE_END, fn (array $scopes = []): HtmlString => $this->mount()->guestLink($this, $panel));
         $panel->renderHook(PanelsRenderHook::BODY_END, fn (array $scopes = []): HtmlString => $this->mount()->drawer($this, $panel));
     }
 

@@ -5,6 +5,8 @@ use Filament\Pages\Dashboard;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\Reports;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\UserResource;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
+use FinityLabs\LinCodex\Enums\ContextType;
+use FinityLabs\LinCodex\Models\Article;
 
 /*
  * One panel per test method (see PanelsTest): FilamentManager boots only the
@@ -56,4 +58,44 @@ it('renders no drawer, no button and no stylesheet in a panel without the plugin
         ->not->toContain('data-fin-codex')
         ->not->toContain('data-codex-drawer')
         ->not->toContain('codex.css');
+});
+
+it('gives the topbar button the same identity as the drawer', function (string $guard, string $path, string $panel, string $pageClass, ?string $resourceClass): void {
+    $user = User::create(['name' => 'Tester', 'email' => $guard.'@example.com']);
+
+    $html = $this->actingAs($user, $guard)->get($path)->assertOk()->getContent();
+
+    expect(substr_count($html, 'data-fin-codex-help-button="'.$panel.'"'))->toBe(1)
+        ->and(substr_count($html, 'data-fin-codex-page="'.$pageClass.'"'))->toBe(2)
+        ->and(substr_count($html, 'data-fin-codex-resource="'.(string) $resourceClass.'"'))->toBe(2)
+        ->and(substr_count($html, 'data-fin-codex-guard="'.$guard.'"'))->toBe(2)
+        ->and($html)->not->toContain('data-fin-codex-guest-link');
+})->with([
+    'admin dashboard' => ['web', '/admin', 'admin', Dashboard::class, null],
+    'admin users create' => ['web', '/admin/users/create', 'admin', UserResource::class, UserResource::class],
+    'staff dashboard' => ['staff', '/staff', 'staff', Dashboard::class, null],
+]);
+
+it('shows the same article count in the badge and in the drawer on every page of a resource', function (string $path): void {
+    Article::factory()->public()->withTranslation('en', ['title' => 'Managing users', 'body' => 'How to manage users.'])
+        ->withContext(ContextType::PageClass, UserResource::class, 'admin')->create(['slug' => 'managing-users']);
+    Article::factory()->public()->withTranslation('en', ['title' => 'Inviting users', 'body' => 'How to invite users.'])
+        ->withContext(ContextType::PageClass, UserResource::class, 'admin')->create(['slug' => 'inviting-users']);
+    $user = User::create(['name' => 'Tester', 'email' => 'web@example.com']);
+
+    $html = $this->actingAs($user, 'web')->get($path)->assertOk()->getContent();
+
+    expect($html)->toMatch('/codex-help-button__badge[^>]*>2</')
+        ->toContain('data-codex-page-count="2"')
+        ->toContain('data-codex-page-article="managing-users"')
+        ->toContain('data-codex-page-article="inviting-users"');
+})->with(['/admin/users', '/admin/users/create']);
+
+it('renders the guest help link under the login form and no topbar button', function (): void {
+    $html = $this->get('/admin/login')->assertOk()->getContent();
+
+    expect(substr_count($html, 'data-fin-codex-guest-link="admin"'))->toBe(1)
+        ->and($html)->toContain(__('fin-codex::fin-codex.guest.link'))
+        ->toContain('codex-help-button--labelled')
+        ->not->toContain('data-fin-codex-help-button');
 });
