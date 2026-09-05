@@ -7,4 +7,10 @@ return [
         'group' => 'Help',
         'help' => 'Help',
     ],
+    'button' => [
+        'tooltip' => 'Help',
+    ],
+    'guest' => [
+        'link' => 'Need help?',
+    ],
 ];

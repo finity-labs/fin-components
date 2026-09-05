@@ -17,17 +17,24 @@ use UnitEnum;
  * Per-panel options for the Codex panel layer.
  *
  * Every option that can differ between two panels lives here as a fluent
- * method, never in config. Later code reads them through filament('fin-codex').
+ * method, never in config: the help button hook, the shortcut, the drawer
+ * width, whether the button and the guest drawer render at all, global
+ * search, navigation placement and the class overrides. Later code reads
+ * them through filament('fin-codex').
  */
 class FinCodexPlugin implements Plugin
 {
     use EvaluatesClosures;
 
-    protected string|Closure $helpButtonRenderHook = PanelsRenderHook::TOPBAR_END;
+    protected string|Closure|null $helpButtonRenderHook = null;
 
     protected string|Closure|null $shortcut = 'ctrl+/';
 
     protected int|Closure $drawerWidth = 480;
+
+    protected bool|Closure $helpButton = true;
+
+    protected bool|Closure $guestDrawer = true;
 
     protected bool|Closure $globalSearch = false;
 
@@ -92,7 +99,16 @@ class FinCodexPlugin implements Plugin
 
     public function getHelpButtonRenderHook(): string
     {
-        return $this->evaluate($this->helpButtonRenderHook);
+        return $this->evaluate($this->helpButtonRenderHook) ?? PanelsRenderHook::TOPBAR_END;
+    }
+
+    /**
+     * True when the host chose the hook; register() then honours it as given
+     * and skips the sidebar fallback.
+     */
+    public function hasExplicitHelpButtonRenderHook(): bool
+    {
+        return $this->helpButtonRenderHook !== null;
     }
 
     public function shortcut(string|Closure|null $shortcut): static
@@ -117,6 +133,39 @@ class FinCodexPlugin implements Plugin
     public function getDrawerWidth(): int
     {
         return $this->evaluate($this->drawerWidth);
+    }
+
+    /**
+     * false removes the topbar button only; the drawer, its shortcut and
+     * (Phase 4) field hints stay.
+     */
+    public function helpButton(bool|Closure $condition = true): static
+    {
+        $this->helpButton = $condition;
+
+        return $this;
+    }
+
+    public function hasHelpButton(): bool
+    {
+        return $this->evaluate($this->helpButton);
+    }
+
+    /**
+     * false renders no drawer, no help link and therefore no shortcut on
+     * simple-layout pages (login, register, password reset, email
+     * verification and any host SimplePage); signed-in pages are unaffected.
+     */
+    public function guestDrawer(bool|Closure $condition = true): static
+    {
+        $this->guestDrawer = $condition;
+
+        return $this;
+    }
+
+    public function hasGuestDrawer(): bool
+    {
+        return $this->evaluate($this->guestDrawer);
     }
 
     public function globalSearch(bool|Closure $enabled = true): static

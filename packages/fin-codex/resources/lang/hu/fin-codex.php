@@ -7,4 +7,10 @@ return [
         'group' => 'Súgó',
         'help' => 'Súgó',
     ],
+    'button' => [
+        'tooltip' => 'Súgó',
+    ],
+    'guest' => [
+        'link' => 'Segítségre van szüksége?',
+    ],
 ];

@@ -107,3 +107,51 @@ it('throws for a panel without the plugin', function (): void {
 
     expect(fn () => filament('fin-codex'))->toThrow(LogicException::class);
 });
+
+/** The plugin instance a fixture panel registered, typed for the assertions below. */
+function finCodexPluginOf(string $panel): FinCodexPlugin
+{
+    $plugin = Filament::getPanel($panel)->getPlugin('fin-codex');
+
+    expect($plugin)->toBeInstanceOf(FinCodexPlugin::class);
+
+    /** @var FinCodexPlugin $plugin */
+    return $plugin;
+}
+
+it('defaults helpButton and guestDrawer to on and evaluates closures', function (): void {
+    $plugin = FinCodexPlugin::make();
+
+    expect($plugin->hasHelpButton())->toBeTrue()
+        ->and($plugin->hasGuestDrawer())->toBeTrue()
+        ->and($plugin->helpButton(false))->toBe($plugin)
+        ->and($plugin->hasHelpButton())->toBeFalse()
+        ->and($plugin->helpButton(fn (): bool => true)->hasHelpButton())->toBeTrue()
+        ->and($plugin->guestDrawer(fn (): bool => false))->toBe($plugin)
+        ->and($plugin->hasGuestDrawer())->toBeFalse()
+        ->and($plugin->guestDrawer()->hasGuestDrawer())->toBeTrue();
+});
+
+it('tracks whether the help button hook was set explicitly and keeps TOPBAR_END as the default', function (): void {
+    $plugin = FinCodexPlugin::make();
+
+    expect($plugin->hasExplicitHelpButtonRenderHook())->toBeFalse()
+        ->and($plugin->getHelpButtonRenderHook())->toBe(PanelsRenderHook::TOPBAR_END);
+
+    $plugin->helpButtonRenderHook(PanelsRenderHook::SIDEBAR_FOOTER);
+
+    expect($plugin->hasExplicitHelpButtonRenderHook())->toBeTrue()
+        ->and($plugin->getHelpButtonRenderHook())->toBe(PanelsRenderHook::SIDEBAR_FOOTER)
+        ->and($plugin->helpButtonRenderHook(fn (): string => PanelsRenderHook::TOPBAR_START)->getHelpButtonRenderHook())->toBe(PanelsRenderHook::TOPBAR_START);
+});
+
+it('reads explicit hooks on admin and staff and the default on portal', function (): void {
+    $portal = finCodexPluginOf('portal');
+
+    expect(finCodexPluginOf('admin')->hasExplicitHelpButtonRenderHook())->toBeTrue()
+        ->and(finCodexPluginOf('staff')->hasExplicitHelpButtonRenderHook())->toBeTrue()
+        ->and($portal->hasExplicitHelpButtonRenderHook())->toBeFalse()
+        ->and($portal->getHelpButtonRenderHook())->toBe(PanelsRenderHook::TOPBAR_END)
+        ->and($portal->getShortcut())->toBe('ctrl+/')
+        ->and($portal->getDrawerWidth())->toBe(480);
+});
