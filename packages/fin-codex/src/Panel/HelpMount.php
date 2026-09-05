@@ -81,6 +81,11 @@ final class HelpMount
     /**
      * The drawer at BODY_END: skipped when no panel is current and on
      * simple-layout pages when the guest drawer is off.
+     *
+     * A disabled shortcut travels as '' rather than null: Blade's @props
+     * treats a null prop as absent (it applies the default with ??), which
+     * would hand the core its "not passed" marker and re-enable the
+     * configured lin-codex.ui.shortcut. The core reads '' as disabled.
      */
     public function drawer(FinCodexPlugin $plugin, Panel $panel): HtmlString
     {
@@ -95,7 +100,7 @@ final class HelpMount
             'resourceClass' => $identity->resourceClass,
             'panelId' => $identity->panelId,
             'guard' => $identity->guard,
-            'shortcut' => $plugin->getShortcut(),
+            'shortcut' => $plugin->getShortcut() ?? '',
             'width' => $plugin->getDrawerWidth(),
             'hasDarkMode' => $panel->hasDarkMode(),
         ]);
