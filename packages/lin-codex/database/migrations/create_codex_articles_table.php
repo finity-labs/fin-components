@@ -28,7 +28,9 @@ return new class extends Migration
             $table->string('source_path')->nullable();
             $table->json('keywords')->nullable();
             $table->json('related')->nullable();
-            $table->json('meta')->nullable();
+            // Text, not JSON: MySQL's JSON type reorders object keys (shortest first),
+            // which breaks the lossless import/export round trip of author metadata.
+            $table->longText('meta')->nullable();
             $table->foreignId('created_by')->nullable()->constrained($users)->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained($users)->nullOnDelete();
             $table->timestamps();
