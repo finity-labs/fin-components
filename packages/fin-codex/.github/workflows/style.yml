@@ -26,8 +26,12 @@ jobs:
         run: vendor/bin/pint --test
 
   phpstan:
-    name: PHPStan
+    name: PHPStan / Filament ${{ matrix.filament }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        filament: ['^4.0', '^5.0']
     steps:
       - uses: actions/checkout@v4
 
@@ -38,7 +42,9 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: |
+          composer update --no-interaction --no-progress --prefer-dist --with "filament/filament:${{ matrix.filament }}"
+          composer show filament/filament livewire/livewire laravel/framework
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --no-progress

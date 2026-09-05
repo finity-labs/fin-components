@@ -98,3 +98,37 @@ jobs:
           DB_PASSWORD: ${{ matrix.database == 'pgsql' && 'password' || '' }}
           CODEX_SEARCH_ENGINE: ${{ matrix.database && 'fulltext' || 'like' }}
         run: vendor/bin/pest
+
+  fin-codex-laravel:
+    name: ${{ matrix.package }} | PHP ${{ matrix.php }} / Filament ${{ matrix.filament }} / Laravel ${{ matrix.laravel }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # fin-codex only: the shared filament job stays on Laravel 12 while fin-mail and fin-sentinel carry Pest 2 ranges.
+      # These are separate rows on purpose; include rows on the shared job would merge into its existing cells.
+      matrix:
+        include:
+          - { package: fin-codex, php: '8.4', filament: '^5.0', laravel: '^12.0', testbench: '^10.0' }
+          - { package: fin-codex, php: '8.3', filament: '^5.0', laravel: '^13.0', testbench: '^11.0' }
+          - { package: fin-codex, php: '8.4', filament: '^5.0', laravel: '^13.0', testbench: '^11.0' }
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Install dependencies
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          composer update --no-interaction --no-progress --prefer-dist \
+            --with "filament/filament:${{ matrix.filament }}" \
+            --with "illuminate/contracts:${{ matrix.laravel }}" \
+            --with "orchestra/testbench:${{ matrix.testbench }}"
+          composer show filament/filament livewire/livewire laravel/framework
+
+      - name: Run tests
+        working-directory: packages/${{ matrix.package }}
+        run: vendor/bin/pest
