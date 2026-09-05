@@ -7,6 +7,7 @@ namespace FinityLabs\LinCodex\Models;
 use FinityLabs\LinCodex\Database\Factories\ArticleFactory;
 use FinityLabs\LinCodex\Enums\ArticleFormat;
 use FinityLabs\LinCodex\Enums\Visibility;
+use FinityLabs\LinCodex\Revisions\RevisionManager;
 use FinityLabs\LinCodex\Search\SearchTextIndexer;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,6 +25,11 @@ use Illuminate\Support\Str;
  * relationship, maintained by the saving/saved hooks in booted() through
  * syncParentFromSlug() and relinkChildren(). Bulk writers that bypass model
  * events must call those two methods themselves.
+ *
+ * The format belongs to the article, not to its translations, so the
+ * updating hook hands a format change to the RevisionManager, which stores
+ * one revision per translation carrying the previous format when revisions
+ * are enabled.
  *
  * @property int $id
  * @property string $slug
@@ -108,6 +114,12 @@ class Article extends Model
         static::saved(function (Article $article): void {
             if ($article->wasRecentlyCreated || $article->wasChanged('slug')) {
                 $article->relinkChildren();
+            }
+        });
+
+        static::updating(function (Article $article): void {
+            if ($article->isDirty('format')) {
+                app(RevisionManager::class)->recordFormatChange($article);
             }
         });
 

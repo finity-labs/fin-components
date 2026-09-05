@@ -12,6 +12,7 @@ use FinityLabs\LinCodex\Rendering\ArticleRenderer;
 use FinityLabs\LinCodex\Rendering\Html\HtmlPipeline;
 use FinityLabs\LinCodex\Rendering\Html\SanitizerFactory;
 use FinityLabs\LinCodex\Rendering\Markdown\MarkdownPipeline;
+use FinityLabs\LinCodex\Revisions\RevisionManager;
 use FinityLabs\LinCodex\Sources\CompositeSource;
 use FinityLabs\LinCodex\Sources\DatabaseSource;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
@@ -45,7 +46,29 @@ class LinCodexServiceProvider extends PackageServiceProvider
                 'create_codex_article_revisions_table',
                 'create_codex_media_table',
                 '../settings/create_codex_settings',
-            ]);
+            ])
+            ->hasConsoleCommands($this->commandClasses());
+    }
+
+    /**
+     * Every class under src/Commands whose file name ends in Command.php, the
+     * way the console kernel's load() discovers an app's commands. A command is
+     * registered the moment its file exists, so adding one never edits this
+     * provider. Console only: the directory read is skipped on web requests and
+     * package-tools registers console commands only in console anyway.
+     *
+     * @return list<string>
+     */
+    private function commandClasses(): array
+    {
+        if (! $this->app->runningInConsole()) {
+            return [];
+        }
+
+        $files = glob(__DIR__.'/Commands/*Command.php') ?: [];
+        sort($files);
+
+        return array_map(static fn (string $file): string => __NAMESPACE__.'\\Commands\\'.basename($file, '.php'), $files);
     }
 
     public function packageRegistered(): void
@@ -88,6 +111,7 @@ class LinCodexServiceProvider extends PackageServiceProvider
 
         $this->app->scoped(PageHelpResolver::class);
         $this->app->singleton(StylesheetVersion::class);
+        $this->app->singleton(RevisionManager::class);
     }
 
     /**

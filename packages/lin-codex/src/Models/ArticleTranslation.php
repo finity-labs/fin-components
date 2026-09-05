@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FinityLabs\LinCodex\Models;
 
 use FinityLabs\LinCodex\Database\Factories\ArticleTranslationFactory;
+use FinityLabs\LinCodex\Revisions\RevisionManager;
 use FinityLabs\LinCodex\Search\SearchTextIndexer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +19,11 @@ use Illuminate\Support\Carbon;
  * current by the saving hook: it is filled when null and recomputed when
  * the title, excerpt or body changes. Assign it explicitly on the same
  * save to override; the hook never touches a dirty search_text.
+ *
+ * The same hook hands an existing translation whose title or body changed
+ * to the RevisionManager before indexing, so the previous content is kept
+ * as a revision when revisions are enabled; a new translation, an
+ * excerpt-only change and a search_text-only change store nothing.
  *
  * @property int $id
  * @property int $article_id
@@ -53,6 +59,10 @@ class ArticleTranslation extends Model
     protected static function booted(): void
     {
         static::saving(function (ArticleTranslation $translation): void {
+            if ($translation->exists && $translation->isDirty(['title', 'body'])) {
+                app(RevisionManager::class)->recordTranslationChange($translation);
+            }
+
             if ($translation->search_text === null
                 || ($translation->isDirty(['title', 'excerpt', 'body']) && ! $translation->isDirty('search_text'))) {
                 app(SearchTextIndexer::class)->index($translation);
