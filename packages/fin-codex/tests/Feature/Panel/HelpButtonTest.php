@@ -1,11 +1,13 @@
 <?php
 
 use Filament\Facades\Filament;
+use Filament\Livewire\Topbar;
 use Filament\Pages\Dashboard;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Models\Article;
+use Livewire\Livewire;
 
 /*
  * PANEL-01's spec, one panel per test method (see PanelsTest). The button is
@@ -151,4 +153,57 @@ it('labels the icon-only button for assistive tech and gives it a Filament toolt
         ->toMatch('/class="codex-help-button[^"]*fin-codex-help-button"/')
         ->not->toContain('codex-help-button--labelled')
         ->not->toContain('codex-help-button__label');
+});
+
+/*
+ * A refresh-topbar dispatch re-renders the Topbar component in a Livewire
+ * update request, where CurrentPage sees no page: the server renders the
+ * button badge-less by design and wire:ignore keeps the first paint's badge
+ * on the client. The unit-test endpoint is the same kind of request, so the
+ * final assertion documents that locked behaviour rather than a bug.
+ */
+it('keeps the button through a refresh-topbar re-render of the Topbar component', function (): void {
+    $this->usesPanel('admin', finCodexWebUser());
+
+    Livewire::test(Topbar::class)
+        ->assertSeeHtml('<div wire:ignore data-fin-codex-help-button="admin"')
+        ->dispatch('refresh-topbar')
+        ->assertSeeHtml('<div wire:ignore data-fin-codex-help-button="admin"')
+        ->assertDontSeeHtml('codex-help-button__badge');
+});
+
+it('passes each panel\'s own shortcut and width to its drawer', function (string $guard, string $path, string $shortcut, int $width, string $other): void {
+    $user = User::create(['name' => 'Tester', 'email' => $guard.'@example.com']);
+
+    $html = $this->actingAs($user, $guard)->get($path)->assertOk()->getContent();
+
+    expect($html)->toContain('data-fin-codex-shortcut="'.$shortcut.'"')
+        ->toContain(__('lin-codex::lin-codex.ui.shortcut_hint', ['shortcut' => $shortcut]))
+        ->not->toContain(__('lin-codex::lin-codex.ui.shortcut_hint', ['shortcut' => $other]))
+        ->toContain('--codex-drawer-width: '.$width.'px');
+})->with([
+    'admin: ctrl+/ and 480px' => ['web', '/admin', 'ctrl+/', 480, 'ctrl+.'],
+    'staff: ctrl+. and 360px' => ['staff', '/staff', 'ctrl+.', 360, 'ctrl+/'],
+]);
+
+it('disables the shortcut on a panel configured with shortcut(null)', function (): void {
+    finCodexHelpPlugin('admin')->shortcut(null);
+
+    $html = $this->actingAs(finCodexWebUser(), 'web')->get('/admin')->assertOk()->getContent();
+
+    expect($html)->toContain('data-fin-codex-shortcut=""')
+        ->toContain('\u0022shortcut\u0022:null')
+        ->not->toContain(__('lin-codex::lin-codex.ui.shortcut_hint', ['shortcut' => 'ctrl+/']))
+        ->and(substr_count($html, 'data-fin-codex-drawer="admin"'))->toBe(1);
+});
+
+it('disables the shortcut on a panel configured with an empty shortcut', function (): void {
+    finCodexHelpPlugin('admin')->shortcut('');
+
+    $html = $this->actingAs(finCodexWebUser(), 'web')->get('/admin')->assertOk()->getContent();
+
+    expect($html)->toContain('data-fin-codex-shortcut=""')
+        ->toContain('\u0022shortcut\u0022:null')
+        ->not->toContain(__('lin-codex::lin-codex.ui.shortcut_hint', ['shortcut' => 'ctrl+/']))
+        ->and(substr_count($html, 'data-fin-codex-drawer="admin"'))->toBe(1);
 });
