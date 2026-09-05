@@ -106,6 +106,21 @@ return [
     ],
 
     /*
+     * Starter text codex:make writes into a new article. Add a `make` group
+     * under lang/vendor/lin-codex/{locale}/lin-codex.php to localise it; a
+     * locale without one gets the English text.
+     */
+    'make' => [
+        'heading' => 'Overview',
+        'intro' => 'Say what this page is for and what the reader can do here.',
+        'step_one' => 'Open the page from the menu.',
+        'step_two' => 'Fill in the form and save.',
+        'figure_alt' => 'Screenshot',
+        'figure_caption' => 'What the reader sees after saving.',
+        'tip' => 'Keep articles short and link to related articles instead of repeating them.',
+    ],
+
+    /*
      * Labels for folder groups (folders without an index file), keyed by the
      * group's full slug: 'users' => 'Users', 'billing/archive' => 'Archive'.
      * A missing key falls back to the humanised last folder name.
