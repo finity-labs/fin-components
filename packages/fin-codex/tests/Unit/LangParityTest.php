@@ -18,11 +18,18 @@ function finCodexLangKeys(string $locale): array
         return $keys;
     };
 
-    return $flatten(require dirname(__DIR__, 2).'/resources/lang/'.$locale.'/fin-codex.php');
+    return $flatten(finCodexLang($locale));
+}
+
+/** @return array<string, mixed> The raw lang array of one locale. */
+function finCodexLang(string $locale): array
+{
+    return require dirname(__DIR__, 2).'/resources/lang/'.$locale.'/fin-codex.php';
 }
 
 it('ships the same lang keys in en, de and hu', function (string $locale): void {
-    expect(finCodexLangKeys($locale))->toBe(finCodexLangKeys('en'))
+    expect(array_keys(finCodexLang($locale)))->toBe(array_keys(finCodexLang('en')))
+        ->and(finCodexLangKeys($locale))->toBe(finCodexLangKeys('en'))
         ->and(finCodexLangKeys('en'))->not->toBeEmpty();
 })->with(['de', 'hu']);
 

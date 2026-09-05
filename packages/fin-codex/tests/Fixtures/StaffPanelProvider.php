@@ -10,6 +10,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -22,7 +23,8 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 /**
  * A second panel on its own guard: id staff, path /staff, authGuard staff
  * (a session guard over the same users provider, declared in the TestCase),
- * FinCodexPlugin registered. Not the default panel.
+ * FinCodexPlugin registered with closure-valued options that differ from
+ * admin's on every option. Not the default panel.
  */
 final class StaffPanelProvider extends PanelProvider
 {
@@ -46,6 +48,18 @@ final class StaffPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([Authenticate::class])
-            ->plugin(FinCodexPlugin::make());
+            ->plugin(
+                FinCodexPlugin::make()
+                    ->helpButtonRenderHook(fn (): string => PanelsRenderHook::TOPBAR_START)
+                    ->shortcut(fn (): string => 'ctrl+.')
+                    ->drawerWidth(fn (): int => 360)
+                    ->globalSearch(fn (): bool => true)
+                    ->navigationGroup(fn (): string => 'Support')
+                    ->navigationSort(fn (): int => 5)
+                    ->articleResource('Staff\\Filament\\Resources\\StaffHelpArticleResource')
+                    ->settingsPage('Staff\\Filament\\Pages\\StaffHelpSettings')
+                    ->coveragePage('Staff\\Filament\\Pages\\StaffHelpCoverage')
+                    ->policyNamespace('Staff\\Policies'),
+            );
     }
 }
