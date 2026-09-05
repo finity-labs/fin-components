@@ -35,7 +35,9 @@ final class HelpMount
      * The topbar (or sidebar-footer) button: skipped when the option is off
      * or no panel is current; badge-less when the request is not a page
      * render (a refresh-topbar update), which wire:ignore keeps invisible on
-     * the client.
+     * the client. The tooltip label stays unescaped Unicode (Súgó, not
+     * S\u00fag\u00f3): Blade escapes the attribute, so only readability is
+     * at stake.
      */
     public function button(FinCodexPlugin $plugin, Panel $panel): HtmlString
     {
@@ -53,7 +55,7 @@ final class HelpMount
             'panelId' => $identity->panelId,
             'guard' => $identity->guard,
             'hasDarkMode' => $panel->hasDarkMode(),
-            'tooltip' => '{ content: '.Js::from($label).', theme: $store.theme }',
+            'tooltip' => '{ content: '.Js::from($label, JSON_UNESCAPED_UNICODE).', theme: $store.theme }',
         ]);
     }
 
