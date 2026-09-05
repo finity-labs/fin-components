@@ -20,6 +20,7 @@ use Filament\Widgets\WidgetsServiceProvider;
 use FinityLabs\FinCodex\FinCodexServiceProvider;
 use FinityLabs\FinCodex\Tests\Fixtures\AdminPanelProvider;
 use FinityLabs\FinCodex\Tests\Fixtures\PlainPanelProvider;
+use FinityLabs\FinCodex\Tests\Fixtures\PortalPanelProvider;
 use FinityLabs\FinCodex\Tests\Fixtures\StaffPanelProvider;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\LinCodexServiceProvider;
@@ -41,10 +42,12 @@ use Spatie\LaravelSettings\LaravelSettingsServiceProvider;
  * listeners lin-codex's models register in booted() survive; clearBootedModels()
  * in setUp() re-arms them as belt and braces (fin-mail's lesson).
  *
- * Three fixture panels are registered: admin (default, web guard) and staff
- * (staff guard) carry FinCodexPlugin; plain carries no plugin. Panel pages
- * are requested one panel per test: FilamentManager is scoped and boots only
- * the first panel of a PHP request cycle.
+ * Four fixture panels are registered: admin (default, web guard) and staff
+ * (staff guard) carry FinCodexPlugin with distinct option values; portal (web
+ * guard, no topbar, no dark mode) carries the plugin with every default; plain
+ * carries no plugin. Panel pages are requested one panel per test:
+ * FilamentManager is scoped and boots only the first panel of a PHP request
+ * cycle.
  */
 class TestCase extends Orchestra
 {
@@ -97,6 +100,7 @@ class TestCase extends Orchestra
             AdminPanelProvider::class,
             StaffPanelProvider::class,
             PlainPanelProvider::class,
+            PortalPanelProvider::class,
         ];
     }
 
@@ -153,7 +157,10 @@ class TestCase extends Orchestra
     /**
      * Make $id the current, serving panel and sign $user in on that panel's
      * guard. For Livewire::test() and unit-style tests; HTTP request tests get
-     * their current panel from Filament's SetUpPanel middleware.
+     * their current panel from Filament's SetUpPanel middleware. The panel is
+     * booted here as SetUpPanel would on an HTTP request, so its render hooks
+     * are flushed and Livewire::test() of a panel component (the Topbar)
+     * renders them.
      */
     protected function usesPanel(string $id, ?Authenticatable $user = null): Panel
     {
@@ -161,6 +168,7 @@ class TestCase extends Orchestra
 
         Filament::setCurrentPanel($panel);
         Filament::setServingStatus();
+        Filament::bootCurrentPanel();
 
         if ($user !== null) {
             $this->actingAs($user, $panel->getAuthGuard());

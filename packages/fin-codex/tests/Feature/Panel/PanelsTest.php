@@ -1,6 +1,7 @@
 <?php
 
 use Filament\Facades\Filament;
+use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
@@ -24,6 +25,7 @@ it('renders the login page of each panel', function (string $path): void {
     'admin' => '/admin/login',
     'staff' => '/staff/login',
     'plain' => '/plain/login',
+    'portal' => '/portal/login',
 ]);
 
 it('renders the dashboard for a user signed in on the panel guard', function (string $guard, string $path): void {
@@ -33,6 +35,7 @@ it('renders the dashboard for a user signed in on the panel guard', function (st
 })->with([
     'admin on web' => ['web', '/admin'],
     'staff on staff' => ['staff', '/staff'],
+    'portal on web' => ['web', '/portal'],
 ]);
 
 it('redirects a guest from the staff dashboard to the staff login', function (): void {
@@ -91,4 +94,38 @@ it('renders the signed password-reset page for a guest', function (): void {
     ]);
 
     $this->get($url)->assertOk();
+});
+
+it('boots portal without a topbar or dark mode on the web guard', function (): void {
+    $portal = Filament::getPanel('portal');
+
+    expect($portal->getAuthGuard())->toBe('web')
+        ->and($portal->hasTopbar())->toBeFalse()
+        ->and($portal->hasDarkMode())->toBeFalse();
+
+    $user = User::create(['name' => 'Portal', 'email' => 'portal@example.com']);
+
+    $this->actingAs($user, 'web')
+        ->get('/portal')
+        ->assertOk()
+        ->assertDontSee('fi-body-has-topbar', false);
+});
+
+it('renders the admin dashboard with a topbar', function (): void {
+    $user = User::create(['name' => 'Admin', 'email' => 'admin@example.com']);
+
+    $this->actingAs($user, 'web')
+        ->get('/admin')
+        ->assertOk()
+        ->assertSee('fi-body-has-topbar', false);
+});
+
+it('leaves the current panel booted after usesPanel()', function (): void {
+    $this->usesPanel('admin');
+
+    expect(Filament::getCurrentPanel()?->getId())->toBe('admin');
+
+    Filament::bootCurrentPanel();
+
+    expect(Filament::getPanel('admin')->getPlugin('fin-codex'))->toBeInstanceOf(FinCodexPlugin::class);
 });
