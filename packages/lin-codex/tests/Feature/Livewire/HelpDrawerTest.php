@@ -381,3 +381,64 @@ it('locks the guard against the client', function (): void {
     expect(fn () => Livewire::test(HelpDrawer::class, ['guard' => 'staff'])->set('guard', 'web'))
         ->toThrow(CannotUpdateLockedPropertyException::class);
 });
+
+it('renders the shortcut and width props and falls back to config without them', function (): void {
+    Livewire::test(HelpDrawer::class, ['width' => 360, 'shortcut' => 'ctrl+.'])
+        ->assertSet('width', 360)
+        ->assertSet('shortcut', 'ctrl+.')
+        ->assertSeeHtml('--codex-drawer-width: 360px')
+        ->assertSee(__('lin-codex::lin-codex.ui.shortcut_hint', ['shortcut' => 'ctrl+.']));
+
+    Livewire::test(HelpDrawer::class, ['width' => 640, 'shortcut' => ''])
+        ->assertSet('width', 640)
+        ->assertSet('shortcut', null)
+        ->assertSeeHtml('--codex-drawer-width: 640px')
+        ->assertSeeHtml('shortcut\u0022:null')
+        ->assertDontSeeHtml('codex-drawer__shortcut');
+
+    Livewire::test(HelpDrawer::class, ['shortcut' => null])
+        ->assertSet('shortcut', null)
+        ->assertSeeHtml('shortcut\u0022:null')
+        ->assertDontSeeHtml('codex-drawer__shortcut');
+
+    Livewire::test(HelpDrawer::class)
+        ->assertSet('width', 480)
+        ->assertSet('shortcut', 'ctrl+/')
+        ->assertSeeHtml('--codex-drawer-width: 480px')
+        ->assertSeeHtml('ctrl+\\\\\/');
+
+    config()->set('lin-codex.ui.drawer_width', 520);
+    config()->set('lin-codex.ui.shortcut', 'ctrl+shift+h');
+
+    Livewire::test(HelpDrawer::class)
+        ->assertSet('width', 520)
+        ->assertSet('shortcut', 'ctrl+shift+h')
+        ->assertSeeHtml('--codex-drawer-width: 520px')
+        ->assertSeeHtml('ctrl+shift+h');
+});
+
+it('locks shortcut and width against the client', function (): void {
+    expect(fn () => Livewire::test(HelpDrawer::class, ['width' => 360])->set('width', 900))
+        ->toThrow(CannotUpdateLockedPropertyException::class)
+        ->and(fn () => Livewire::test(HelpDrawer::class, ['shortcut' => 'ctrl+.'])->set('shortcut', 'x'))
+        ->toThrow(CannotUpdateLockedPropertyException::class);
+});
+
+// The Octane and in-process guarantee the props exist for: a config write
+// after mount never reaches a drawer that was mounted with its own values.
+it('keeps the mounted shortcut and width when config changes after mount', function (): void {
+    $drawer = Livewire::test(HelpDrawer::class, linCodexDrawerOnDashboard() + ['width' => 360, 'shortcut' => 'ctrl+.'])
+        ->assertSeeHtml('--codex-drawer-width: 360px');
+
+    config()->set('lin-codex.ui.drawer_width', 999);
+    config()->set('lin-codex.ui.shortcut', 'ctrl+shift+h');
+
+    $drawer->call('goTo', 'tree')
+        ->assertSet('view', 'tree')
+        ->assertSet('width', 360)
+        ->assertSet('shortcut', 'ctrl+.')
+        ->assertSeeHtml('--codex-drawer-width: 360px')
+        ->assertSee(__('lin-codex::lin-codex.ui.shortcut_hint', ['shortcut' => 'ctrl+.']))
+        ->assertDontSeeHtml('999px')
+        ->assertDontSeeHtml('ctrl+shift+h');
+});

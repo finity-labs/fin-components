@@ -152,6 +152,42 @@ it('resolves the badge through the guard prop and shares nothing between two gua
         ->and((string) $this->get('/ui-page?render=both')->assertOk()->getContent())->toContain('>3<', '>2<');
 });
 
+it('shares one resolution with the drawer on a guard', function (): void {
+    linCodexHelpButtonUseDocs('docs-ui');
+    linCodexHelpButtonSignInOnStaff();
+
+    Route::get('/ui-page', fn () => Blade::render('<x-lin-codex::help-button guard="staff" /><x-lin-codex::help-drawer guard="staff" />'))->middleware('web');
+
+    $content = (string) $this->get('/ui-page')->assertOk()->getContent();
+
+    expect($content)->toContain('codex-help-button__badge', '>3<', 'data-codex-page-count="3"', '&quot;guard&quot;:&quot;staff&quot;', 'members-only');
+});
+
+it('forwards guard, shortcut and width through the wrapper and lets two drawers differ', function (): void {
+    linCodexHelpButtonSignInOnStaff();
+
+    $this->blade('<x-lin-codex::help-drawer :width="360" shortcut="ctrl+." guard="staff" /><x-lin-codex::help-drawer :width="640" shortcut="" />')
+        ->assertSeeHtml('--codex-drawer-width: 360px')
+        ->assertSeeHtml('--codex-drawer-width: 640px')
+        ->assertSee(__('lin-codex::lin-codex.ui.shortcut_hint', ['shortcut' => 'ctrl+.']))
+        ->assertSeeHtml('shortcut\u0022:null')
+        ->assertSeeHtml('&quot;guard&quot;:&quot;staff&quot;');
+
+    // An omitted shortcut never reaches the Livewire tag, so the configured one survives.
+    $this->blade('<x-lin-codex::help-drawer />')
+        ->assertSeeHtml('--codex-drawer-width: 480px')
+        ->assertSeeHtml('ctrl+\\\\\/')
+        ->assertDontSeeHtml('shortcut\u0022:null');
+
+    $this->blade('<x-lin-codex::help-drawer locale="de" shortcut="" />')
+        ->assertSeeHtml('&quot;locale&quot;:&quot;de&quot;')
+        ->assertSeeHtml('shortcut\u0022:null');
+
+    $this->blade('<x-lin-codex::help-drawer locale="de" />')
+        ->assertSeeHtml('&quot;locale&quot;:&quot;de&quot;')
+        ->assertSeeHtml('ctrl+\\\\\/');
+});
+
 it('passes page class and panel id through both components', function (): void {
     linCodexHelpButtonUseDocs('docs-ui');
 
