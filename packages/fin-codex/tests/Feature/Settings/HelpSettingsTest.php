@@ -14,6 +14,7 @@ use FinityLabs\LinCodex\Revisions\RevisionManager;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
+use Spatie\LaravelSettings\Models\SettingsProperty;
 
 /*
  * SET-01: one screen where an admin adds a language, picks the default,
@@ -293,4 +294,137 @@ it('is read back by the core on the next request', function (): void {
     expect(app(RevisionManager::class)->enabled())->toBeFalse()
         ->and(array_column(TranslationTabs::languages()['languages'], 'code'))->toBe(['en', 'de'])
         ->and(TranslationTabs::languages()['default'])->toBe('en');
+});
+
+/*
+ * The fresh-install half of SET-02: an installation whose settings group has
+ * never been written. The harness seeds the group in defineDatabaseMigrations(),
+ * so every row here starts by removing it again.
+ */
+
+/** Drop every stored lin-codex setting and the resolved instance with it. */
+function finCodexSettingsUnseed(): void
+{
+    SettingsProperty::query()->where('group', 'lin-codex')->delete();
+
+    app()->forgetInstance(CodexSettings::class);
+}
+
+/** How many settings rows the lin-codex group holds right now. */
+function finCodexSettingsRows(): int
+{
+    return SettingsProperty::query()->where('group', 'lin-codex')->count();
+}
+
+it('opens on the package defaults when no settings row exists', function (): void {
+    finCodexSettingsUnseed();
+
+    $this->usesPanel('admin', finCodexSettingsUser());
+
+    // Without the fillForm() guard this mount is a MissingSettings exception.
+    $data = Livewire::test(AdminHelpSettings::class)->assertOk()->get('data');
+
+    $defaults = CodexSettings::defaults();
+
+    expect(array_values($data['languages']))->toBe($defaults['languages'])
+        ->and($data['default_locale'])->toBe($defaults['default_locale'])
+        ->and($data['fallback'])->toBe((string) FallbackBehaviour::ShowDefault->value)
+        ->and($data['revisions_enabled'])->toBeFalse()
+        ->and($data['revisions_keep'])->toEqual(10);
+});
+
+it('writes nothing by merely being looked at', function (): void {
+    finCodexSettingsUnseed();
+
+    $this->usesPanel('admin', finCodexSettingsUser());
+
+    Livewire::test(AdminHelpSettings::class)->assertOk();
+
+    expect(finCodexSettingsRows())->toBe(0);
+});
+
+it('creates all five rows on the first save, with the admin\'s edits intact', function (): void {
+    finCodexSettingsUnseed();
+
+    $this->usesPanel('admin', finCodexSettingsUser());
+
+    expect(finCodexSettingsRows())->toBe(0);
+
+    $page = Livewire::test(AdminHelpSettings::class);
+
+    // The default language's own code stays in the list; only its display name
+    // changes, and a second language joins it.
+    $languages = $page->get('data.languages');
+    $languages = array_map(fn (array $row): array => ['code' => $row['code'], 'display' => 'British English', 'flag-icon' => $row['flag-icon']], $languages);
+    $languages['second'] = ['code' => 'de', 'display' => 'Deutsch', 'flag-icon' => 'de'];
+
+    // Without the save() guard this throws MissingSettings from Settings::fill().
+    $page->set('data.languages', $languages)
+        ->set('data.fallback', '2')
+        ->set('data.revisions_enabled', true)
+        ->set('data.revisions_keep', '3')
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect(finCodexSettingsRows())->toBe(5);
+
+    $stored = finCodexSettingsStored();
+
+    expect(array_values($stored->languages))->toBe([
+        ['code' => 'en', 'display' => 'British English', 'flag-icon' => 'gb'],
+        ['code' => 'de', 'display' => 'Deutsch', 'flag-icon' => 'de'],
+    ])
+        ->and($stored->default_locale)->toBe('en')
+        ->and($stored->fallback)->toBe(FallbackBehaviour::Hide)
+        ->and($stored->revisions_enabled)->toBeTrue()
+        ->and($stored->revisions_keep)->toBe(3);
+});
+
+it('stores the edited language list, not the defaults, on an unseeded group', function (): void {
+    finCodexSettingsUnseed();
+
+    $this->usesPanel('admin', finCodexSettingsUser());
+
+    $page = Livewire::test(AdminHelpSettings::class);
+
+    $languages = $page->get('data.languages');
+    $languages = array_map(fn (array $row): array => [...$row, 'flag-icon' => 'uk'], $languages);
+
+    $page->set('data.languages', $languages)
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect(array_values(finCodexSettingsStored()->languages))->toBe([
+        ['code' => 'en', 'display' => 'English', 'flag-icon' => 'uk'],
+    ]);
+});
+
+it('catches a missing settings table the same way it catches a missing row', function (): void {
+    // A host that opens the page before the settings migration has run gets a
+    // QueryException, not MissingSettings. Both guards name the pair, which is
+    // the idiom TranslationTabs, OutdatedTranslations and RevisionManager use;
+    // dropping the settings table to prove it would take the harness with it.
+    $source = file_get_contents(dirname(__DIR__, 3).'/src/Pages/HelpSettings.php');
+
+    expect(substr_count((string) $source, 'MissingSettings|QueryException'))->toBe(2);
+});
+
+it('leaves a seeded installation alone', function (): void {
+    finCodexSettingsSeed();
+
+    $this->usesPanel('admin', finCodexSettingsUser());
+
+    $page = Livewire::test(AdminHelpSettings::class);
+
+    // The stored values, not the defaults: no double-seeding on mount.
+    expect(array_column($page->get('data.languages'), 'code'))->toBe(['en', 'de'])
+        ->and($page->get('data.revisions_keep'))->toEqual(7);
+
+    $rows = finCodexSettingsRows();
+
+    $page->set('data.revisions_keep', '4')->call('save')->assertHasNoFormErrors();
+
+    expect(finCodexSettingsRows())->toBe($rows)
+        ->and(finCodexSettingsStored()->revisions_keep)->toBe(4)
+        ->and(array_column(finCodexSettingsStored()->languages, 'code'))->toBe(['en', 'de']);
 });

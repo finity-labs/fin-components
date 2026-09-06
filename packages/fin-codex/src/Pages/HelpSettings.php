@@ -18,6 +18,8 @@ use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\LinCodex\Enums\FallbackBehaviour;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Database\QueryException;
+use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use UnitEnum;
 
 /**
@@ -145,6 +147,61 @@ class HelpSettings extends SettingsPage
                         ->required(),
                 ]),
         ]);
+    }
+
+    /**
+     * GUARD 1 — the page has to open on an installation that has never stored a
+     * setting. The vendor version calls toArray() unguarded, and CodexSettings
+     * declares no PHP property defaults, so an unwritten group throws
+     * MissingSettings before a single field renders.
+     */
+    protected function fillForm(): void
+    {
+        $this->callHook('beforeFill');
+
+        $this->form->fill($this->mutateFormDataBeforeFill($this->settingsData()));
+
+        $this->callHook('afterFill');
+    }
+
+    /**
+     * The stored values, or CodexSettings::defaults() when the group has never
+     * been written or the settings table is not there yet. Visiting the page
+     * writes nothing — the same rule TranslationTabs::languages() follows.
+     *
+     * @return array<string, mixed>
+     */
+    private function settingsData(): array
+    {
+        try {
+            return app(CodexSettings::class)->toArray();
+        } catch (MissingSettings|QueryException) {
+            return CodexSettings::defaults();
+        }
+    }
+
+    /**
+     * GUARD 2 — the first save creates all five rows.
+     *
+     * parent::save() calls Settings::fill(), which assigns through __set() and
+     * loads from the database on the first assignment, so an unwritten group
+     * throws MissingSettings again. new CodexSettings($values) loads from the
+     * array instead, which leaves the instance "loaded" without a query; the
+     * repository's write is an upsert, so the missing rows are created. The
+     * container instance lives for this request only.
+     */
+    public function save(): void
+    {
+        try {
+            app(CodexSettings::class)->toArray();
+        } catch (MissingSettings|QueryException) {
+            $seed = CodexSettings::defaults();
+            $seed['fallback'] = FallbackBehaviour::from((int) $seed['fallback']);
+
+            app()->instance(CodexSettings::class, new CodexSettings($seed));
+        }
+
+        parent::save();
     }
 
     /**
