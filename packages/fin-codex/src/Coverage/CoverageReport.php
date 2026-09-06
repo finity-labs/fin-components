@@ -8,11 +8,17 @@ use Filament\Facades\Filament;
 use Filament\Pages\Page as BasePage;
 use Filament\Resources\Pages\Page as ResourcePage;
 use FinityLabs\FinCodex\Editor\ContextPicker;
+use FinityLabs\FinCodex\Help\DeclaredContextsSource;
+use FinityLabs\LinCodex\Contexts\ContextIndex;
+use FinityLabs\LinCodex\Contexts\PageContext;
 use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Coverage\RouteCoverage;
 use FinityLabs\LinCodex\Coverage\RouteCoverageRow;
+use FinityLabs\LinCodex\Data\ArticleData;
+use FinityLabs\LinCodex\Enums\ContextType;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Spatie\LaravelSettings\Exceptions\MissingSettings;
 
@@ -51,14 +57,31 @@ final class CoverageReport
     /** The panel filter's value for rows that belong to no panel. */
     public const OUTSIDE_PANELS = '__outside';
 
+    private ?Request $memoRequest = null;
+
+    /** @var list<CoverageRow>|null */
+    private ?array $memo = null;
+
     public function __construct(private readonly Application $app) {}
 
     /**
+     * Memoised on the request instance, exactly like Panel\CurrentPage: the
+     * scoped instance survives the in-process requests a test issues, so a
+     * different request object drops the memo.
+     *
      * @return list<CoverageRow>
      */
     public function rows(): array
     {
-        return $this->build();
+        /** @var Request $request */
+        $request = $this->app->make('request');
+
+        if ($this->memo === null || $this->memoRequest !== $request) {
+            $this->memoRequest = $request;
+            $this->memo = $this->build();
+        }
+
+        return $this->memo;
     }
 
     /** Uncovered rows of one panel — the badge number, and the default view's count. */
@@ -136,12 +159,14 @@ final class CoverageReport
     {
         try {
             $report = $this->app->make(RouteCoverage::class)->report();
-            $this->app->make(ContentSource::class)->all();
+            $all = $this->app->make(ContentSource::class)->all();
         } catch (MissingSettings|QueryException) {
             // A fresh install before the settings migration must not break
             // every panel page through the navigation badge.
             return [];
         }
+
+        $index = ContextIndex::fromArticles($all);
 
         // Both picker methods rebuild from the panel registry and the router's
         // route collection on every call, so they are asked once per report,
@@ -167,6 +192,8 @@ final class CoverageReport
 
         foreach ($groups as $group) {
             $key = $group['routes'][0]->name;
+            [$matchedBy, $slug] = $this->match($index, $group['panelId'], $group['helpClass'], $group['routes']);
+            $article = $slug !== null ? ($all[$slug] ?? null) : null;
 
             $rows[] = new CoverageRow(
                 key: $key,
@@ -174,15 +201,70 @@ final class CoverageReport
                 helpClass: $group['helpClass'],
                 label: $this->label($key, $group['helpClass'], $classLabels, $routeLabels),
                 routes: $group['routes'],
-                matchedBy: null,
-                slug: null,
-                isDeclared: false,
-                isFileOnly: false,
-                articleId: null,
+                matchedBy: $matchedBy,
+                slug: $slug,
+                isDeclared: $this->isDeclared($article, $matchedBy),
+                isFileOnly: $article !== null && $article->id === null,
+                articleId: $article?->id,
             );
         }
 
         return $rows;
+    }
+
+    /**
+     * The winning context of one screen, as the drawer would resolve it.
+     *
+     * The class credit runs first when the screen has a help identity: the
+     * index is asked for the panel's own contexts and then for the panel-less
+     * ones, which is the core's two-pass fallback, and only PageClass matches
+     * are kept — the `/` path is a placeholder, and without the type filter a
+     * `url:/*` context would claim every row. When no class context answers,
+     * the first member route the core's own report matched wins.
+     *
+     * ContextResolver is not asked, on purpose: it applies the viewer gate and
+     * the locale pick, and coverage asks whether a mapping exists.
+     *
+     * @param  list<RouteCoverageRow>  $routes
+     *
+     * @return array{0: ?string, 1: ?string} the context string and the slug
+     */
+    private function match(ContextIndex $index, ?string $panelId, ?string $helpClass, array $routes): array
+    {
+        if ($helpClass !== null) {
+            $page = new PageContext(null, '/', $helpClass, null);
+
+            foreach ([$panelId, null] as $pass) {
+                foreach ($index->candidates($page, $pass) as $candidate) {
+                    if ($candidate->context->type === ContextType::PageClass) {
+                        return [$candidate->context->toString(), $candidate->slug];
+                    }
+                }
+            }
+        }
+
+        foreach ($routes as $route) {
+            if ($route->covered()) {
+                return [$route->matchedBy, $route->slug];
+            }
+        }
+
+        return [null, null];
+    }
+
+    /**
+     * Whether the winning context is one DeclaredContextsSource synthesised
+     * from a HasHelp declaration rather than one an author stored.
+     */
+    private function isDeclared(?ArticleData $article, ?string $matchedBy): bool
+    {
+        if ($article === null || $matchedBy === null) {
+            return false;
+        }
+
+        $declared = $article->meta[DeclaredContextsSource::META_KEY] ?? [];
+
+        return is_array($declared) && in_array($matchedBy, $declared, true);
     }
 
     /**

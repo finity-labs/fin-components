@@ -1,5 +1,6 @@
 <?php
 
+use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\Help\ArticleLookup;
 use FinityLabs\FinCodex\Help\DeclaredContexts;
 use FinityLabs\FinCodex\Panel\CurrentPage;
@@ -18,6 +19,11 @@ uses(TestCase::class)->in(__DIR__);
  * request. The ContentSource
  * extender is re-applied on the next resolution, so the fresh instance is
  * again the declared-contexts decorator, over a fresh registry scan.
+ *
+ * The coverage report is here for the same reason as the rest: it memoises
+ * one RouteCoverage::report() and one ContentSource::all() per request, so a
+ * test that seeds an article after reading it would otherwise keep getting
+ * the answer from before the seed.
  */
 function forgetHelpMemo(): void
 {
@@ -26,6 +32,7 @@ function forgetHelpMemo(): void
     app()->forgetInstance(ArticleLookup::class);
     app()->forgetInstance(ContentSource::class);
     app()->forgetInstance(DeclaredContexts::class);
+    app()->forgetInstance(CoverageReport::class);
 }
 
 /**
