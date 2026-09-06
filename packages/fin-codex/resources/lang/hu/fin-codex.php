@@ -65,6 +65,23 @@ return [
             'missing' => 'Hiányzó nyelv',
             'outdated' => 'Elavult nyelv',
         ],
+        'tabs' => [
+            'articles' => 'Cikkek',
+            'files' => 'Fájlokból',
+        ],
+        'files' => [
+            'title' => 'Cím',
+            'locales' => 'Nyelvek',
+            'path' => 'Fájl',
+            'import' => 'Importálás és szerkesztés',
+            'empty' => 'Minden fájlcikk már az adatbázisban van.',
+        ],
+        'imported' => [
+            'title' => 'Cikk importálva',
+            'body' => 'A(z) :path fájl mostantól figyelmen kívül marad; helyette az adatbázisban tárolt cikk jelenik meg.',
+            'failed' => 'Az importálás sikertelen',
+        ],
+        'shadowed' => 'Ez a cikk elfedi a(z) :path fájlt, amely a cikk létezéséig figyelmen kívül marad.',
         'validation' => [
             'slug_format' => 'A slug kötőjeles szegmensekből álljon, perjellel elválasztva.',
             'parent_missing' => 'Nem létezik cikk a(z) :parent helyen.',

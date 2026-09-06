@@ -65,6 +65,23 @@ return [
             'missing' => 'Missing language',
             'outdated' => 'Outdated language',
         ],
+        'tabs' => [
+            'articles' => 'Articles',
+            'files' => 'From files',
+        ],
+        'files' => [
+            'title' => 'Title',
+            'locales' => 'Languages',
+            'path' => 'File',
+            'import' => 'Import and edit',
+            'empty' => 'Every file article is already in the database.',
+        ],
+        'imported' => [
+            'title' => 'Article imported',
+            'body' => 'The file :path is now ignored; the database article is served instead.',
+            'failed' => 'Import failed',
+        ],
+        'shadowed' => 'This article shadows the file :path, which is ignored while the article exists.',
         'validation' => [
             'slug_format' => 'The slug must be kebab-case segments separated by slashes.',
             'parent_missing' => 'No article exists at :parent.',

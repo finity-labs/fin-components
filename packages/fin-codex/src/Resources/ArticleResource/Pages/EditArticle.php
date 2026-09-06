@@ -12,6 +12,7 @@ use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
+use FinityLabs\LinCodex\Sources\FilesystemSource;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -21,7 +22,8 @@ use Illuminate\Database\Eloquent\Model;
  *
  * The header stays empty for now: preview, convert and delete arrive in
  * 05-07, delete behind the confirmation modal that lists what a delete takes
- * with it. A bare DeleteAction would hide those consequences.
+ * with it. A bare DeleteAction would hide those consequences. The subheading
+ * is the standing notice for an article that shadows a file.
  */
 final class EditArticle extends EditRecord
 {
@@ -29,6 +31,27 @@ final class EditArticle extends EditRecord
 
     /** The language tab the admin is looking at; Tabs::livewireProperty() writes it. */
     public ?string $activeLocale = null;
+
+    /**
+     * A standing notice under the page title while a file of the same slug
+     * exists: the composite source lets the database row hide it whole, so
+     * the file is dead weight until the article is deleted. Asked of the
+     * file source, never the composite, which would always answer with this
+     * very article.
+     *
+     * Narrower than the parent's string|Htmlable|null on purpose: the notice
+     * is plain text, and Filament escapes a string subheading.
+     */
+    public function getSubheading(): ?string
+    {
+        $record = $this->getRecord();
+
+        if (! $record instanceof Article || app(FilesystemSource::class)->findBySlug($record->slug) === null) {
+            return null;
+        }
+
+        return __('fin-codex::fin-codex.editor.shadowed', ['path' => (string) ($record->source_path ?? $record->slug)]);
+    }
 
     /**
      * @param  array<string, mixed>  $data

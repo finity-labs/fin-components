@@ -65,6 +65,23 @@ return [
             'missing' => 'Fehlende Sprache',
             'outdated' => 'Veraltete Sprache',
         ],
+        'tabs' => [
+            'articles' => 'Artikel',
+            'files' => 'Aus Dateien',
+        ],
+        'files' => [
+            'title' => 'Titel',
+            'locales' => 'Sprachen',
+            'path' => 'Datei',
+            'import' => 'Importieren und bearbeiten',
+            'empty' => 'Jeder Dateiartikel ist bereits in der Datenbank.',
+        ],
+        'imported' => [
+            'title' => 'Artikel importiert',
+            'body' => 'Die Datei :path wird jetzt ignoriert; stattdessen wird der Datenbankartikel ausgeliefert.',
+            'failed' => 'Import fehlgeschlagen',
+        ],
+        'shadowed' => 'Dieser Artikel überdeckt die Datei :path; sie wird ignoriert, solange der Artikel existiert.',
         'validation' => [
             'slug_format' => 'Der Slug muss aus Kebab-Case-Segmenten bestehen, durch Schrägstriche getrennt.',
             'parent_missing' => 'Unter :parent existiert kein Artikel.',
