@@ -131,28 +131,17 @@ final class DeclaredContextsSource implements ContentSource
 
     /**
      * ArticleData is readonly with no with…() methods, so the article is
-     * rebuilt field by field; only contexts and meta change.
+     * rebuilt from its public fields as named arguments; only contexts and
+     * meta change, and a field the core adds later is carried along.
      *
      * @param  list<ContextData>  $declared
      */
     private function withDeclared(ArticleData $article, array $declared): ArticleData
     {
-        return new ArticleData(
-            slug: $article->slug,
-            parentSlug: $article->parentSlug,
-            order: $article->order,
-            icon: $article->icon,
-            format: $article->format,
-            visibility: $article->visibility,
-            published: $article->published,
-            contexts: [...$article->contexts, ...$declared],
-            related: $article->related,
-            keywords: $article->keywords,
-            translations: $article->translations,
-            meta: $article->meta + [self::META_KEY => array_map(static fn (ContextData $context): string => $context->toString(), $declared)],
-            isSection: $article->isSection,
-            sourcePath: $article->sourcePath,
-            id: $article->id,
-        );
+        return new ArticleData(...[
+            ...get_object_vars($article),
+            'contexts' => [...$article->contexts, ...$declared],
+            'meta' => $article->meta + [self::META_KEY => array_map(static fn (ContextData $context): string => $context->toString(), $declared)],
+        ]);
     }
 }
