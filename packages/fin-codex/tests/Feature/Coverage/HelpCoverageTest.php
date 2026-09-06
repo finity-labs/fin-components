@@ -16,6 +16,7 @@ use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -365,4 +366,111 @@ it('paginates instead of dumping every screen on one page', function (): void {
     expect($second)->toHaveCount(5)
         ->and(array_intersect($first, $second))->toBe([])
         ->and(array_merge($first, $second))->toBe(array_slice(finCodexPageKeys(finCodexPageTable()), 0, 10));
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * The two filters, and the badge that agrees with the page.
+ * -----------------------------------------------------------------------
+ */
+
+/** A named GET route with no Filament page behind it — a row outside every panel. */
+function finCodexPageShopRoute(): void
+{
+    Route::get('/shop', fn (): string => '')->name('shop.index')->middleware('web');
+}
+
+it('opens on this panel\'s own screens with no filter touched', function (): void {
+    $this->usesPanel('admin', finCodexPageUser());
+
+    $page = finCodexPageTable();
+    $keys = finCodexPageKeys($page);
+
+    expect($page->instance()->getTableFilterState('panel')['value'])->toBe('admin')
+        ->and(finCodexPageRecords($page)->pluck('panel')->unique()->values()->all())->toBe(['admin']);
+
+    $page->assertCanSeeTableRecords([finCodexPageRowKey('admin', UserResource::class)])
+        ->assertCanNotSeeTableRecords([finCodexPageRowKey('staff', UserResource::class)]);
+
+    expect($keys)->not->toContain('filament.exports.download');
+});
+
+it('widens to another panel and to the application\'s own web routes', function (): void {
+    finCodexPageShopRoute();
+
+    $this->usesPanel('admin', finCodexPageUser());
+    forgetHelpMemo();
+
+    $wide = finCodexPageKeys(finCodexPageTable()->filterTable('panel', null));
+
+    expect($wide)->toContain(finCodexPageRowKey('admin', UserResource::class))
+        ->toContain(finCodexPageRowKey('staff', UserResource::class))
+        ->toContain('shop.index');
+
+    $outside = finCodexPageRecords(finCodexPageTable()->filterTable('panel', CoverageReport::OUTSIDE_PANELS));
+
+    expect($outside->keys()->all())->toContain('shop.index')
+        // Every row of that view belongs to no panel — which is what the
+        // option means, not "no filament.* route": the core's export and
+        // import download routes sit outside every panel too.
+        ->and($outside->pluck('panel')->unique()->values()->all())->toBe([null])
+        ->and($outside->keys()->all())->not->toContain(finCodexPageRowKey('admin', UserResource::class));
+});
+
+it('filters the covered state independently of the panel', function (): void {
+    finCodexPageArticle('users-guide', ContextType::PageClass, UserResource::class, 'admin');
+
+    $this->usesPanel('admin', finCodexPageUser());
+    forgetHelpMemo();
+
+    $adminUsers = finCodexPageRowKey('admin', UserResource::class);
+
+    $uncovered = finCodexPageRecords(finCodexPageTable()->filterTable('covered', false));
+
+    expect($uncovered->pluck('covered')->unique()->values()->all())->toBe([false])
+        ->and($uncovered->pluck('panel')->unique()->values()->all())->toBe(['admin'])
+        ->and($uncovered->keys()->all())->not->toContain($adminUsers);
+
+    $covered = finCodexPageRecords(finCodexPageTable()->filterTable('covered', true));
+
+    expect($covered->keys()->all())->toBe([$adminUsers]);
+
+    // Both filters at once, on a panel the page did not open on.
+    $staff = finCodexPageRecords(
+        finCodexPageTable()->filterTable('panel', 'staff')->filterTable('covered', false),
+    );
+
+    expect($staff)->not->toBeEmpty()
+        ->and($staff->pluck('panel')->unique()->values()->all())->toBe(['staff'])
+        ->and($staff->pluck('covered')->unique()->values()->all())->toBe([false]);
+});
+
+it('shows both verdicts again when the covered filter is cleared', function (): void {
+    finCodexPageArticle('users-guide', ContextType::PageClass, UserResource::class, 'admin');
+
+    $this->usesPanel('admin', finCodexPageUser());
+    forgetHelpMemo();
+
+    // false is a filter, null is no filter — the difference blank() makes.
+    $page = finCodexPageTable()->filterTable('covered', false);
+
+    expect(finCodexPageRecords($page)->pluck('covered')->unique()->values()->all())->toBe([false]);
+
+    $page->filterTable('covered', null);
+
+    expect(finCodexPageRecords($page)->pluck('covered')->unique()->sort()->values()->all())->toBe([false, true]);
+});
+
+it('shows exactly as many uncovered rows as the sidebar promises', function (): void {
+    finCodexPageArticle('users-guide', ContextType::PageClass, UserResource::class, 'admin');
+
+    $this->usesPanel('admin', finCodexPageUser());
+    forgetHelpMemo();
+
+    $onThePage = finCodexPageRecords(finCodexPageTable())
+        ->reject(fn (array $row): bool => $row['covered'])
+        ->count();
+
+    expect($onThePage)->toBeGreaterThan(0)
+        ->and(AdminHelpCoverage::getNavigationBadge())->toBe((string) $onThePage);
 });
