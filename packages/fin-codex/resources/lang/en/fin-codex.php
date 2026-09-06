@@ -94,6 +94,11 @@ return [
             'declared' => 'Declared in code',
             'declared_by' => 'Declared by :class for panel :panel',
         ],
+        'copy' => [
+            'label' => 'Copy from default language',
+            'heading' => 'Overwrite this translation?',
+            'description' => "Title, excerpt and body are replaced with the default language's current text.",
+        ],
         'validation' => [
             'slug_format' => 'The slug must be kebab-case segments separated by slashes.',
             'parent_missing' => 'No article exists at :parent.',

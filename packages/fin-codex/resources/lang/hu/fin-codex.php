@@ -94,6 +94,11 @@ return [
             'declared' => 'Kódban deklarálva',
             'declared_by' => ':class deklarálta a(z) :panel panelhez',
         ],
+        'copy' => [
+            'label' => 'Másolás az alapértelmezett nyelvből',
+            'heading' => 'Felülírja ezt a fordítást?',
+            'description' => 'A cím, a kivonat és a törzs az alapértelmezett nyelv aktuális szövegére cserélődik.',
+        ],
         'validation' => [
             'slug_format' => 'A slug kötőjeles szegmensekből álljon, perjellel elválasztva.',
             'parent_missing' => 'Nem létezik cikk a(z) :parent helyen.',

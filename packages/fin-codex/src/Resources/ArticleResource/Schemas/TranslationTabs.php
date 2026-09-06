@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex\Resources\ArticleResource\Schemas;
 
+use Filament\Actions\Action;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -12,6 +13,8 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinCodex\Editor\OutdatedTranslations;
 use FinityLabs\FinCodex\Editor\SlugRules;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Settings\CodexSettings;
@@ -29,13 +32,22 @@ use Spatie\LaravelSettings\Exceptions\MissingSettings;
  * article exists in its default language and is translated later.
  *
  * The body is a MarkdownEditor, never a WYSIWYG: article bodies round-trip
- * to Markdown files, and a rich editor would smuggle HTML into them. Uploads,
- * missing/outdated badges and the copy-from-default action arrive in 05-06;
- * the HTML read-only body in 05-07.
+ * to Markdown files, and a rich editor would smuggle HTML into them. The
+ * HTML read-only body arrives in 05-07.
  *
  * Tabs::livewireProperty() keeps the active tab on the page itself, so the
  * server knows which language the admin is looking at (05-07's preview reads
- * it) and a locale key survives a round trip.
+ * it), a locale key survives a round trip, and the tab the admin was on is
+ * still the open one after the copy action's confirmation modal.
+ *
+ * A tab carries at most one badge, and the two badges have different
+ * sources. **Missing** is read from live form state, so it disappears the
+ * moment the title and the body are both filled, without a save.
+ * **Outdated** is read from the stored timestamps through
+ * OutdatedTranslations, which knows nothing about the form: it is therefore
+ * fixed for the whole page render and only clears on the next mount after a
+ * save. That is the honest answer — until the tab is saved, the stored
+ * translation really is older than the stored default one.
  */
 final class TranslationTabs
 {
@@ -43,19 +55,61 @@ final class TranslationTabs
     {
         $languages = self::languages();
         $default = $languages['default'];
+        $verdict = self::verdicts($record);
 
         $tabs = [];
 
         foreach ($languages['languages'] as $language) {
             $code = $language['code'];
+            $isDefault = $code === $default;
             $label = trim(self::flag($language['flag-icon']).' '.$language['display']);
 
-            $tabs[$code] = Tab::make($label)->schema(self::fields($code, $default, $record));
+            $tabs[$code] = Tab::make($label)
+                ->extraAttributes(['data-fin-codex-locale' => $code])
+                ->badge(static function (Get $get) use ($code, $isDefault, $verdict): ?string {
+                    if (blank($get("translations.{$code}.title")) || blank($get("translations.{$code}.body"))) {
+                        return $isDefault ? null : __('fin-codex::fin-codex.editor.state.missing');
+                    }
+
+                    if (! $isDefault && $verdict($code) === OutdatedTranslations::OUTDATED) {
+                        return __('fin-codex::fin-codex.editor.state.outdated');
+                    }
+
+                    return null;
+                })
+                ->badgeColor(static fn (?string $badge): string => $badge === __('fin-codex::fin-codex.editor.state.outdated') ? 'warning' : 'gray')
+                ->schema(self::fields($code, $default, $record));
         }
 
         return Tabs::make('translations')
             ->livewireProperty('activeLocale')
             ->tabs($tabs);
+    }
+
+    /**
+     * One verdict lookup for the whole tab set, resolved on first use.
+     *
+     * Asking OutdatedTranslations per tab would cost one settings query and
+     * one translations query per language (CodexSettings is not a shared
+     * binding in a package install), and the create page must not query at
+     * all — it has no record to compare anything against.
+     *
+     * @return callable(string): ?string locale => PRESENT|MISSING|OUTDATED, null without a record
+     */
+    private static function verdicts(?Article $record): callable
+    {
+        /** @var array<string, string>|null $verdicts */
+        $verdicts = null;
+
+        return static function (string $code) use ($record, &$verdicts): ?string {
+            if ($record === null) {
+                return null;
+            }
+
+            $verdicts ??= app(OutdatedTranslations::class)->verdicts($record);
+
+            return $verdicts[$code] ?? null;
+        };
     }
 
     /**
@@ -101,11 +155,12 @@ final class TranslationTabs
     }
 
     /**
-     * Title, excerpt and body of one locale. On create, typing in the
+     * Title, excerpt and body of one locale, plus the copy-from-default
+     * action on every tab but the default one. On create, typing in the
      * default-language title suggests the slug; on edit the record already
      * has one and the title never touches it.
      *
-     * @return list<Component>
+     * @return list<Action|Component>
      */
     private static function fields(string $code, string $default, ?Article $record): array
     {
@@ -129,7 +184,38 @@ final class TranslationTabs
             MarkdownEditor::make("translations.{$code}.body")
                 ->label(__('fin-codex::fin-codex.editor.form.body'))
                 ->required($isDefault),
+            self::copyFromDefault($code, $default),
         ];
+    }
+
+    /**
+     * Prefill one language from the default one, after a confirmation.
+     *
+     * Get reads the *unsaved* default tab, which is the only reading that
+     * makes sense here: the admin has usually just written the English text
+     * and wants the German tab to start from it. Reading the stored row
+     * would copy whatever was saved last time and quietly ignore the edit in
+     * front of them.
+     *
+     * Exactly three fields travel — title, excerpt and body. The slug, the
+     * icon and everything else in the sidebar belong to the article, not to
+     * a language.
+     */
+    private static function copyFromDefault(string $code, string $default): Action
+    {
+        return Action::make('copy_from_default')
+            ->label(__('fin-codex::fin-codex.editor.copy.label'))
+            ->icon(Heroicon::OutlinedDocumentDuplicate)
+            ->color('gray')
+            ->visible($code !== $default)
+            ->requiresConfirmation()
+            ->modalHeading(__('fin-codex::fin-codex.editor.copy.heading'))
+            ->modalDescription(__('fin-codex::fin-codex.editor.copy.description'))
+            ->action(static function (Get $get, Set $set) use ($code, $default): void {
+                foreach (['title', 'excerpt', 'body'] as $field) {
+                    $set("translations.{$code}.{$field}", $get("translations.{$default}.{$field}"));
+                }
+            });
     }
 
     /**

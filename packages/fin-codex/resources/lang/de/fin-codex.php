@@ -94,6 +94,11 @@ return [
             'declared' => 'Im Code deklariert',
             'declared_by' => 'Deklariert von :class für Panel :panel',
         ],
+        'copy' => [
+            'label' => 'Aus der Standardsprache kopieren',
+            'heading' => 'Diese Übersetzung überschreiben?',
+            'description' => 'Titel, Auszug und Inhalt werden durch den aktuellen Text der Standardsprache ersetzt.',
+        ],
         'validation' => [
             'slug_format' => 'Der Slug muss aus Kebab-Case-Segmenten bestehen, durch Schrägstriche getrennt.',
             'parent_missing' => 'Unter :parent existiert kein Artikel.',
