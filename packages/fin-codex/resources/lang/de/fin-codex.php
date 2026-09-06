@@ -82,6 +82,9 @@ return [
             'failed' => 'Import fehlgeschlagen',
         ],
         'shadowed' => 'Dieser Artikel überdeckt die Datei :path; sie wird ignoriert, solange der Artikel existiert.',
+        'contexts' => [
+            'any_panel' => 'Jedes Panel',
+        ],
         'validation' => [
             'slug_format' => 'Der Slug muss aus Kebab-Case-Segmenten bestehen, durch Schrägstriche getrennt.',
             'parent_missing' => 'Unter :parent existiert kein Artikel.',

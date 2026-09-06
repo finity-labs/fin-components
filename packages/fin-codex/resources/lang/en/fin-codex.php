@@ -82,6 +82,9 @@ return [
             'failed' => 'Import failed',
         ],
         'shadowed' => 'This article shadows the file :path, which is ignored while the article exists.',
+        'contexts' => [
+            'any_panel' => 'Any panel',
+        ],
         'validation' => [
             'slug_format' => 'The slug must be kebab-case segments separated by slashes.',
             'parent_missing' => 'No article exists at :parent.',

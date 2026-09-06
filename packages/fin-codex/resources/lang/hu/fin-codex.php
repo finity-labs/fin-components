@@ -82,6 +82,9 @@ return [
             'failed' => 'Az importálás sikertelen',
         ],
         'shadowed' => 'Ez a cikk elfedi a(z) :path fájlt, amely a cikk létezéséig figyelmen kívül marad.',
+        'contexts' => [
+            'any_panel' => 'Bármely panel',
+        ],
         'validation' => [
             'slug_format' => 'A slug kötőjeles szegmensekből álljon, perjellel elválasztva.',
             'parent_missing' => 'Nem létezik cikk a(z) :parent helyen.',
