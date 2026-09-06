@@ -176,6 +176,7 @@ function finCodexSearchHelpResults(?GlobalSearchResults $results): array
 
 /**
  * @param  list<GlobalSearchResult>  $results
+ *
  * @return list<string>
  */
 function finCodexSearchTitles(array $results): array

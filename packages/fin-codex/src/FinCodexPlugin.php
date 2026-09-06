@@ -6,6 +6,7 @@ namespace FinityLabs\FinCodex;
 
 use Closure;
 use Filament\Contracts\Plugin;
+use Filament\GlobalSearch\Providers\Contracts\GlobalSearchProvider;
 use Filament\Panel;
 use Filament\Support\Concerns\EvaluatesClosures;
 use Filament\Support\View\ViewManager;
@@ -15,6 +16,7 @@ use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Panel\HelpMount;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Search\HelpSearchProvider;
 use Illuminate\Support\HtmlString;
 use UnitEnum;
 
@@ -124,18 +126,28 @@ class FinCodexPlugin implements Plugin
 
     /**
      * Panel state (guard, global search provider, topbar) is read here or lazily,
-     * never in register(). The one thing to do at boot is SPA mode: Filament adds
-     * wire:navigate to every same-app href, and Livewire's navigate listener starts
-     * on mousedown without consulting defaultPrevented, so the CodexHelp hint's
-     * Alpine intercept would lose the race and the click would leave for the help
-     * center even with a drawer on the page. Panel::boot() pushes the panel's own
-     * spaUrlExceptions() before plugins boot, and ViewManager::spaUrlExceptions()
-     * appends, so adding the help-center pattern here survives a host that chains
-     * ->spaUrlExceptions() after ->plugin(). hasSpaMode($pattern) is the guard:
-     * it turns false once the pattern is on the list, so repeated boots within one
-     * process add nothing.
+     * never in register(). Two independent concerns, two private methods: the SPA
+     * exception returns early on a panel without SPA mode, and appending the
+     * global search block after that return would skip it on every non-SPA panel.
      */
     public function boot(Panel $panel): void
+    {
+        $this->bootSpaExceptions($panel);
+        $this->bootGlobalSearch($panel);
+    }
+
+    /**
+     * Filament adds wire:navigate to every same-app href, and Livewire's navigate
+     * listener starts on mousedown without consulting defaultPrevented, so the
+     * CodexHelp hint's Alpine intercept would lose the race and the click would
+     * leave for the help center even with a drawer on the page. Panel::boot()
+     * pushes the panel's own spaUrlExceptions() before plugins boot, and
+     * ViewManager::spaUrlExceptions() appends, so adding the help-center pattern
+     * here survives a host that chains ->spaUrlExceptions() after ->plugin().
+     * hasSpaMode($pattern) is the guard: it turns false once the pattern is on
+     * the list, so repeated boots within one process add nothing.
+     */
+    private function bootSpaExceptions(Panel $panel): void
     {
         if (! $panel->hasSpaMode()) {
             return;
@@ -147,6 +159,44 @@ class FinCodexPlugin implements Plugin
         if ($view->hasSpaMode($pattern)) {
             $view->spaUrlExceptions([$pattern]);
         }
+    }
+
+    /**
+     * The Help category in the panel's own search field, for the panels whose
+     * globalSearch() option is on. Note the collision: this plugin's
+     * globalSearch(bool) is the per-panel opt-in read here, while Filament's
+     * Panel::globalSearch(string|bool) sets the provider — they are unrelated.
+     *
+     * The wrapper is installed on the CONTAINER, not on the Panel.
+     * Panel::globalSearch(Wrapper::class) would mutate a long-lived object (a
+     * worker or Testbench keeps panels across requests) while the binding behind
+     * it lives in a container that gets flushed, and app($provider) resolves with
+     * no constructor arguments, so the wrapper could not receive the provider it
+     * wraps. Container::extend() on the resolved concrete has neither problem, it
+     * is the house pattern already (ContentSource is extended the same way in
+     * FinCodexServiceProvider), and Filament::getGlobalSearchProvider() still
+     * returns the wrapper because it resolves through the container.
+     */
+    private function bootGlobalSearch(Panel $panel): void
+    {
+        if (! $this->hasGlobalSearch()) {
+            return;
+        }
+
+        $provider = $panel->getGlobalSearchProvider();
+
+        // null means the panel turned Filament's global search off entirely
+        // (Panel::globalSearch(false)); nothing to wrap, so nothing is registered.
+        if ($provider === null || $provider instanceof HelpSearchProvider) {
+            return;
+        }
+
+        app()->extend(
+            $provider::class,
+            static fn (GlobalSearchProvider $inner): GlobalSearchProvider => $inner instanceof HelpSearchProvider
+                ? $inner
+                : new HelpSearchProvider($inner),
+        );
     }
 
     public function helpButtonRenderHook(string|Closure $hook): static
