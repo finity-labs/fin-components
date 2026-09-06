@@ -106,6 +106,15 @@ return [
             'done' => 'In Markdown umgewandelt',
         ],
         'html_readonly' => 'HTML-Artikel sind schreibgeschützt; wandeln Sie sie in Markdown um, um den Inhalt zu bearbeiten.',
+        'delete' => [
+            'children' => 'Artikel, die dieses übergeordnete Element verlieren',
+            'moves_to' => 'wandert unter die Gruppe :group (kein Artikel)',
+            'stays' => 'bleibt unter :parent',
+            'media' => 'Dateien, die ihren Artikel verlieren',
+            'none' => 'Sonst ist nichts betroffen.',
+            'exposes' => 'Öffentliche untergeordnete Artikel dieses authentifizierten Artikels würden für Gäste sichtbar.',
+            'keep_hidden' => 'Vor Gästen verborgen halten (auf „authentifiziert“ setzen)',
+        ],
         'copy' => [
             'label' => 'Aus der Standardsprache kopieren',
             'heading' => 'Diese Übersetzung überschreiben?',

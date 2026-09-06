@@ -11,6 +11,7 @@ use FinityLabs\FinCodex\Editor\ArticleWriter;
 use FinityLabs\FinCodex\Editor\MediaRecorder;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Resources\ArticleResource\Actions\ConvertToMarkdownAction;
+use FinityLabs\FinCodex\Resources\ArticleResource\Actions\DeleteArticleAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Actions\PreviewAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ContextsRepeater;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
@@ -24,9 +25,11 @@ use Illuminate\Database\Eloquent\Model;
  * language tabs and its contexts are written in one transaction under the
  * panel user's attribution and the revision carries that user's id.
  *
- * The header carries the preview slide-over; convert and delete join it
- * below. The subheading is the standing notice for an article that shadows a
- * file.
+ * The header carries the preview slide-over, the convert action an HTML
+ * article needs before it can be edited, and the delete action behind the
+ * modal that lists what a delete takes with it — a bare DeleteAction would
+ * hide those consequences, which is why the table has none. The subheading is
+ * the standing notice for an article that shadows a file.
  */
 final class EditArticle extends EditRecord
 {
@@ -148,6 +151,7 @@ final class EditArticle extends EditRecord
         return [
             PreviewAction::make(),
             ConvertToMarkdownAction::make(),
+            DeleteArticleAction::make(),
         ];
     }
 

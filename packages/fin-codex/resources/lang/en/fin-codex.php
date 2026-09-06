@@ -106,6 +106,15 @@ return [
             'done' => 'Converted to Markdown',
         ],
         'html_readonly' => 'HTML articles are read-only; convert to Markdown to edit the body.',
+        'delete' => [
+            'children' => 'Articles that lose this parent',
+            'moves_to' => 'moves under the group :group (no article)',
+            'stays' => 'stays under :parent',
+            'media' => 'Files that lose their article',
+            'none' => 'Nothing else is affected.',
+            'exposes' => 'Public children of this authenticated article would become visible to guests.',
+            'keep_hidden' => 'Keep them hidden from guests (set them to authenticated)',
+        ],
         'copy' => [
             'label' => 'Copy from default language',
             'heading' => 'Overwrite this translation?',

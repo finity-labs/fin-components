@@ -106,6 +106,15 @@ return [
             'done' => 'Átalakítva Markdownra',
         ],
         'html_readonly' => 'A HTML-cikkek csak olvashatók; a törzs szerkesztéséhez alakítsa át Markdownra.',
+        'delete' => [
+            'children' => 'Az e szülőt elveszítő cikkek',
+            'moves_to' => 'a(z) :group csoport alá kerül (nincs cikk)',
+            'stays' => ':parent alatt marad',
+            'media' => 'A cikküket elveszítő fájlok',
+            'none' => 'Más nem érintett.',
+            'exposes' => 'Ennek a bejelentkezést igénylő cikknek a nyilvános gyermekei láthatóvá válnának a vendégek számára.',
+            'keep_hidden' => 'Maradjanak rejtve a vendégek elől (beállítás bejelentkezést igénylőre)',
+        ],
         'copy' => [
             'label' => 'Másolás az alapértelmezett nyelvből',
             'heading' => 'Felülírja ezt a fordítást?',

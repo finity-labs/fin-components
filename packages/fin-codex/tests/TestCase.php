@@ -134,7 +134,9 @@ class TestCase extends Orchestra
      * migrations by include()->up() in dependency order, then the settings seed.
      * The users table carries a nullable password column because Laravel's
      * AuthenticateSession middleware reads getAuthPassword() on every panel
-     * request, which strict models turn into a MissingAttributeException.
+     * request, and a remember_token because SessionGuard::logout() writes
+     * one; strict models turn either missing attribute into a
+     * MissingAttributeException.
      */
     protected function defineDatabaseMigrations(): void
     {
@@ -143,6 +145,7 @@ class TestCase extends Orchestra
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password')->nullable();
+            $table->rememberToken();
             $table->timestamps();
         });
 

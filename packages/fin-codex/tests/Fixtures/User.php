@@ -14,8 +14,9 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * so the fixture implements the contract; no $fillable guard so ::create()
  * works with plain arrays.
  *
- * password defaults to null so the attribute is always present: Laravel's
- * AuthenticateSession middleware reads getAuthPassword() on every request,
+ * password and remember_token default to null so the attributes are always
+ * present: Laravel's AuthenticateSession middleware reads getAuthPassword()
+ * on every request and SessionGuard::logout() writes the remember token,
  * actingAs() clears wasRecentlyCreated on the signed-in instance, and strict
  * models throw for an attribute a retrieved model does not carry.
  */
@@ -26,7 +27,7 @@ final class User extends Authenticatable implements FilamentUser
     protected $guarded = [];
 
     /** @var array<string, mixed> */
-    protected $attributes = ['password' => null];
+    protected $attributes = ['password' => null, 'remember_token' => null];
 
     public function canAccessPanel(Panel $panel): bool
     {
