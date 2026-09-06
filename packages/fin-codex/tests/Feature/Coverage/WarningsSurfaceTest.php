@@ -1,8 +1,11 @@
 <?php
 
+use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\Coverage\SourceWarnings;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\ListArticles;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpCoverage;
+use FinityLabs\FinCodex\Tests\Fixtures\Resources\AdminHelpArticleResource;
+use FinityLabs\FinCodex\Tests\Fixtures\Resources\StaffHelpArticleResource;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Enums\SourceWarningKind;
 use FinityLabs\LinCodex\Models\Article;
@@ -203,4 +206,92 @@ it('renders nothing on either page when the sources are happy', function (): voi
         ->and($coverage)->not->toContain('data-fin-codex-warnings')
         ->and($coverage)->not->toContain($noisy)
         ->and($coverage)->not->toContain(__('fin-codex::fin-codex.warnings.description'));
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * The count on the Help articles navigation item — and the uncovered count
+ * staying where it is. One number per navigation item, each meaning one
+ * thing.
+ * -----------------------------------------------------------------------
+ */
+
+/** The sidebar list item whose link points at $path, out of a rendered panel page. */
+function finCodexSurfaceNavItem(string $html, string $path): string
+{
+    preg_match_all('/<li[^>]*class="fi-sidebar-item[^"]*"[^>]*>.*?<\/li>/s', $html, $matches);
+
+    $items = array_values(array_filter(
+        $matches[0],
+        static fn (string $item): bool => str_contains($item, 'href="http://localhost'.$path.'"'),
+    ));
+
+    expect($items)->toHaveCount(1);
+
+    return $items[0];
+}
+
+/** The number Filament printed in that item's badge, or null when it printed none. */
+function finCodexSurfaceNavBadge(string $item): ?string
+{
+    return preg_match('/fi-badge-label">\s*([^<\s][^<]*?)\s*</', $item, $matches) === 1
+        ? $matches[1]
+        : null;
+}
+
+it('counts the content warnings on the Help articles navigation item', function (): void {
+    $this->usesPanel('admin', finCodexSurfaceUser());
+
+    $count = app(SourceWarnings::class)->count();
+
+    expect($count)->toBeGreaterThan(0)
+        ->and(AdminHelpArticleResource::getNavigationBadge())->toBe((string) $count)
+        ->and(AdminHelpArticleResource::getNavigationBadgeColor())->toBe('warning');
+});
+
+it('hides the Help articles badge once the sources are happy', function (): void {
+    $this->usesPanel('admin', finCodexSurfaceUser());
+
+    expect(AdminHelpArticleResource::getNavigationBadge())->not->toBeNull();
+
+    finCodexSurfaceSilence();
+
+    expect(app(SourceWarnings::class)->count())->toBe(0)
+        ->and(AdminHelpArticleResource::getNavigationBadge())->toBeNull();
+});
+
+it('gives a host subclass the same badge, because it lives on the package resource', function (): void {
+    $this->usesPanel('staff', finCodexSurfaceUser('staff'));
+
+    $count = app(SourceWarnings::class)->count();
+
+    expect($count)->toBeGreaterThan(0)
+        ->and(StaffHelpArticleResource::getNavigationBadge())->toBe((string) $count)
+        ->and(StaffHelpArticleResource::getNavigationBadgeColor())->toBe('warning');
+});
+
+it('keeps the warnings count and the uncovered count apart', function (): void {
+    $this->usesPanel('admin', finCodexSurfaceUser());
+
+    $warnings = app(SourceWarnings::class)->count();
+    $uncovered = app(CoverageReport::class)->uncovered('admin');
+
+    expect($warnings)->toBeGreaterThan(0)
+        ->and($uncovered)->toBeGreaterThan(0)
+        ->and($warnings)->not->toBe($uncovered)
+        ->and(AdminHelpArticleResource::getNavigationBadge())->toBe((string) $warnings)
+        ->and(AdminHelpCoverage::getNavigationBadge())->toBe((string) $uncovered);
+});
+
+it('shows both numbers in the sidebar of a rendered panel page', function (): void {
+    finCodexSurfaceUser();
+
+    $html = (string) $this->get('/admin/help-articles')->assertOk()->getContent();
+
+    $warnings = app(SourceWarnings::class)->count();
+    $uncovered = app(CoverageReport::class)->uncovered('admin');
+
+    expect(finCodexSurfaceNavBadge(finCodexSurfaceNavItem($html, '/admin/help-articles')))->toBe((string) $warnings)
+        ->and(finCodexSurfaceNavBadge(finCodexSurfaceNavItem($html, '/admin/help-coverage')))->toBe((string) $uncovered)
+        ->and($warnings)->not->toBe($uncovered);
 });
