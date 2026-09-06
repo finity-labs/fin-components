@@ -177,6 +177,7 @@ return [
         'navigation' => 'Súgóbeállítások',
         'title' => 'Súgóbeállítások',
         'saved' => 'A beállítások elmentve.',
+        'default_locale_removed' => 'Az alapértelmezett nyelvet (:locale) nem lehet eltávolítani. Válasszon előbb másik alapértelmezettet, utána már törölhető.',
         'languages' => [
             'section' => 'Nyelvek',
             'description' => 'Ezeken a nyelveken írható meg egy cikk. Minden itt felvett nyelv külön fület kap a szerkesztőben.',
@@ -185,6 +186,7 @@ return [
             'display' => 'Név',
             'flag' => 'Zászlókód',
             'flag_help' => 'A zászlóhoz tartozó kétbetűs országkód, például gb vagy de.',
+            'translations' => 'Fordítások',
         ],
         'reading' => [
             'section' => 'Olvasás',

@@ -177,6 +177,7 @@ return [
         'navigation' => 'Help settings',
         'title' => 'Help settings',
         'saved' => 'Settings saved.',
+        'default_locale_removed' => 'The default language :locale cannot be removed. Choose a different default first, then remove it.',
         'languages' => [
             'section' => 'Languages',
             'description' => 'The languages an article can be written in. The first language you add becomes available on the editor tabs.',
@@ -185,6 +186,7 @@ return [
             'display' => 'Name',
             'flag' => 'Flag code',
             'flag_help' => 'Two-letter country code for the flag, for example gb or de.',
+            'translations' => 'Translations',
         ],
         'reading' => [
             'section' => 'Reading',

@@ -177,6 +177,7 @@ return [
         'navigation' => 'Hilfe-Einstellungen',
         'title' => 'Hilfe-Einstellungen',
         'saved' => 'Einstellungen gespeichert.',
+        'default_locale_removed' => 'Die Standardsprache :locale können Sie nicht entfernen. Wählen Sie zuerst eine andere Standardsprache, danach lässt sie sich entfernen.',
         'languages' => [
             'section' => 'Sprachen',
             'description' => 'Die Sprachen, in denen ein Artikel geschrieben werden kann. Jede Sprache, die Sie hier hinzufügen, bekommt im Editor einen eigenen Reiter.',
@@ -185,6 +186,7 @@ return [
             'display' => 'Name',
             'flag' => 'Flaggen-Kürzel',
             'flag_help' => 'Zweibuchstabiges Länderkürzel für die Flagge, zum Beispiel gb oder de.',
+            'translations' => 'Übersetzungen',
         ],
         'reading' => [
             'section' => 'Lesen',

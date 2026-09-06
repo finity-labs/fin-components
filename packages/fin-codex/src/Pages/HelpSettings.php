@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace FinityLabs\FinCodex\Pages;
 
 use BackedEnum;
+use Closure;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Pages\SettingsPage;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -16,6 +18,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\LinCodex\Enums\FallbackBehaviour;
+use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\QueryException;
@@ -78,6 +81,22 @@ class HelpSettings extends SettingsPage
     }
 
     /**
+     * How many translations are written in one language.
+     *
+     * Asked once per language row on a render and once per removed language on
+     * a confirmation — a handful of counts either way. The query goes through
+     * the core's model, so no table name is spelled out here.
+     */
+    public static function translationCount(string $code): int
+    {
+        if ($code === '') {
+            return 0;
+        }
+
+        return ArticleTranslation::query()->where('locale', $code)->count();
+    }
+
+    /**
      * Three stacked sections. defaultForm() already applies columns(2) and
      * statePath('data'), so neither is repeated here.
      */
@@ -92,14 +111,15 @@ class HelpSettings extends SettingsPage
                         ->hiddenLabel()
                         ->addActionLabel(__('fin-codex::fin-codex.settings.languages.add'))
                         ->minItems(1)
-                        ->columns(3)
+                        ->columns(4)
                         ->schema([
                             TextInput::make('code')
                                 ->label(__('fin-codex::fin-codex.settings.languages.code'))
                                 ->required()
                                 ->maxLength(10)
-                                // Live so the default-language select below follows the
-                                // list as it is edited, without a save.
+                                // Live so the default-language select below and the
+                                // translation count beside it follow the list as it is
+                                // edited, without a save.
                                 ->live(onBlur: true),
                             TextInput::make('display')
                                 ->label(__('fin-codex::fin-codex.settings.languages.display'))
@@ -109,6 +129,40 @@ class HelpSettings extends SettingsPage
                                 ->label(__('fin-codex::fin-codex.settings.languages.flag'))
                                 ->maxLength(4)
                                 ->helperText(__('fin-codex::fin-codex.settings.languages.flag_help')),
+                            // What this language would cost to remove, read from the
+                            // row's own code rather than from the stored settings, so
+                            // it is right while the list is being edited. One count
+                            // per row per render on a list that is two to five rows
+                            // long; memoising it would make the number lie the moment
+                            // a code is retyped.
+                            TextEntry::make('translations_count')
+                                ->label(__('fin-codex::fin-codex.settings.languages.translations'))
+                                ->state(fn (Get $get): string => (string) self::translationCount((string) ($get('code') ?? '')))
+                                ->extraAttributes(fn (Get $get): array => [
+                                    'data-fin-codex-language-count' => (string) ($get('code') ?? '').':'.self::translationCount((string) ($get('code') ?? '')),
+                                ]),
+                        ])
+                        ->rules([
+                            // Filament evaluates a Closure handed to rules() as a rule
+                            // FACTORY with its own dependency injection, so a Laravel
+                            // closure rule has to be RETURNED from a closure (the same
+                            // finding SlugRules carries). Get is injected by type and
+                            // resolves against the repeater's own container, which is
+                            // the form root — so 'default_locale' is the sibling field.
+                            static fn (Get $get): Closure => static function (string $attribute, mixed $value, Closure $fail) use ($get): void {
+                                $codes = collect(is_array($value) ? $value : [])
+                                    ->pluck('code')
+                                    ->filter()
+                                    ->all();
+
+                                $default = $get('default_locale');
+
+                                if (filled($default) && ! in_array($default, $codes, true)) {
+                                    $fail((string) __('fin-codex::fin-codex.settings.default_locale_removed', [
+                                        'locale' => $default,
+                                    ]));
+                                }
+                            },
                         ]),
                 ]),
 
