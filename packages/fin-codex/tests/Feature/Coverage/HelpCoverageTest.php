@@ -3,6 +3,7 @@
 use Filament\Facades\Filament;
 use Filament\Pages\Dashboard;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
+use FinityLabs\FinCodex\Coverage\CoverageRow;
 use FinityLabs\FinCodex\Enums\NavigationGroup;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpCoverage;
@@ -240,6 +241,15 @@ function finCodexPageRecords(Testable $page): Collection
     return $page->instance()->getTableRecords()->getCollection();
 }
 
+/** How many screens the report itself puts on one panel — an equality against the service, never a number. */
+function finCodexPagePanelCount(?string $panelId): int
+{
+    return count(array_filter(
+        app(CoverageReport::class)->rows(),
+        fn (CoverageRow $row): bool => $row->panelId === $panelId,
+    ));
+}
+
 /** The report's own key for one screen — never hard-coded, so a fixture change cannot make a row vacuous. */
 function finCodexPageRowKey(?string $panelId, ?string $helpClass): string
 {
@@ -267,7 +277,8 @@ it('shows one row per screen, with a resource\'s three routes folded into one', 
     expect($keys)->toContain($usersKey)
         ->and($keys)->toContain(finCodexPageRowKey('admin', Dashboard::class))
         ->and($userRoutes)->toBe([$usersKey])
-        ->and($page->instance()->getTableRecords()->total())->toBe(count(app(CoverageReport::class)->rows()));
+        // The page opens on this panel, so the total is this panel's screens.
+        ->and($page->instance()->getTableRecords()->total())->toBe(finCodexPagePanelCount('admin'));
 });
 
 it('reads like a checklist: the screen\'s name, its panel and its article', function (): void {
@@ -350,12 +361,13 @@ it('re-orders on a header click, which drops the uncovered-first opening order',
 it('paginates instead of dumping every screen on one page', function (): void {
     $this->usesPanel('admin', finCodexPageUser());
 
-    $total = count(app(CoverageReport::class)->rows());
+    $total = finCodexPagePanelCount('admin');
 
     $page = Livewire::test(AdminHelpCoverage::class)->set('tableRecordsPerPage', 5);
     $records = $page->instance()->getTableRecords();
 
     expect($records)->toBeInstanceOf(LengthAwarePaginator::class)
+        ->and($total)->toBeGreaterThan(5)
         ->and($records->total())->toBe($total)
         ->and($records->count())->toBe(5);
 
@@ -363,9 +375,9 @@ it('paginates instead of dumping every screen on one page', function (): void {
     $second = finCodexPageKeys($page->call('setPage', 2));
 
     // preserve_keys is what keeps the second slice keyed by route name too.
-    expect($second)->toHaveCount(5)
+    expect($second)->toHaveCount($total - 5)
         ->and(array_intersect($first, $second))->toBe([])
-        ->and(array_merge($first, $second))->toBe(array_slice(finCodexPageKeys(finCodexPageTable()), 0, 10));
+        ->and(array_merge($first, $second))->toBe(finCodexPageKeys(finCodexPageTable()));
 });
 
 /*

@@ -14,6 +14,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\FinCodexPlugin;
@@ -157,6 +159,19 @@ class HelpCoverage extends Page implements HasTable
                     ->badge()
                     ->color(fn (array $record): string => $record['covered'] ? 'success' : 'danger')
                     ->placeholder('—'),
+            ])
+            ->filters([
+                TernaryFilter::make('covered')
+                    ->label(__('fin-codex::fin-codex.coverage.filters.covered'))
+                    ->trueLabel(__('fin-codex::fin-codex.coverage.filters.covered_true'))
+                    ->falseLabel(__('fin-codex::fin-codex.coverage.filters.covered_false')),
+                // Opening on the panel the admin is standing in is the whole
+                // point of a per-panel badge; clearing it shows every screen
+                // of the application, including the ones outside any panel.
+                SelectFilter::make('panel')
+                    ->label(__('fin-codex::fin-codex.coverage.filters.panel'))
+                    ->options(fn (): array => app(CoverageReport::class)->panelOptions())
+                    ->default(Filament::getCurrentPanel()?->getId()),
             ])
             ->emptyStateHeading(__('fin-codex::fin-codex.coverage.empty'))
             ->emptyStateDescription(__('fin-codex::fin-codex.coverage.empty_description'))
