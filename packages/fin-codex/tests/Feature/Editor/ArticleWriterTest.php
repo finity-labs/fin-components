@@ -286,3 +286,132 @@ it('resolves the default locale from settings', function (): void {
     ]), $user->id))->toThrow(InvalidArgumentException::class)
         ->and(Article::query()->count())->toBe(1);
 });
+
+/*
+ * appendContext(): the narrow append the coverage page's attach action needs.
+ *
+ * update() cannot do this. split() pulls `translations` out with a `[]`
+ * default and writeTranslations() then refuses a contexts-only payload
+ * because the default locale has no title, and even with a synthesized
+ * payload it would delete and recreate every context the article already
+ * has. The append keeps the rule that this class is the only thing that
+ * writes.
+ */
+
+it('appends one context and leaves the existing rows exactly where they were', function (): void {
+    $user = finCodexWriterUser();
+    $article = finCodexWriter()->create(finCodexWriterData(), $user->id);
+    $before = ArticleContext::query()->where('article_id', $article->id)->orderBy('sort_order')->get();
+
+    $appended = finCodexWriter()->appendContext($article, [
+        'panel_id' => 'staff',
+        'type' => 'route',
+        'key' => 'filament.staff.pages.dashboard',
+    ], $user->id);
+
+    $after = ArticleContext::query()->where('article_id', $article->id)->orderBy('sort_order')->get();
+
+    expect($appended)->toBeTrue()
+        ->and($after)->toHaveCount(3)
+        ->and($after->take(2)->pluck('id')->all())->toBe($before->pluck('id')->all())
+        ->and($after->take(2)->pluck('sort_order')->all())->toBe($before->pluck('sort_order')->all())
+        ->and($after[2]->sort_order)->toBe(((int) $before->max('sort_order')) + 1)
+        ->and($after[2]->panel_id)->toBe('staff')
+        ->and($after[2]->type)->toBe(ContextType::Route)
+        ->and($after[2]->key)->toBe('filament.staff.pages.dashboard');
+});
+
+it('reads *, the empty string and a missing panel as any panel, and a real id as itself', function (): void {
+    $user = finCodexWriterUser();
+    $data = finCodexWriterData();
+    $data['contexts'] = [];
+    $article = finCodexWriter()->create($data, $user->id);
+
+    finCodexWriter()->appendContext($article, ['panel_id' => '*', 'type' => 'url', 'key' => '/a/*'], $user->id);
+    finCodexWriter()->appendContext($article, ['panel_id' => '', 'type' => 'url', 'key' => '/b/*'], $user->id);
+    finCodexWriter()->appendContext($article, ['type' => 'url', 'key' => '/c/*'], $user->id);
+    finCodexWriter()->appendContext($article, ['panel_id' => 'admin', 'type' => 'url', 'key' => '/d/*'], $user->id);
+
+    $rows = ArticleContext::query()->where('article_id', $article->id)->orderBy('sort_order')->get();
+
+    // max('sort_order') over no rows is null, so the first append on an
+    // article with no contexts lands at 1 rather than 0. The order is what
+    // the core reads; the numbers only have to ascend, and the next full save
+    // renumbers them from 0 anyway.
+    expect($rows->pluck('panel_id')->all())->toBe([null, null, null, 'admin'])
+        ->and($rows->pluck('sort_order')->all())->toBe([1, 2, 3, 4])
+        ->and($rows->pluck('key')->all())->toBe(['/a/*', '/b/*', '/c/*', '/d/*']);
+});
+
+it('refuses the identical row, writes nothing and leaves the attribution alone', function (): void {
+    enableRevisions(true);
+    $alice = finCodexWriterUser('Alice');
+    $bob = finCodexWriterUser('Bob');
+    $article = finCodexWriter()->create(finCodexWriterData(), $alice->id);
+
+    $sameScopedRow = finCodexWriter()->appendContext($article, [
+        'panel_id' => 'admin',
+        'type' => 'class',
+        'key' => UserResource::class,
+    ], $bob->id);
+
+    // The stored row has a null panel_id, so the null branch of the lookup is
+    // the one that has to find it.
+    $samePanellessRow = finCodexWriter()->appendContext($article, [
+        'panel_id' => null,
+        'type' => 'url',
+        'key' => '/admin/*',
+    ], $bob->id);
+
+    expect($sameScopedRow)->toBeFalse()
+        ->and($samePanellessRow)->toBeFalse()
+        ->and(ArticleContext::query()->where('article_id', $article->id)->count())->toBe(2)
+        ->and($article->fresh()->updated_by)->toBe($alice->id)
+        ->and(ArticleRevision::query()->count())->toBe(0);
+});
+
+it('appends a row that only differs by panel, and a route context that overlaps a class one', function (): void {
+    $user = finCodexWriterUser();
+    $article = finCodexWriter()->create(finCodexWriterData(), $user->id);
+
+    $otherPanel = finCodexWriter()->appendContext($article, ['panel_id' => 'staff', 'type' => 'class', 'key' => UserResource::class], $user->id);
+    $anyPanel = finCodexWriter()->appendContext($article, ['panel_id' => '*', 'type' => 'class', 'key' => UserResource::class], $user->id);
+    $overlapping = finCodexWriter()->appendContext($article, ['panel_id' => 'admin', 'type' => 'route', 'key' => 'filament.admin.resources.users.index'], $user->id);
+
+    expect([$otherPanel, $anyPanel, $overlapping])->toBe([true, true, true])
+        ->and(ArticleContext::query()->where('article_id', $article->id)->count())->toBe(5);
+});
+
+it('attributes the append to the passed user, inside the revision scope', function (): void {
+    enableRevisions(true);
+    $alice = finCodexWriterUser('Alice');
+    $bob = finCodexWriterUser('Bob');
+    $article = finCodexWriter()->create(finCodexWriterData(), $alice->id);
+
+    // Nobody is signed in, so a revision recorded OUTSIDE an attributing()
+    // scope would carry a null user id and there would be nothing to tell the
+    // two apart. Saving a translation from inside the append is what shows
+    // whose scope the write is running in.
+    ArticleContext::created(function () use ($article): void {
+        $translation = ArticleTranslation::query()->where('article_id', $article->id)->firstOrFail();
+        $translation->title = 'Users, renamed from inside the append';
+        $translation->save();
+    });
+
+    finCodexWriter()->appendContext($article, ['panel_id' => 'staff', 'type' => 'class', 'key' => UserResource::class], $bob->id);
+
+    $revisions = ArticleRevision::query()->get();
+
+    expect($article->fresh()->updated_by)->toBe($bob->id)
+        ->and($revisions)->toHaveCount(1)
+        ->and($revisions[0]->user_id)->toBe($bob->id)
+        ->and($revisions[0]->reason)->toBe(RevisionReason::Manual);
+});
+
+it('accepts a null user id, for a panel with nobody signed in', function (): void {
+    $article = finCodexWriter()->create(finCodexWriterData(), null);
+
+    expect(finCodexWriter()->appendContext($article, ['panel_id' => 'staff', 'type' => 'class', 'key' => UserResource::class], null))->toBeTrue()
+        ->and($article->fresh()->updated_by)->toBeNull()
+        ->and(ArticleContext::query()->where('article_id', $article->id)->count())->toBe(3);
+});
