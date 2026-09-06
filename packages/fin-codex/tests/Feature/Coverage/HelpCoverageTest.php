@@ -1,6 +1,7 @@
 <?php
 
 use Filament\Facades\Filament;
+use Filament\Pages\Dashboard;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\Enums\NavigationGroup;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
@@ -13,7 +14,10 @@ use FinityLabs\LinCodex\Data\ArticleData;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Settings\CodexSettings;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Spatie\LaravelSettings\Exceptions\MissingSettings;
 
@@ -199,4 +203,161 @@ it('mounts on the panel it was registered on', function (): void {
     $this->usesPanel('admin', finCodexPageUser());
 
     Livewire::test(AdminHelpCoverage::class)->assertOk();
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * The table: one row per screen, the gap first, searchable and paginated.
+ * -----------------------------------------------------------------------
+ */
+
+/** The mounted admin coverage page with every row on one page. */
+function finCodexPageTable(): Testable
+{
+    return Livewire::test(AdminHelpCoverage::class)->set('tableRecordsPerPage', 'all');
+}
+
+/**
+ * The record keys the page is showing, in the order it shows them.
+ *
+ * Read off the component's own records rather than through Filament's count
+ * assertion: that one goes through getAllTableRecordsCount(), which calls
+ * count() on a null query for a table with no query behind it.
+ *
+ * @return list<string>
+ */
+function finCodexPageKeys(Testable $page): array
+{
+    $records = $page->instance()->getTableRecords();
+
+    return array_values(array_map(strval(...), array_keys($records->getCollection()->all())));
+}
+
+/** The rows the page is showing, in order, as the plain arrays they are. */
+function finCodexPageRecords(Testable $page): Collection
+{
+    return $page->instance()->getTableRecords()->getCollection();
+}
+
+/** The report's own key for one screen — never hard-coded, so a fixture change cannot make a row vacuous. */
+function finCodexPageRowKey(?string $panelId, ?string $helpClass): string
+{
+    foreach (app(CoverageReport::class)->rows() as $row) {
+        if ($row->panelId === $panelId && $row->helpClass === $helpClass) {
+            return $row->key;
+        }
+    }
+
+    throw new RuntimeException('No coverage row for '.($panelId ?? 'no panel').' / '.($helpClass ?? 'no class'));
+}
+
+it('shows one row per screen, with a resource\'s three routes folded into one', function (): void {
+    $this->usesPanel('admin', finCodexPageUser());
+
+    $page = finCodexPageTable();
+    $keys = finCodexPageKeys($page);
+    $usersKey = finCodexPageRowKey('admin', UserResource::class);
+
+    $userRoutes = array_values(array_filter(
+        $keys,
+        fn (string $key): bool => str_starts_with($key, 'filament.admin.resources.users.'),
+    ));
+
+    expect($keys)->toContain($usersKey)
+        ->and($keys)->toContain(finCodexPageRowKey('admin', Dashboard::class))
+        ->and($userRoutes)->toBe([$usersKey])
+        ->and($page->instance()->getTableRecords()->total())->toBe(count(app(CoverageReport::class)->rows()));
+});
+
+it('reads like a checklist: the screen\'s name, its panel and its article', function (): void {
+    finCodexPageArticle('users-guide', ContextType::PageClass, UserResource::class, 'admin');
+
+    $this->usesPanel('admin', finCodexPageUser());
+    forgetHelpMemo();
+
+    $users = finCodexPageRecords(finCodexPageTable())[finCodexPageRowKey('admin', UserResource::class)];
+
+    expect($users['label'])->not->toContain('filament.')
+        ->and($users['covered'])->toBeTrue()
+        ->and($users['slug'])->toBe('users-guide');
+
+    finCodexPageTable()
+        ->assertSee($users['label'])
+        ->assertSee('users-guide')
+        // The uncovered rows carry the placeholder in the article column.
+        ->assertSee('—');
+});
+
+it('opens with the screens that have no article at the top', function (): void {
+    finCodexPageArticle('dashboard-guide', ContextType::PageClass, Dashboard::class, 'admin');
+
+    $this->usesPanel('admin', finCodexPageUser());
+    forgetHelpMemo();
+
+    $records = finCodexPageRecords(finCodexPageTable());
+    $covered = $records->pluck('covered')->values()->all();
+
+    expect($records->first()['covered'])->toBeFalse()
+        ->and($records->last()['covered'])->toBeTrue()
+        // No uncovered row ever appears after a covered one.
+        ->and($covered)->toBe(collect($covered)->sort()->values()->all())
+        // Inside the uncovered block the order is the label's.
+        ->and($labels = $records->reject(fn (array $row): bool => $row['covered'])->pluck('label')->values()->all())
+        ->toBe(collect($labels)->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()->all());
+});
+
+it('searches the screen name and the route name, and says so when nothing matches', function (): void {
+    $this->usesPanel('admin', finCodexPageUser());
+
+    $keys = finCodexPageKeys(finCodexPageTable()->searchTable('Users'));
+
+    expect($keys)->toContain(finCodexPageRowKey('admin', UserResource::class))
+        ->and($keys)->not->toContain(finCodexPageRowKey('admin', Dashboard::class));
+
+    $miss = finCodexPageTable()->searchTable('zzzz-no-such-screen');
+
+    expect(finCodexPageKeys($miss))->toBe([]);
+
+    $miss->assertSee((string) __('fin-codex::fin-codex.coverage.empty'));
+});
+
+it('re-orders on a header click, which drops the uncovered-first opening order', function (): void {
+    finCodexPageArticle('dashboard-guide', ContextType::PageClass, Dashboard::class, 'admin');
+
+    $this->usesPanel('admin', finCodexPageUser());
+    forgetHelpMemo();
+
+    $dashboardKey = finCodexPageRowKey('admin', Dashboard::class);
+    $opening = finCodexPageKeys(finCodexPageTable());
+
+    // The one covered row opens last, under every uncovered screen.
+    expect(array_search($dashboardKey, $opening, true))->toBe(count($opening) - 1);
+
+    $sorted = finCodexPageRecords(finCodexPageTable()->sortTable('label'));
+    $labels = $sorted->pluck('label')->values()->all();
+
+    expect($labels)->toBe(collect($labels)->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()->all())
+        ->and(array_search($dashboardKey, finCodexPageKeys(finCodexPageTable()->sortTable('label')), true))
+        ->not->toBe(count($opening) - 1);
+});
+
+it('paginates instead of dumping every screen on one page', function (): void {
+    $this->usesPanel('admin', finCodexPageUser());
+
+    $total = count(app(CoverageReport::class)->rows());
+
+    $page = Livewire::test(AdminHelpCoverage::class)->set('tableRecordsPerPage', 5);
+    $records = $page->instance()->getTableRecords();
+
+    expect($records)->toBeInstanceOf(LengthAwarePaginator::class)
+        ->and($records->total())->toBe($total)
+        ->and($records->count())->toBe(5);
+
+    $first = finCodexPageKeys($page);
+    $second = finCodexPageKeys($page->call('setPage', 2));
+
+    // preserve_keys is what keeps the second slice keyed by route name too.
+    expect($second)->toHaveCount(5)
+        ->and(array_intersect($first, $second))->toBe([])
+        ->and(array_merge($first, $second))->toBe(array_slice(finCodexPageKeys(finCodexPageTable()), 0, 10));
 });
