@@ -201,5 +201,12 @@ return [
             'keep' => 'Revisionen pro Sprache',
             'keep_help' => 'Ältere Revisionen fallen weg, sobald neue dazukommen. Ein kleinerer Wert löscht jetzt nichts, er senkt nur die Obergrenze ab hier.',
         ],
+        'removal' => [
+            'heading' => 'Sprache entfernen?',
+            'intro' => 'Diese Sprachen fallen gleich aus den Einstellungen heraus:',
+            'row' => ':locale — :count Übersetzungen',
+            'kept' => 'Die Übersetzungen bleiben in der Datenbank. Die Sprache verschwindet aus den Reitern im Editor und aus dem Fallback für Leser; nehmen Sie sie wieder auf, ist alles unverändert wieder da.',
+            'submit' => 'Einstellungen speichern',
+        ],
     ],
 ];

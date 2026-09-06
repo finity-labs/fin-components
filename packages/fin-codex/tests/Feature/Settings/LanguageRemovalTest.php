@@ -1,10 +1,14 @@
 <?php
 
+use Filament\Actions\Action;
+use Filament\Actions\Testing\TestAction;
 use FinityLabs\FinCodex\Pages\HelpSettings;
+use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpSettings;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Enums\FallbackBehaviour;
 use FinityLabs\LinCodex\Models\Article;
+use FinityLabs\LinCodex\Models\ArticleRevision;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Livewire\Features\SupportTesting\Testable;
@@ -257,4 +261,187 @@ it('counts translations without naming a table', function (): void {
 
     expect(HelpSettings::translationCount('hu'))->toBe(4)
         ->and(HelpSettings::translationCount('nl'))->toBe(0);
+});
+
+/*
+ * The second warning: a save that drops a language asks once more.
+ *
+ * SettingsPage's own save button cannot carry a modal — with the form wrapper
+ * it renders type="submit" and no wire:click at all, and without it a string
+ * action() short-circuits into a direct method call. getFormActions() is
+ * replaced by a plain Action whose action() is a closure, which renders a
+ * mountAction() handler. The test handle is the same shape: the empty
+ * schema: argument is load-bearing, because getDefaultTestingSchemaName() is
+ * 'form' and a bare schemaComponent('content.form-actions') would resolve to
+ * form.content.form-actions and silently not mount.
+ */
+
+/** Mount the replaced save button and hand back the mounted Action. */
+function finCodexRemovalMountSave(Testable $page): ?Action
+{
+    $page->mountAction(TestAction::make('save')->schemaComponent('content.form-actions', schema: ''));
+
+    return $page->instance()->getMountedAction();
+}
+
+/** The save button as getFormActions() hands it over, unmounted. */
+function finCodexRemovalSaveAction(Testable $page): Action
+{
+    /** @var Action $action */
+    $action = collect($page->instance()->getFormActions())
+        ->first(fn (Action $action): bool => $action->getName() === 'save');
+
+    return $action;
+}
+
+it('asks once more when a save is about to drop a language', function (): void {
+    finCodexRemovalSeed(['en', 'de'], 'en');
+    finCodexRemovalTranslations('de', 2);
+
+    $page = finCodexRemovalPage();
+    $rows = finCodexRemovalRows($page);
+
+    $page->set('data.languages', [$rows['en']]);
+
+    $action = finCodexRemovalMountSave($page);
+
+    expect($action)->not->toBeNull()
+        ->and($action?->isConfirmationRequired())->toBeTrue()
+        ->and((string) $action?->getModalHeading())->toBe((string) __('fin-codex::fin-codex.settings.removal.heading'));
+
+    $description = (string) $action?->getModalDescription();
+
+    expect($description)
+        ->toContain((string) __('fin-codex::fin-codex.settings.removal.intro'))
+        // The language and what it holds, so the cost is on screen before the
+        // press, not after it.
+        ->toContain((string) __('fin-codex::fin-codex.settings.removal.row', ['locale' => 'de', 'count' => 2]))
+        // And the sentence that stops the panic.
+        ->toContain((string) __('fin-codex::fin-codex.settings.removal.kept'));
+});
+
+it('names every language going away, each with its own count', function (): void {
+    finCodexRemovalSeed(['en', 'de', 'hu'], 'en');
+    finCodexRemovalTranslations('de', 2);
+    finCodexRemovalTranslations('hu', 5);
+
+    $page = finCodexRemovalPage();
+    $rows = finCodexRemovalRows($page);
+
+    $page->set('data.languages', [$rows['en']]);
+
+    $description = (string) finCodexRemovalMountSave($page)?->getModalDescription();
+
+    expect($description)
+        ->toContain((string) __('fin-codex::fin-codex.settings.removal.row', ['locale' => 'de', 'count' => 2]))
+        ->toContain((string) __('fin-codex::fin-codex.settings.removal.row', ['locale' => 'hu', 'count' => 5]));
+});
+
+it('does not ask when nothing is being removed', function (): void {
+    finCodexRemovalSeed(['en', 'de'], 'en');
+
+    $page = finCodexRemovalPage();
+    $rows = finCodexRemovalRows($page);
+    $rows['de']['display'] = 'Deutsch (Österreich)';
+
+    $page->set('data.languages', array_values($rows));
+
+    expect(finCodexRemovalSaveAction($page)->isConfirmationRequired())->toBeFalse()
+        ->and($page->instance()->removedLanguages())->toBe([]);
+
+    // The confirmation must not become a speed bump on every save.
+    $page->call('save')->assertHasNoErrors();
+
+    expect(finCodexRemovalStored()->languages[1]['display'])->toBe('Deutsch (Österreich)');
+});
+
+it('writes the shortened list when the confirmation is accepted', function (): void {
+    finCodexRemovalSeed(['en', 'de'], 'en');
+    finCodexRemovalTranslations('de', 2);
+
+    $page = finCodexRemovalPage();
+    $rows = finCodexRemovalRows($page);
+
+    $page->set('data.languages', [$rows['en']]);
+
+    finCodexRemovalMountSave($page);
+
+    $page->callMountedAction();
+
+    expect(finCodexRemovalStoredCodes())->toBe(['en']);
+});
+
+it('writes nothing when the confirmation is left standing', function (): void {
+    finCodexRemovalSeed(['en', 'de'], 'en');
+
+    $page = finCodexRemovalPage();
+    $rows = finCodexRemovalRows($page);
+
+    $page->set('data.languages', [$rows['en']]);
+
+    // Mounted, never called: the admin read the modal and walked away.
+    expect(finCodexRemovalMountSave($page)?->isConfirmationRequired())->toBeTrue()
+        ->and(finCodexRemovalStoredCodes())->toBe(['en', 'de']);
+});
+
+/*
+ * The locked decision, and the row that gets to be explicit about it.
+ */
+
+it('deletes no translation when a language is removed, and gives them all back when it returns', function (): void {
+    finCodexRemovalSeed(['en', 'de'], 'en');
+    finCodexRemovalTranslations('en', 1);
+    $german = finCodexRemovalTranslations('de', 3);
+
+    $page = finCodexRemovalPage();
+    $rows = finCodexRemovalRows($page);
+
+    $page->set('data.languages', [$rows['en']]);
+    finCodexRemovalMountSave($page);
+    $page->callMountedAction();
+
+    expect(finCodexRemovalStoredCodes())->toBe(['en'])
+        // Not one row went away, and every one of them still reads exactly as
+        // it did: a settings save never touches article content.
+        ->and(ArticleTranslation::query()->where('locale', 'de')->count())->toBe(3);
+
+    foreach ($german as $translation) {
+        $fresh = ArticleTranslation::query()->findOrFail($translation->id);
+
+        expect($fresh->title)->toBe($translation->title)
+            ->and($fresh->body)->toBe($translation->body);
+    }
+
+    // Adding the language back brings the tab and its texts straight back.
+    finCodexRemovalSeed(['en', 'de'], 'en');
+    forgetHelpMemo();
+
+    expect(array_column(TranslationTabs::languages()['languages'], 'code'))->toBe(['en', 'de'])
+        ->and(ArticleTranslation::query()->where('locale', 'de')->count())->toBe(3);
+});
+
+it('prunes no revision when the keep count is lowered', function (): void {
+    finCodexRemovalSeed(['en'], 'en');
+
+    $article = Article::factory()->create(['slug' => 'keeping-history']);
+
+    ArticleRevision::factory()->count(5)->create([
+        'article_id' => $article->id,
+        'locale' => 'en',
+    ]);
+
+    $page = finCodexRemovalPage();
+
+    expect($page->get('data.revisions_keep'))->toEqual(10);
+
+    $page->set('data.revisions_keep', '2')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    // Pruning lives in the core's snapshot path (RevisionManager::prune(),
+    // called per article and per locale after a revision is recorded), never
+    // in a settings save. Lowering the ceiling changes what happens from here
+    // on; it deletes nothing that is already stored.
+    expect(finCodexRemovalStored()->revisions_keep)->toBe(2)
+        ->and(ArticleRevision::query()->where('article_id', $article->id)->count())->toBe(5);
 });

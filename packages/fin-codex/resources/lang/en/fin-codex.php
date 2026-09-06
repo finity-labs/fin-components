@@ -201,5 +201,12 @@ return [
             'keep' => 'Revisions kept per language',
             'keep_help' => 'Older revisions are dropped as new ones are recorded. Lowering this number deletes nothing now; it only changes the ceiling from here on.',
         ],
+        'removal' => [
+            'heading' => 'Remove a language?',
+            'intro' => 'These languages are about to be removed from the settings:',
+            'row' => ':locale — :count translations',
+            'kept' => 'Their translations stay in the database. The language disappears from the editor tabs and from the reader fallback, and comes back with everything intact if you add it again.',
+            'submit' => 'Save settings',
+        ],
     ],
 ];

@@ -201,5 +201,12 @@ return [
             'keep' => 'Megőrzött változatok nyelvenként',
             'keep_help' => 'A régebbi változatok kiesnek, ahogy újak keletkeznek. A szám csökkentése most nem töröl semmit, csak a felső határt viszi lejjebb.',
         ],
+        'removal' => [
+            'heading' => 'Eltávolítja a nyelvet?',
+            'intro' => 'A következő nyelvek kerülnek ki a beállításokból:',
+            'row' => ':locale — :count fordítás',
+            'kept' => 'A fordítások megmaradnak az adatbázisban. A nyelv eltűnik a szerkesztő füleiről és az olvasói tartaléksorrendből, de ha később visszaveszi, minden a helyén lesz.',
+            'submit' => 'Beállítások mentése',
+        ],
     ],
 ];

@@ -6,6 +6,7 @@ namespace FinityLabs\FinCodex\Pages;
 
 use BackedEnum;
 use Closure;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -22,6 +23,7 @@ use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\HtmlString;
 use Spatie\LaravelSettings\Exceptions\MissingSettings;
 use UnitEnum;
 
@@ -256,6 +258,102 @@ class HelpSettings extends SettingsPage
         }
 
         parent::save();
+    }
+
+    /**
+     * The save button, replaced so that it can ask first.
+     *
+     * SettingsPage's own button cannot carry a modal in either of its two
+     * modes: with the form wrapper it renders type="submit" and no wire:click
+     * at all, and without it a string action() short-circuits
+     * getLivewireClickHandler() into a direct method call. requiresConfirmation()
+     * on that button does nothing. A plain Action whose action() is a CLOSURE
+     * renders a mountAction() handler, and the confirmation works.
+     *
+     * Everything else is the vendor's button, down to its own label key and
+     * mod+s, so a host's muscle memory still works.
+     *
+     * @return array<Action>
+     */
+    public function getFormActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label(__('filament-spatie-laravel-settings-plugin::pages/settings-page.form.actions.save.label'))
+                ->keyBindings(['mod+s'])
+                ->visible($this->canEdit())
+                // Only when something is going away — a confirmation on every
+                // save is a speed bump, not a warning.
+                ->requiresConfirmation(fn (): bool => $this->removedLanguages() !== [])
+                ->modalHeading(__('fin-codex::fin-codex.settings.removal.heading'))
+                ->modalDescription(fn (): ?Htmlable => $this->removalDescription())
+                ->modalSubmitActionLabel(__('fin-codex::fin-codex.settings.removal.submit'))
+                // A closure, never the string 'save': the string is what puts
+                // you back on a button that cannot confirm.
+                ->action(fn () => $this->save()),
+        ];
+    }
+
+    /**
+     * The stored language codes that are no longer in the form's live state.
+     *
+     * getRawState() is the unvalidated state — literally what is about to be
+     * saved — which is the only honest source for a warning that has to appear
+     * before validation runs. It is the same accessor PreviewAction reads.
+     * Nothing is stored on an installation that has never saved, so the
+     * rescued fallback is an empty list and no save is ever a removal there.
+     *
+     * @return list<string>
+     */
+    public function removedLanguages(): array
+    {
+        /** @var list<string> $stored */
+        $stored = rescue(
+            fn (): array => collect(app(CodexSettings::class)->languages)
+                ->pluck('code')
+                ->filter()
+                ->values()
+                ->all(),
+            [],
+            report: false,
+        );
+
+        /** @var array<mixed> $rows */
+        $rows = $this->form->getRawState()['languages'] ?? [];
+
+        $current = collect($rows)->pluck('code')->filter()->all();
+
+        return array_values(array_diff($stored, $current));
+    }
+
+    /**
+     * The languages going away, one line each with what they hold, and the
+     * sentence that says the texts are kept.
+     *
+     * The lines are escaped and joined with <br> rather than newlines, because
+     * a modal description renders as one paragraph and three languages on one
+     * run-on line is exactly the thing this warning exists to avoid.
+     */
+    private function removalDescription(): ?Htmlable
+    {
+        $removed = $this->removedLanguages();
+
+        if ($removed === []) {
+            return null;
+        }
+
+        $lines = [(string) __('fin-codex::fin-codex.settings.removal.intro')];
+
+        foreach ($removed as $code) {
+            $lines[] = (string) __('fin-codex::fin-codex.settings.removal.row', [
+                'locale' => $code,
+                'count' => self::translationCount($code),
+            ]);
+        }
+
+        $lines[] = (string) __('fin-codex::fin-codex.settings.removal.kept');
+
+        return new HtmlString(implode('<br>', array_map(fn (string $line): string => e($line), $lines)));
     }
 
     /**
