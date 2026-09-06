@@ -5,7 +5,7 @@
 .php_cs.cache
 .phpunit.result.cache
 composer.lock
-coverage
+/coverage
 phpstan.cache
 .idea
 .vscode

@@ -18,6 +18,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
+use FinityLabs\FinCodex\Coverage\WarningsSection;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -107,10 +108,15 @@ class HelpCoverage extends Page implements HasTable
         return (string) __('fin-codex::fin-codex.coverage.badge_tooltip');
     }
 
-    /** The base Page renders {{ $this->content }}; 07-03 prepends the warnings section here. */
+    /**
+     * The base Page renders {{ $this->content }}. The warnings section sits
+     * above the table and renders nothing when the sources are happy, so an
+     * admin with nothing to fix sees the page exactly as before.
+     */
     public function content(Schema $schema): Schema
     {
         return $schema->components([
+            WarningsSection::make(),
             EmbeddedTable::make(),
         ]);
     }

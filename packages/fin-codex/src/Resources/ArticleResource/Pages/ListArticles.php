@@ -13,6 +13,7 @@ use Filament\Schemas\Components\RenderHook;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\View\PanelsRenderHook;
+use FinityLabs\FinCodex\Coverage\WarningsSection;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Resources\ArticleResource\Livewire\FileArticlesTable;
 use FinityLabs\LinCodex\Contracts\ContentSource;
@@ -64,10 +65,16 @@ final class ListArticles extends ListRecords
      * Filament's own list content with the table swapped for the nested
      * component on the files tab; the render hooks stay where hosts expect
      * them.
+     *
+     * The warnings section goes above the tab strip and outside
+     * getTabsContentComponent(): a source warning describes the whole source,
+     * not one tab, and DeclaredContextsSource contributes warnings that have
+     * nothing to do with files. It renders nothing when the sources are happy.
      */
     public function content(Schema $schema): Schema
     {
         return $schema->components([
+            WarningsSection::make(),
             $this->getTabsContentComponent(),
             RenderHook::make(PanelsRenderHook::RESOURCE_PAGES_LIST_RECORDS_TABLE_BEFORE),
             $this->activeTab === 'files'
