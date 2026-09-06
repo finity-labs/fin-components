@@ -8,6 +8,7 @@ use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ContextsRepeater;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use Illuminate\Database\Eloquent\Model;
 
@@ -32,6 +33,22 @@ final class CreateArticle extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         return app(ArticleWriter::class)->create($data, $this->userId());
+    }
+
+    /**
+     * The contexts repeater keeps `key` and `url` apart while the admin is
+     * picking; the writer wants one key per row, in drag order.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeCreate(array $data): array
+    {
+        $rows = $data['contexts'] ?? [];
+        $data['contexts'] = ContextsRepeater::dehydrate(is_array($rows) ? array_values($rows) : []);
+
+        return $data;
     }
 
     protected function afterFill(): void

@@ -9,6 +9,7 @@ use Filament\Facades\Filament;
 use Filament\Resources\Pages\EditRecord;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ContextsRepeater;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
@@ -64,9 +65,11 @@ final class EditArticle extends EditRecord
 
     /**
      * The form state the writer speaks: enums as their backing values, the
-     * json columns as arrays, and one entry per stored translation keyed by
-     * locale. The translations are read with a fresh query rather than the
-     * relation, so strict models never see an unloaded relation.
+     * json columns as arrays, one entry per stored translation keyed by
+     * locale and the stored contexts in sort order. Both are read with a
+     * fresh query rather than the relation, so strict models never see an
+     * unloaded relation. Contexts declared in code are not here: they have
+     * no row to fill from and are listed read-only beside the repeater.
      *
      * @param  array<string, mixed>  $data
      *
@@ -93,6 +96,24 @@ final class EditArticle extends EditRecord
                 ],
             ])
             ->all();
+        $data['contexts'] = ContextsRepeater::fill($record);
+
+        return $data;
+    }
+
+    /**
+     * The contexts repeater keeps `key` and `url` apart while the admin is
+     * picking; the writer wants one key per row, in the order Filament hands
+     * the rows back, which is the order they were dragged into.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $rows = $data['contexts'] ?? [];
+        $data['contexts'] = ContextsRepeater::dehydrate(is_array($rows) ? array_values($rows) : []);
 
         return $data;
     }

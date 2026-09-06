@@ -24,6 +24,7 @@ return [
             'identity' => 'Identität',
             'publishing' => 'Veröffentlichung',
             'discovery' => 'Auffindbarkeit',
+            'contexts' => 'Kontexte',
             'slug' => 'Slug (Pfad)',
             'slug_help' => 'Kebab-Case-Segmente, durch Schrägstriche getrennt; das übergeordnete Element muss existieren.',
             'parent' => 'Übergeordnet',
@@ -83,7 +84,15 @@ return [
         ],
         'shadowed' => 'Dieser Artikel überdeckt die Datei :path; sie wird ignoriert, solange der Artikel existiert.',
         'contexts' => [
+            'panel' => 'Panel',
             'any_panel' => 'Jedes Panel',
+            'type' => 'Typ',
+            'key' => 'Schlüssel',
+            'pattern' => 'URL-Muster',
+            'label' => 'Angezeigt auf',
+            'add' => 'Kontext hinzufügen',
+            'declared' => 'Im Code deklariert',
+            'declared_by' => 'Deklariert von :class für Panel :panel',
         ],
         'validation' => [
             'slug_format' => 'Der Slug muss aus Kebab-Case-Segmenten bestehen, durch Schrägstriche getrennt.',

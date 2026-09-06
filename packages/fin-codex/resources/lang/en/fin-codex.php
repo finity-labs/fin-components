@@ -24,6 +24,7 @@ return [
             'identity' => 'Identity',
             'publishing' => 'Publishing',
             'discovery' => 'Discovery',
+            'contexts' => 'Contexts',
             'slug' => 'Slug (path)',
             'slug_help' => 'Kebab-case segments separated by slashes; the parent must exist.',
             'parent' => 'Parent',
@@ -83,7 +84,15 @@ return [
         ],
         'shadowed' => 'This article shadows the file :path, which is ignored while the article exists.',
         'contexts' => [
+            'panel' => 'Panel',
             'any_panel' => 'Any panel',
+            'type' => 'Type',
+            'key' => 'Key',
+            'pattern' => 'URL pattern',
+            'label' => 'Shown on',
+            'add' => 'Add context',
+            'declared' => 'Declared in code',
+            'declared_by' => 'Declared by :class for panel :panel',
         ],
         'validation' => [
             'slug_format' => 'The slug must be kebab-case segments separated by slashes.',

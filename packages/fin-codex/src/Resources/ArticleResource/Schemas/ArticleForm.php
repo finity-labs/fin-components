@@ -30,8 +30,8 @@ use FinityLabs\LinCodex\Sources\SlugPath;
  *
  * The record is read from the schema rather than passed in: EditRecord binds
  * the model before form() runs, so $schema->getRecord() is the Article on
- * edit and null on create, which is what the slug suggestion and the HTML
- * format lock need to know.
+ * edit and null on create, which is what the slug suggestion, the HTML
+ * format lock and the declared-contexts list need to know.
  */
 final class ArticleForm
 {
@@ -48,6 +48,7 @@ final class ArticleForm
                     self::identity(),
                     self::publishing(),
                     self::discovery(),
+                    ContextsRepeater::section($record),
                 ])->columnSpan(1),
             ]);
     }

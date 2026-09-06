@@ -24,6 +24,7 @@ return [
             'identity' => 'Azonosító',
             'publishing' => 'Közzététel',
             'discovery' => 'Felfedezhetőség',
+            'contexts' => 'Kontextusok',
             'slug' => 'Slug (útvonal)',
             'slug_help' => 'Kötőjeles szegmensek perjellel elválasztva; a szülőnek léteznie kell.',
             'parent' => 'Szülő',
@@ -83,7 +84,15 @@ return [
         ],
         'shadowed' => 'Ez a cikk elfedi a(z) :path fájlt, amely a cikk létezéséig figyelmen kívül marad.',
         'contexts' => [
+            'panel' => 'Panel',
             'any_panel' => 'Bármely panel',
+            'type' => 'Típus',
+            'key' => 'Kulcs',
+            'pattern' => 'URL-minta',
+            'label' => 'Megjelenik itt',
+            'add' => 'Kontextus hozzáadása',
+            'declared' => 'Kódban deklarálva',
+            'declared_by' => ':class deklarálta a(z) :panel panelhez',
         ],
         'validation' => [
             'slug_format' => 'A slug kötőjeles szegmensekből álljon, perjellel elválasztva.',
