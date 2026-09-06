@@ -15,6 +15,7 @@ use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\CreateArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\EditArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\ListArticles;
+use FinityLabs\FinCodex\Resources\ArticleResource\RelationManagers\MediaRelationManager;
 use FinityLabs\FinCodex\Resources\ArticleResource\RelationManagers\RevisionsRelationManager;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ArticleForm;
 use FinityLabs\FinCodex\Resources\ArticleResource\Tables\ArticlesTable;
@@ -108,6 +109,7 @@ class ArticleResource extends Resource
     {
         return [
             'revisions' => RevisionsRelationManager::class,
+            'media' => MediaRelationManager::class,
         ];
     }
 }

@@ -150,4 +150,27 @@ return [
             'done' => 'Die Revision wurde wiederhergestellt.',
         ],
     ],
+    'media' => [
+        'title' => 'Medien',
+        'empty' => 'Noch keine Uploads.',
+        'empty_description' => 'Bilder, die in einen Sprachtext gezogen werden, landen hier.',
+        'columns' => [
+            'preview' => 'Vorschau',
+            'name' => 'Datei',
+            'size' => 'Größe',
+            'type' => 'Typ',
+            'uploader' => 'Hochgeladen von',
+            'date' => 'Hochgeladen',
+        ],
+        'no_uploader' => 'Unbekannt',
+        'no_preview' => 'Keine Vorschau',
+        'delete' => [
+            'heading' => ':name löschen?',
+            'in_use' => 'Diese Datei wird noch verwendet in:',
+            'in_use_row' => ':slug (:locale)',
+            'in_use_hint' => 'Entfernen Sie das Bild zuerst aus diesen Texten, dann lässt sich die Datei löschen.',
+            'free' => 'Nichts verweist auf diese Datei. Sie wird aus der Datenbank und vom Speicher :disk entfernt.',
+            'done' => 'Die Datei wurde gelöscht.',
+        ],
+    ],
 ];

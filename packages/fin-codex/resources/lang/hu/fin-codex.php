@@ -150,4 +150,27 @@ return [
             'done' => 'A változat visszaállt.',
         ],
     ],
+    'media' => [
+        'title' => 'Média',
+        'empty' => 'Még nincs feltöltés.',
+        'empty_description' => 'A nyelvi szövegbe húzott képek ide kerülnek.',
+        'columns' => [
+            'preview' => 'Előnézet',
+            'name' => 'Fájl',
+            'size' => 'Méret',
+            'type' => 'Típus',
+            'uploader' => 'Feltöltötte',
+            'date' => 'Feltöltve',
+        ],
+        'no_uploader' => 'Ismeretlen',
+        'no_preview' => 'Nincs előnézet',
+        'delete' => [
+            'heading' => 'Törli a(z) :name fájlt?',
+            'in_use' => 'Ezek még használják ezt a fájlt:',
+            'in_use_row' => ':slug (:locale)',
+            'in_use_hint' => 'Előbb vegye ki a képet ezekből a szövegekből, utána törölhető a fájl.',
+            'free' => 'Semmi nem hivatkozik erre a fájlra. Törlődik az adatbázisból és a(z) :disk tárhelyről is.',
+            'done' => 'A fájl törlődött.',
+        ],
+    ],
 ];

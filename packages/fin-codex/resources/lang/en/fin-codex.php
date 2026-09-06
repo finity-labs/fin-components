@@ -150,4 +150,27 @@ return [
             'done' => 'The revision was restored.',
         ],
     ],
+    'media' => [
+        'title' => 'Media',
+        'empty' => 'No uploads yet.',
+        'empty_description' => 'Images dropped into a language body are stored here.',
+        'columns' => [
+            'preview' => 'Preview',
+            'name' => 'File',
+            'size' => 'Size',
+            'type' => 'Type',
+            'uploader' => 'Uploaded by',
+            'date' => 'Uploaded',
+        ],
+        'no_uploader' => 'Unknown',
+        'no_preview' => 'No preview',
+        'delete' => [
+            'heading' => 'Delete :name?',
+            'in_use' => 'This file is still used by:',
+            'in_use_row' => ':slug (:locale)',
+            'in_use_hint' => 'Remove the image from those texts first, then delete the file.',
+            'free' => 'Nothing points at this file. It will be removed from the database and from the :disk disk.',
+            'done' => 'The file was deleted.',
+        ],
+    ],
 ];
