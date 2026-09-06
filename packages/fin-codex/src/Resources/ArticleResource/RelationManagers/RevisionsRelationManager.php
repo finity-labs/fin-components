@@ -10,6 +10,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use FinityLabs\FinCodex\Panel\Concerns\ResolvesPanelUser;
+use FinityLabs\FinCodex\Resources\ArticleResource\Actions\RevisionPreviewAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\LinCodex\Models\ArticleRevision;
 use FinityLabs\LinCodex\Revisions\RevisionManager;
@@ -110,7 +111,9 @@ final class RevisionsRelationManager extends RelationManager
                     ->label(__('fin-codex::fin-codex.revisions.columns.locale'))
                     ->options($localeOptions),
             ])
-            ->recordActions([]);
+            ->recordActions([
+                RevisionPreviewAction::make(),
+            ]);
     }
 
     /**

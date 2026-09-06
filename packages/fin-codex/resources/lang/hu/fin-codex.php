@@ -137,5 +137,10 @@ return [
             'title' => 'Cím',
         ],
         'no_author' => 'Ismeretlen',
+        'preview' => [
+            'label' => 'Megtekintés',
+            'heading' => ':time időpontban mentett változat (:locale)',
+            'close' => 'Bezárás',
+        ],
     ],
 ];

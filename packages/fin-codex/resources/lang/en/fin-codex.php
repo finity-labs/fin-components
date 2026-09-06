@@ -137,5 +137,10 @@ return [
             'title' => 'Title',
         ],
         'no_author' => 'Unknown',
+        'preview' => [
+            'label' => 'Preview',
+            'heading' => 'Revision from :time (:locale)',
+            'close' => 'Close',
+        ],
     ],
 ];
