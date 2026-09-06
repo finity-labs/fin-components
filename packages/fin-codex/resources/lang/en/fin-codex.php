@@ -99,6 +99,13 @@ return [
             'heading' => 'Preview (:locale)',
             'close' => 'Close',
         ],
+        'convert' => [
+            'label' => 'Convert to Markdown',
+            'heading' => 'Convert this article to Markdown?',
+            'description' => 'Every translation is converted and the HTML is kept as a revision.',
+            'done' => 'Converted to Markdown',
+        ],
+        'html_readonly' => 'HTML articles are read-only; convert to Markdown to edit the body.',
         'copy' => [
             'label' => 'Copy from default language',
             'heading' => 'Overwrite this translation?',

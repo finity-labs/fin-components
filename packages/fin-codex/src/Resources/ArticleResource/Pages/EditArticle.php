@@ -10,6 +10,7 @@ use Filament\Resources\Pages\EditRecord;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
 use FinityLabs\FinCodex\Editor\MediaRecorder;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Resources\ArticleResource\Actions\ConvertToMarkdownAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Actions\PreviewAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ContextsRepeater;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
@@ -144,7 +145,10 @@ final class EditArticle extends EditRecord
      */
     protected function getHeaderActions(): array
     {
-        return [PreviewAction::make()];
+        return [
+            PreviewAction::make(),
+            ConvertToMarkdownAction::make(),
+        ];
     }
 
     /** The panel user's id, or null for a panel without an authenticated user. Public: the header actions attribute their writes to it. */

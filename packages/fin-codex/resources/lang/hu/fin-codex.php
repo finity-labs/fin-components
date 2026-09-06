@@ -99,6 +99,13 @@ return [
             'heading' => 'Előnézet (:locale)',
             'close' => 'Bezárás',
         ],
+        'convert' => [
+            'label' => 'Átalakítás Markdownra',
+            'heading' => 'Átalakítja ezt a cikket Markdownra?',
+            'description' => 'Minden fordítás átalakul; a HTML revízióként megmarad.',
+            'done' => 'Átalakítva Markdownra',
+        ],
+        'html_readonly' => 'A HTML-cikkek csak olvashatók; a törzs szerkesztéséhez alakítsa át Markdownra.',
         'copy' => [
             'label' => 'Másolás az alapértelmezett nyelvből',
             'heading' => 'Felülírja ezt a fordítást?',

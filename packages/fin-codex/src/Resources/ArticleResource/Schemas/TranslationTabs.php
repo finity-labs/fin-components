@@ -18,6 +18,7 @@ use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinCodex\Editor\MediaRecorder;
 use FinityLabs\FinCodex\Editor\OutdatedTranslations;
 use FinityLabs\FinCodex\Editor\SlugRules;
+use FinityLabs\LinCodex\Enums\ArticleFormat;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Illuminate\Database\QueryException;
@@ -35,8 +36,9 @@ use Spatie\LaravelSettings\Exceptions\MissingSettings;
  * article exists in its default language and is translated later.
  *
  * The body is a MarkdownEditor, never a WYSIWYG: article bodies round-trip
- * to Markdown files, and a rich editor would smuggle HTML into them. The
- * HTML read-only body arrives in 05-07.
+ * to Markdown files, and a rich editor would smuggle HTML into them. An
+ * HTML-format article gets no editor at all — its body is shown as source,
+ * read-only, until the convert action turns it into Markdown.
  *
  * Tabs::livewireProperty() keeps the active tab on the page itself, so the
  * server knows which language the admin is looking at (05-07's preview reads
@@ -179,14 +181,42 @@ final class TranslationTabs
             $title = $title->afterStateUpdated(self::suggestSlug());
         }
 
+        $isHtml = $record?->format === ArticleFormat::Html;
+
         return [
             $title,
             Textarea::make("translations.{$code}.excerpt")
                 ->label(__('fin-codex::fin-codex.editor.form.excerpt'))
                 ->rows(3),
-            self::body($code)->required($isDefault),
+            $isHtml ? self::htmlBody($code) : self::body($code)->required($isDefault),
             self::copyFromDefault($code, $default),
         ];
+    }
+
+    /**
+     * An HTML article's body: its own source, read-only.
+     *
+     * A MarkdownEditor would parse the HTML as Markdown and hand it back
+     * mangled, and a disabled one renders its state through Markdown too, so
+     * the tags would show up as text. A rich editor is out for the reason the
+     * class docblock gives. What is left is the source in a plain textarea
+     * the admin can read and copy but not save.
+     *
+     * dehydrated(false) keeps the body key out of the form data entirely, and
+     * ArticleWriter reads a missing body key as "keep the stored one", so a
+     * title or excerpt edit on an HTML article cannot touch the body even by
+     * accident. Not required either: there is nothing here to fill in — the
+     * body exists, and the only way to change it is the convert action.
+     */
+    private static function htmlBody(string $code): Textarea
+    {
+        return Textarea::make("translations.{$code}.body")
+            ->label(__('fin-codex::fin-codex.editor.form.body'))
+            ->helperText(__('fin-codex::fin-codex.editor.html_readonly'))
+            ->extraAttributes(['data-fin-codex-html-body' => $code])
+            ->rows(24)
+            ->disabled()
+            ->dehydrated(false);
     }
 
     /**

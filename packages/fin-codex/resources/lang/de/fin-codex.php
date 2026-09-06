@@ -99,6 +99,13 @@ return [
             'heading' => 'Vorschau (:locale)',
             'close' => 'Schließen',
         ],
+        'convert' => [
+            'label' => 'In Markdown umwandeln',
+            'heading' => 'Diesen Artikel in Markdown umwandeln?',
+            'description' => 'Jede Übersetzung wird umgewandelt; das HTML bleibt als Revision erhalten.',
+            'done' => 'In Markdown umgewandelt',
+        ],
+        'html_readonly' => 'HTML-Artikel sind schreibgeschützt; wandeln Sie sie in Markdown um, um den Inhalt zu bearbeiten.',
         'copy' => [
             'label' => 'Aus der Standardsprache kopieren',
             'heading' => 'Diese Übersetzung überschreiben?',
