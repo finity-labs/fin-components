@@ -39,6 +39,32 @@ return [
             'excerpt' => 'Kivonat',
             'body' => 'Törzs',
         ],
+        'columns' => [
+            'slug' => 'Cikk',
+            'source' => 'Forrás',
+            'published' => 'Közzétéve',
+            'visibility' => 'Láthatóság',
+            'format' => 'Formátum',
+            'languages' => 'Nyelvek',
+        ],
+        'source' => [
+            'database' => 'Adatbázis',
+            'both' => 'Fájl és adatbázis',
+            'file' => 'Fájl',
+        ],
+        'state' => [
+            'present' => 'Lefordítva',
+            'missing' => 'Hiányzik',
+            'outdated' => 'Elavult',
+        ],
+        'filters' => [
+            'published' => 'Közzétéve',
+            'visibility' => 'Láthatóság',
+            'format' => 'Formátum',
+            'source' => 'Forrás',
+            'missing' => 'Hiányzó nyelv',
+            'outdated' => 'Elavult nyelv',
+        ],
         'validation' => [
             'slug_format' => 'A slug kötőjeles szegmensekből álljon, perjellel elválasztva.',
             'parent_missing' => 'Nem létezik cikk a(z) :parent helyen.',

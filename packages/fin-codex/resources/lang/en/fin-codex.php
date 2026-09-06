@@ -39,6 +39,32 @@ return [
             'excerpt' => 'Excerpt',
             'body' => 'Body',
         ],
+        'columns' => [
+            'slug' => 'Article',
+            'source' => 'Source',
+            'published' => 'Published',
+            'visibility' => 'Visibility',
+            'format' => 'Format',
+            'languages' => 'Languages',
+        ],
+        'source' => [
+            'database' => 'Database',
+            'both' => 'File and database',
+            'file' => 'File',
+        ],
+        'state' => [
+            'present' => 'Translated',
+            'missing' => 'Missing',
+            'outdated' => 'Outdated',
+        ],
+        'filters' => [
+            'published' => 'Published',
+            'visibility' => 'Visibility',
+            'format' => 'Format',
+            'source' => 'Source',
+            'missing' => 'Missing language',
+            'outdated' => 'Outdated language',
+        ],
         'validation' => [
             'slug_format' => 'The slug must be kebab-case segments separated by slashes.',
             'parent_missing' => 'No article exists at :parent.',

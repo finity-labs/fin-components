@@ -39,6 +39,32 @@ return [
             'excerpt' => 'Auszug',
             'body' => 'Inhalt',
         ],
+        'columns' => [
+            'slug' => 'Artikel',
+            'source' => 'Quelle',
+            'published' => 'Veröffentlicht',
+            'visibility' => 'Sichtbarkeit',
+            'format' => 'Format',
+            'languages' => 'Sprachen',
+        ],
+        'source' => [
+            'database' => 'Datenbank',
+            'both' => 'Datei und Datenbank',
+            'file' => 'Datei',
+        ],
+        'state' => [
+            'present' => 'Übersetzt',
+            'missing' => 'Fehlt',
+            'outdated' => 'Veraltet',
+        ],
+        'filters' => [
+            'published' => 'Veröffentlicht',
+            'visibility' => 'Sichtbarkeit',
+            'format' => 'Format',
+            'source' => 'Quelle',
+            'missing' => 'Fehlende Sprache',
+            'outdated' => 'Veraltete Sprache',
+        ],
         'validation' => [
             'slug_format' => 'Der Slug muss aus Kebab-Case-Segmenten bestehen, durch Schrägstriche getrennt.',
             'parent_missing' => 'Unter :parent existiert kein Artikel.',
