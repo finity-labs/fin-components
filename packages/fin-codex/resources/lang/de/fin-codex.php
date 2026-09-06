@@ -142,5 +142,12 @@ return [
             'heading' => 'Revision vom :time (:locale)',
             'close' => 'Schließen',
         ],
+        'restore' => [
+            'label' => 'Wiederherstellen',
+            'heading' => 'Den :locale-Text vom :time wiederherstellen?',
+            'description' => 'Der aktuelle :locale-Titel und -Text werden vorher als Revision gespeichert, die Wiederherstellung lässt sich also genauso rückgängig machen.',
+            'submit' => 'Wiederherstellen',
+            'done' => 'Die Revision wurde wiederhergestellt.',
+        ],
     ],
 ];

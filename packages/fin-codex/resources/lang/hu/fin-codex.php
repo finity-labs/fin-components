@@ -142,5 +142,12 @@ return [
             'heading' => ':time időpontban mentett változat (:locale)',
             'close' => 'Bezárás',
         ],
+        'restore' => [
+            'label' => 'Visszaállítás',
+            'heading' => 'Visszaállítja a(z) :locale szöveget :time állapotára?',
+            'description' => 'A jelenlegi :locale cím és törzs előbb változatként mentődik, így a visszaállítás ugyanígy visszavonható.',
+            'submit' => 'Visszaállítás',
+            'done' => 'A változat visszaállt.',
+        ],
     ],
 ];

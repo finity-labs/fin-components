@@ -5,6 +5,7 @@ use FinityLabs\FinCodex\Resources\ArticleResource\Pages\EditArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\RelationManagers\RevisionsRelationManager;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Enums\ArticleFormat;
+use FinityLabs\LinCodex\Enums\RevisionReason;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleRevision;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
@@ -76,6 +77,32 @@ function finCodexRestoreAction(Testable $component, string $name, ArticleRevisio
     expect($action)->toBeInstanceOf(Action::class);
 
     return $action;
+}
+
+/**
+ * Rewrite a translation the way the editor does, which is what makes the
+ * core record a revision of the text that was there before.
+ */
+function finCodexRestoreEdit(Article $article, string $title, string $body, string $locale = 'en'): ArticleTranslation
+{
+    $translation = ArticleTranslation::query()
+        ->where('article_id', $article->id)
+        ->where('locale', $locale)
+        ->sole();
+
+    $translation->fill(['title' => $title, 'body' => $body])->save();
+
+    return $translation;
+}
+
+/** The one revision this article has in the given locale, newest first. */
+function finCodexRestoreLatest(Article $article, ?RevisionReason $reason = null): ArticleRevision
+{
+    return ArticleRevision::query()
+        ->where('article_id', $article->id)
+        ->when($reason !== null, fn ($query) => $query->where('reason', $reason))
+        ->orderByDesc('id')
+        ->sole();
 }
 
 /** The rendered modal body of the preview action for one revision. */
@@ -213,4 +240,194 @@ it('writes nothing when a revision is previewed', function (): void {
     expect(ArticleRevision::query()->count())->toBe(1)
         ->and($translation->title)->toBe('Users')
         ->and($translation->body)->toBe('Users body');
+});
+
+it('confirms the restore with a modal naming the language and the timestamp', function (): void {
+    enableRevisions(true);
+    $user = finCodexRestoreUser();
+    $this->usesPanel('admin', $user);
+
+    $article = finCodexRestoreArticle();
+    $revision = ArticleRevision::factory()->create([
+        'article_id' => $article->id,
+        'locale' => 'de',
+        'title' => 'Benutzer',
+        'body' => 'Wie Benutzer funktionieren.',
+        'user_id' => $user->id,
+    ]);
+
+    $action = finCodexRestoreAction(finCodexRestoreManager($article), 'restore', $revision);
+
+    expect($action->isConfirmationRequired())->toBeTrue()
+        ->and((string) $action->getModalHeading())
+        ->toContain('DE')
+        ->toContain($revision->created_at->toDayDateTimeString())
+        ->and((string) $action->getModalDescription())
+        ->toBe(__('fin-codex::fin-codex.revisions.restore.description', ['locale' => 'DE']))
+        ->toContain('DE')
+        ->not->toContain(':locale');
+});
+
+it('puts the title and the body of a revision back', function (): void {
+    enableRevisions(true);
+    $user = finCodexRestoreUser();
+    $this->usesPanel('admin', $user);
+
+    $article = finCodexRestoreArticle('users', 'v1');
+    finCodexRestoreEdit($article, 'v2', 'v2 body');
+
+    // The edit is what recorded the v1 revision — nothing here hand-writes one.
+    $revision = finCodexRestoreLatest($article);
+    expect($revision->title)->toBe('v1');
+
+    finCodexRestoreManager($article)->callTableAction('restore', $revision);
+
+    $translation = ArticleTranslation::query()->where('article_id', $article->id)->where('locale', 'en')->sole();
+
+    expect($translation->title)->toBe('v1')
+        ->and($translation->body)->toBe('v1 body');
+});
+
+it('snapshots the current text first, with the Restore reason and the panel user', function (): void {
+    enableRevisions(true);
+    $user = finCodexRestoreUser();
+    $this->usesPanel('admin', $user);
+
+    $article = finCodexRestoreArticle('users', 'v1');
+    finCodexRestoreEdit($article, 'v2', 'v2 body');
+
+    $revision = finCodexRestoreLatest($article);
+    $before = ArticleRevision::query()->count();
+
+    finCodexRestoreManager($article)->callTableAction('restore', $revision);
+
+    $snapshot = finCodexRestoreLatest($article, RevisionReason::Restore);
+
+    expect(ArticleRevision::query()->count())->toBe($before + 1)
+        ->and($snapshot->reason)->toBe(RevisionReason::Restore)
+        ->and($snapshot->user_id)->toBe($user->id)
+        ->and($snapshot->locale)->toBe('en')
+        ->and($snapshot->title)->toBe('v2')
+        ->and($snapshot->body)->toBe('v2 body');
+});
+
+it('restores the restore, which is what the confirmation promises', function (): void {
+    enableRevisions(true);
+    $user = finCodexRestoreUser();
+    $this->usesPanel('admin', $user);
+
+    $article = finCodexRestoreArticle('users', 'v1');
+    finCodexRestoreEdit($article, 'v2', 'v2 body');
+
+    finCodexRestoreManager($article)->callTableAction('restore', finCodexRestoreLatest($article));
+
+    // The snapshot the restore just wrote holds v2; restoring it is the undo.
+    finCodexRestoreManager($article)->callTableAction('restore', finCodexRestoreLatest($article, RevisionReason::Restore));
+
+    $translation = ArticleTranslation::query()->where('article_id', $article->id)->where('locale', 'en')->sole();
+
+    expect($translation->title)->toBe('v2')
+        ->and($translation->body)->toBe('v2 body');
+});
+
+it('recreates a translation that was deleted since, with nothing to snapshot', function (): void {
+    enableRevisions(true);
+    $user = finCodexRestoreUser();
+    $this->usesPanel('admin', $user);
+
+    $article = finCodexRestoreArticle();
+    $revision = ArticleRevision::factory()->create([
+        'article_id' => $article->id,
+        'locale' => 'de',
+        'title' => 'Benutzer',
+        'body' => 'Wie Benutzer funktionieren.',
+        'user_id' => $user->id,
+    ]);
+
+    $before = ArticleRevision::query()->count();
+
+    finCodexRestoreManager($article)->callTableAction('restore', $revision);
+
+    $german = ArticleTranslation::query()->where('article_id', $article->id)->where('locale', 'de')->sole();
+
+    expect($german->title)->toBe('Benutzer')
+        ->and($german->body)->toBe('Wie Benutzer funktionieren.')
+        ->and(ArticleRevision::query()->count())->toBe($before);
+});
+
+it('leaves search_text current on the restored translation', function (): void {
+    enableRevisions(true);
+    $user = finCodexRestoreUser();
+    $this->usesPanel('admin', $user);
+
+    $article = finCodexRestoreArticle('users', 'v1');
+    finCodexRestoreEdit($article, 'v2', 'Something else entirely.');
+
+    finCodexRestoreManager($article)->callTableAction('restore', finCodexRestoreLatest($article));
+
+    $translation = ArticleTranslation::query()->where('article_id', $article->id)->where('locale', 'en')->sole();
+
+    expect($translation->search_text)->toContain('v1 body')
+        ->and($translation->search_text)->not->toContain('Something else entirely');
+});
+
+it('follows the revision format when it differs from the article', function (): void {
+    enableRevisions(true);
+    $user = finCodexRestoreUser();
+    $this->usesPanel('admin', $user);
+
+    $article = finCodexRestoreArticle();
+    $revision = ArticleRevision::factory()->create([
+        'article_id' => $article->id,
+        'locale' => 'en',
+        'title' => 'Legacy',
+        'body' => '<h2>Hi</h2>',
+        'format' => ArticleFormat::Html,
+        'user_id' => $user->id,
+    ]);
+
+    finCodexRestoreManager($article)->callTableAction('restore', $revision);
+
+    expect($article->fresh()->format)->toBe(ArticleFormat::Html);
+});
+
+it('restores the middle row of a table with several revisions', function (): void {
+    enableRevisions(true);
+    $user = finCodexRestoreUser();
+    $this->usesPanel('admin', $user);
+
+    // Three rows arm preventsLazyLoading on a collection hydrate; the action's
+    // record is re-resolved with a single-row find(), and setRelation('article')
+    // removes the last lazy-load risk from the core's first line.
+    $article = finCodexRestoreArticle('users', 'v1');
+    finCodexRestoreEdit($article, 'v2', 'v2 body');
+    finCodexRestoreEdit($article, 'v3', 'v3 body');
+    finCodexRestoreEdit($article, 'v4', 'v4 body');
+
+    $middle = ArticleRevision::query()->where('article_id', $article->id)->where('title', 'v2')->sole();
+
+    finCodexRestoreManager($article)
+        ->assertCanSeeTableRecords([$middle])
+        ->callTableAction('restore', $middle)
+        ->assertHasNoActionErrors();
+
+    $translation = ArticleTranslation::query()->where('article_id', $article->id)->where('locale', 'en')->sole();
+
+    expect($translation->title)->toBe('v2')
+        ->and($translation->body)->toBe('v2 body');
+});
+
+it('attributes the snapshot to nobody when no user is signed in', function (): void {
+    enableRevisions(true);
+    $this->usesPanel('portal');
+
+    $article = finCodexRestoreArticle('users', 'v1');
+    finCodexRestoreEdit($article, 'v2', 'v2 body');
+
+    finCodexRestoreManager($article)->callTableAction('restore', finCodexRestoreLatest($article));
+
+    $snapshot = finCodexRestoreLatest($article, RevisionReason::Restore);
+
+    expect($snapshot->user_id)->toBeNull()
+        ->and($snapshot->title)->toBe('v2');
 });

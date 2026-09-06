@@ -10,6 +10,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use FinityLabs\FinCodex\Panel\Concerns\ResolvesPanelUser;
+use FinityLabs\FinCodex\Resources\ArticleResource\Actions\RestoreRevisionAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Actions\RevisionPreviewAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\LinCodex\Models\ArticleRevision;
@@ -57,6 +58,17 @@ final class RevisionsRelationManager extends RelationManager
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
         return app(RevisionManager::class)->enabled();
+    }
+
+    /**
+     * The panel user, for the restore action's attribution. Public because an
+     * action closure holds the manager as $livewire and reaches it from
+     * outside the class, the way EditArticle::userId() serves its header
+     * actions.
+     */
+    public function userId(): ?int
+    {
+        return $this->panelUserId();
     }
 
     public function table(Table $table): Table
@@ -113,6 +125,7 @@ final class RevisionsRelationManager extends RelationManager
             ])
             ->recordActions([
                 RevisionPreviewAction::make(),
+                RestoreRevisionAction::make(),
             ]);
     }
 

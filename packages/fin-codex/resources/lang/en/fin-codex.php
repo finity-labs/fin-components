@@ -142,5 +142,12 @@ return [
             'heading' => 'Revision from :time (:locale)',
             'close' => 'Close',
         ],
+        'restore' => [
+            'label' => 'Restore',
+            'heading' => 'Restore the :locale text from :time?',
+            'description' => 'The current :locale title and body are saved as a revision first, so you can undo this restore the same way.',
+            'submit' => 'Restore',
+            'done' => 'The revision was restored.',
+        ],
     ],
 ];
