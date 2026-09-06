@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex\Editor;
 
+use FinityLabs\LinCodex\Enums\ArticleFormat;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Enums\RevisionReason;
 use FinityLabs\LinCodex\Models\Article;
@@ -46,7 +47,10 @@ final class ArticleWriter
      */
     public const ATTRIBUTES = ['slug', 'icon', 'sort_order', 'format', 'visibility', 'is_published', 'keywords', 'related'];
 
-    public function __construct(private readonly RevisionManager $revisions) {}
+    public function __construct(
+        private readonly RevisionManager $revisions,
+        private readonly HtmlToMarkdown $converter,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $data  ATTRIBUTES keys (enum cases or their int backing values; Eloquent's enum cast accepts both) plus
@@ -93,11 +97,68 @@ final class ArticleWriter
     }
 
     /**
-     * Rewrite the slug prefix of every descendant after a section rename.
-     * Task 2 of plan 05-01 fills this in; until then a rename touches the
-     * article alone.
+     * Convert an HTML article to Markdown in one transaction: the format is
+     * saved first under attributing(), so the core's updating hook records
+     * one revision per translation carrying the original Html format and
+     * the HTML body, authored by $userId; the converted bodies are then
+     * saved under withoutRevisions(), because the translation hook would
+     * otherwise record each HTML body a second time, labelled Markdown.
+     * Each body save re-indexes search_text through the translation hook
+     * (the format save already ran one pass through reindexTranslations();
+     * two passes are accepted). A Markdown article is returned untouched.
      */
-    private function renameDescendants(Article $article, string $oldSlug): void {}
+    public function convertToMarkdown(Article $article, ?int $userId): Article
+    {
+        if ($article->format === ArticleFormat::Markdown) {
+            return $article;
+        }
+
+        return DB::transaction(fn (): Article => $this->revisions->attributing(RevisionReason::Manual, $userId, function () use ($article, $userId): Article {
+            $article->fill(['format' => ArticleFormat::Markdown, 'updated_by' => $userId])->save();
+
+            $this->revisions->withoutRevisions(function () use ($article): void {
+                foreach ($article->translations()->get() as $translation) {
+                    $translation->body = $this->converter->convert($translation->body);
+                    $translation->save();
+                }
+            });
+
+            return $article;
+        }));
+    }
+
+    /**
+     * Rewrite the slug prefix of every descendant after a section rename,
+     * inside the caller's transaction. Runs after the parent save, so
+     * Article::saved (relinkChildren) has already orphaned the direct
+     * children through the query builder; each descendant is then re-read
+     * fresh, which makes the parent_id its own saving hook assigns dirty
+     * again (a row loaded before the parent save would keep the old value
+     * in memory, assign the same value and write nothing). Top-down by slug
+     * length so every child finds its renamed parent. The LIKE prefix is
+     * safe because slugs only contain [a-z0-9/-]: users-guide does not
+     * match users/%. A rename writes no revision (the slug is not
+     * revisioned) and leaves search_text alone (the slug is not indexed).
+     */
+    private function renameDescendants(Article $article, string $oldSlug): void
+    {
+        if ($oldSlug === $article->slug) {
+            return;
+        }
+
+        $slugs = Article::query()
+            ->where('slug', 'like', $oldSlug.'/%')
+            ->orderByRaw('length(slug)')
+            ->orderBy('slug')
+            ->pluck('slug')
+            ->all();
+
+        foreach ($slugs as $slug) {
+            $row = Article::query()->where('slug', $slug)->firstOrFail();
+            $row->slug = $article->slug.substr((string) $slug, strlen($oldSlug));
+            $row->save();
+        }
+    }
 
     /**
      * Pull the nested form state out of the data before fill() sees it and
