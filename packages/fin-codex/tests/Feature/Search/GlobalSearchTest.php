@@ -1,12 +1,20 @@
 <?php
 
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\GlobalSearch\GlobalSearchResult;
 use Filament\GlobalSearch\GlobalSearchResults;
+use Filament\GlobalSearch\Providers\Contracts\GlobalSearchProvider;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Search\HelpSearchProvider;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\AdminHelpArticleResource;
+use FinityLabs\FinCodex\Tests\Fixtures\Search\HostGlobalSearchProvider;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
+use FinityLabs\LinCodex\Auth\ViewerResolver;
 use FinityLabs\LinCodex\Models\Article;
+use FinityLabs\LinCodex\Rendering\ArticlePath;
+use FinityLabs\LinCodex\Search\Searcher;
+use FinityLabs\LinCodex\Search\SearchHit;
 
 /*
  * GS-01 and GS-02. Help reaches the panel's own search field through one
@@ -131,4 +139,245 @@ it('never exposes an authenticated article through the panel search to a guest',
         ->not->toContain('users-draft')
         ->not->toContain('Users draft')
         ->not->toContain('users-overview');
+});
+
+/*
+ * GS-02, tested on the wrapper itself so that its wiring into the panel
+ * stays a separate question. The staff panel is the one whose plugin has
+ * globalSearch() on.
+ */
+
+function finCodexSearchHelpCategory(): string
+{
+    return (string) __('fin-codex::fin-codex.search.category');
+}
+
+/**
+ * The wrapper over the fixture host provider (or over $inner), asked once.
+ */
+function finCodexSearchWrapped(string $query, ?GlobalSearchProvider $inner = null): ?GlobalSearchResults
+{
+    return (new HelpSearchProvider($inner ?? new HostGlobalSearchProvider))->getResults($query);
+}
+
+/**
+ * The Help category's results, as a list.
+ *
+ * @return list<GlobalSearchResult>
+ */
+function finCodexSearchHelpResults(?GlobalSearchResults $results): array
+{
+    return finCodexSearchCategory($results, finCodexSearchHelpCategory());
+}
+
+/**
+ * @param  list<GlobalSearchResult>  $results
+ * @return list<string>
+ */
+function finCodexSearchTitles(array $results): array
+{
+    return array_map(static fn (GlobalSearchResult $result): string => (string) $result->title, $results);
+}
+
+it('delegates to the panel provider and appends Help last', function (): void {
+    finCodexSearchSeedUsers();
+
+    $this->usesPanel('staff', finCodexSearchUser());
+
+    $results = finCodexSearchWrapped('users');
+    $names = finCodexSearchCategoryNames($results);
+
+    expect($names)->toBe([HostGlobalSearchProvider::CATEGORY, finCodexSearchHelpCategory()])
+        ->and(end($names))->toBe(finCodexSearchHelpCategory());
+
+    $shop = finCodexSearchCategory($results, HostGlobalSearchProvider::CATEGORY);
+
+    expect($shop)->toHaveCount(1)
+        ->and((string) $shop[0]->title)->toBe('Shop result for users')
+        ->and($shop[0]->url)->toBe('/shop');
+});
+
+it('passes a null answer from the panel provider straight through', function (): void {
+    finCodexSearchSeedUsers();
+
+    $this->usesPanel('staff', finCodexSearchUser());
+
+    $silent = new class implements GlobalSearchProvider
+    {
+        public function getResults(string $query): ?GlobalSearchResults
+        {
+            return null;
+        }
+    };
+
+    expect(finCodexSearchWrapped('users', $silent))->toBeNull();
+});
+
+/*
+ * The hits are Searcher's, not a query of our own: the expectation is
+ * computed from the service with the panel's viewer and the wrapper's own
+ * limit, so a hand-rolled LIKE could not satisfy it.
+ */
+it('takes the help results from Searcher with the panel guard viewer', function (): void {
+    finCodexSearchSeedUsers();
+
+    $panel = $this->usesPanel('staff', finCodexSearchUser());
+
+    $viewer = app(ViewerResolver::class)->resolve($panel->getAuthGuard());
+    $expected = array_map(
+        static fn (SearchHit $hit): string => $hit->title,
+        app(Searcher::class)->search('users', $viewer, null, 5)->hits,
+    );
+
+    expect($expected)->not->toBeEmpty();
+
+    expect(finCodexSearchTitles(finCodexSearchHelpResults(finCodexSearchWrapped('users'))))->toBe($expected);
+});
+
+it('keeps an authenticated article out of a guest search and in a member one', function (): void {
+    finCodexSearchSeedUsers();
+
+    $this->usesPanel('staff');
+
+    expect(auth('staff')->check())->toBeFalse();
+
+    $guest = finCodexSearchTitles(finCodexSearchHelpResults(finCodexSearchWrapped('users')));
+
+    expect($guest)->toContain('Users overview')
+        ->not->toContain('Users internal')
+        ->not->toContain('Users draft');
+
+    $this->usesPanel('staff', finCodexSearchUser());
+
+    $member = finCodexSearchTitles(finCodexSearchHelpResults(finCodexSearchWrapped('users')));
+
+    expect($member)->toContain('Users overview')
+        ->toContain('Users internal')
+        ->not->toContain('Users draft');
+});
+
+it('shows at most five help results in the dropdown', function (): void {
+    foreach (range(1, 7) as $n) {
+        Article::factory()->public()->published()
+            ->withTranslation('en', ['title' => 'Widgets chapter '.$n, 'body' => 'All about widgets, part '.$n.'.'])
+            ->create(['slug' => 'widgets-'.$n]);
+    }
+
+    $this->usesPanel('staff', finCodexSearchUser());
+
+    expect(finCodexSearchHelpResults(finCodexSearchWrapped('widgets')))->toHaveCount(5);
+});
+
+it('adds no help category when the search is rate limited', function (): void {
+    finCodexSearchSeedUsers();
+
+    $this->usesPanel('staff', finCodexSearchUser());
+
+    config(['lin-codex.search.rate_limit.user' => 1]);
+
+    expect(finCodexSearchHelpResults(finCodexSearchWrapped('users')))->not->toBeEmpty();
+
+    $throttled = finCodexSearchWrapped('users');
+
+    expect(finCodexSearchCategoryNames($throttled))->toBe([HostGlobalSearchProvider::CATEGORY])
+        ->and(finCodexSearchCategory($throttled, HostGlobalSearchProvider::CATEGORY))->toHaveCount(1);
+});
+
+it('adds no help category when nothing matches', function (): void {
+    finCodexSearchSeedUsers();
+
+    $this->usesPanel('staff', finCodexSearchUser());
+
+    $results = finCodexSearchWrapped('zzzqqqnothing');
+
+    expect(finCodexSearchCategoryNames($results))->toBe([HostGlobalSearchProvider::CATEGORY])
+        ->and(finCodexSearchHelpResults($results))->toBe([]);
+});
+
+/*
+ * The row: the help-center URL, the section path as an unlabelled detail
+ * (a list, so Filament prints no <dt>), and never the <mark>-carrying
+ * snippet, whose markup would show as text in an escaped detail.
+ */
+it('builds the row from the article path and the section path', function (): void {
+    $parent = Article::factory()->public()->published()
+        ->withTranslation('en', ['title' => 'Guides', 'body' => 'The guide index.'])
+        ->create(['slug' => 'guides']);
+
+    Article::factory()->public()->published()->childOf($parent, 'zebra-handling')
+        ->withTranslation('en', ['title' => 'Zebra handling', 'body' => 'How to handle a zebra.'])
+        ->create();
+
+    Article::factory()->public()->published()
+        ->withTranslation('en', ['title' => 'Zebra overview', 'body' => 'A zebra at the top level.'])
+        ->create(['slug' => 'zebra-overview']);
+
+    $this->usesPanel('staff', finCodexSearchUser());
+
+    $rows = [];
+
+    foreach (finCodexSearchHelpResults(finCodexSearchWrapped('zebra')) as $result) {
+        $rows[(string) $result->title] = $result;
+    }
+
+    expect($rows)->toHaveKeys(['Zebra handling', 'Zebra overview'])
+        ->and($rows['Zebra handling']->url)->toBe(ArticlePath::href('guides/zebra-handling'))
+        ->and($rows['Zebra handling']->details)->toBe(['Guides'])
+        ->and(array_is_list($rows['Zebra handling']->details))->toBeTrue()
+        ->and($rows['Zebra overview']->url)->toBe(ArticlePath::href('zebra-overview'))
+        ->and($rows['Zebra overview']->details)->toBe([]);
+
+    foreach ($rows as $result) {
+        expect((string) $result->title)->not->toContain('<mark>');
+
+        foreach ($result->details as $detail) {
+            expect((string) $detail)->not->toContain('<mark>');
+        }
+    }
+});
+
+it('carries one open-here action that opens the drawer in place', function (): void {
+    finCodexSearchSeedUsers();
+
+    $this->usesPanel('staff', finCodexSearchUser());
+
+    $rows = [];
+
+    foreach (finCodexSearchHelpResults(finCodexSearchWrapped('users')) as $result) {
+        $rows[(string) $result->title] = $result;
+    }
+
+    expect($rows)->toHaveKey('Users overview');
+
+    $actions = $rows['Users overview']->actions;
+
+    expect($actions)->toHaveCount(1);
+
+    $action = $actions[0];
+
+    expect($action)->toBeInstanceOf(Action::class)
+        ->and($action->getLabel())->toBe((string) __('fin-codex::fin-codex.search.open_here'))
+        ->and($action->getUrl())->toBe(ArticlePath::href('users-overview'))
+        ->and($action->getUrl())->toBe($rows['Users overview']->url)
+        ->and($action->getAlpineClickHandler())
+        ->toContain("document.querySelector('[data-codex-drawer]')")
+        ->toContain('$event.preventDefault()')
+        ->toContain("new CustomEvent('codex:open'")
+        ->toContain('users-overview');
+});
+
+/*
+ * The container extender is application-wide, so the wrapper can be reached
+ * from a panel that never registered the plugin. FinCodexPlugin::get() would
+ * throw a LogicException there.
+ */
+it('leaves a panel without the plugin exactly as its own provider answered', function (): void {
+    finCodexSearchSeedUsers();
+
+    $this->usesPanel('plain');
+
+    $results = finCodexSearchWrapped('users');
+
+    expect(finCodexSearchCategoryNames($results))->toBe([HostGlobalSearchProvider::CATEGORY])
+        ->and(finCodexSearchCategory($results, HostGlobalSearchProvider::CATEGORY))->toHaveCount(1);
 });
