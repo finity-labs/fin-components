@@ -8,6 +8,7 @@ use Closure;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Concerns\EvaluatesClosures;
+use Filament\Support\View\ViewManager;
 use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\Enums\NavigationGroup;
 use FinityLabs\FinCodex\Panel\HelpMount;
@@ -103,8 +104,32 @@ class FinCodexPlugin implements Plugin
         return app(HelpMount::class);
     }
 
-    /** Panel state (guard, global search provider, topbar) is read here or lazily, never in register(). */
-    public function boot(Panel $panel): void {}
+    /**
+     * Panel state (guard, global search provider, topbar) is read here or lazily,
+     * never in register(). The one thing to do at boot is SPA mode: Filament adds
+     * wire:navigate to every same-app href, and Livewire's navigate listener starts
+     * on mousedown without consulting defaultPrevented, so the CodexHelp hint's
+     * Alpine intercept would lose the race and the click would leave for the help
+     * center even with a drawer on the page. Panel::boot() pushes the panel's own
+     * spaUrlExceptions() before plugins boot, and ViewManager::spaUrlExceptions()
+     * appends, so adding the help-center pattern here survives a host that chains
+     * ->spaUrlExceptions() after ->plugin(). hasSpaMode($pattern) is the guard:
+     * it turns false once the pattern is on the list, so repeated boots within one
+     * process add nothing.
+     */
+    public function boot(Panel $panel): void
+    {
+        if (! $panel->hasSpaMode()) {
+            return;
+        }
+
+        $pattern = rtrim((string) config('lin-codex.routes.help_center', '/help'), '/').'/*';
+        $view = app(ViewManager::class);
+
+        if ($view->hasSpaMode($pattern)) {
+            $view->spaUrlExceptions([$pattern]);
+        }
+    }
 
     public function helpButtonRenderHook(string|Closure $hook): static
     {
