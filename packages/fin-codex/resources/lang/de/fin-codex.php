@@ -173,4 +173,31 @@ return [
             'done' => 'Die Datei wurde gelöscht.',
         ],
     ],
+    'settings' => [
+        'navigation' => 'Hilfe-Einstellungen',
+        'title' => 'Hilfe-Einstellungen',
+        'saved' => 'Einstellungen gespeichert.',
+        'languages' => [
+            'section' => 'Sprachen',
+            'description' => 'Die Sprachen, in denen ein Artikel geschrieben werden kann. Jede Sprache, die Sie hier hinzufügen, bekommt im Editor einen eigenen Reiter.',
+            'add' => 'Sprache hinzufügen',
+            'code' => 'Kürzel',
+            'display' => 'Name',
+            'flag' => 'Flaggen-Kürzel',
+            'flag_help' => 'Zweibuchstabiges Länderkürzel für die Flagge, zum Beispiel gb oder de.',
+        ],
+        'reading' => [
+            'section' => 'Lesen',
+            'default_locale' => 'Standardsprache',
+            'default_locale_help' => 'Jeder Artikel wird zuerst in dieser Sprache geschrieben, und sie ist es, die ein Fallback anzeigt.',
+            'fallback' => 'Wenn eine Übersetzung fehlt',
+        ],
+        'revisions' => [
+            'section' => 'Revisionen',
+            'enabled' => 'Revisionen aufzeichnen',
+            'enabled_help' => 'Solange das aus ist, werden Änderungen nicht mehr aufgezeichnet, die bereits gespeicherte Historie bleibt erhalten, und der Reiter Revisionen verschwindet aus dem Artikeleditor.',
+            'keep' => 'Revisionen pro Sprache',
+            'keep_help' => 'Ältere Revisionen fallen weg, sobald neue dazukommen. Ein kleinerer Wert löscht jetzt nichts, er senkt nur die Obergrenze ab hier.',
+        ],
+    ],
 ];

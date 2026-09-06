@@ -173,4 +173,31 @@ return [
             'done' => 'A fájl törlődött.',
         ],
     ],
+    'settings' => [
+        'navigation' => 'Súgóbeállítások',
+        'title' => 'Súgóbeállítások',
+        'saved' => 'A beállítások elmentve.',
+        'languages' => [
+            'section' => 'Nyelvek',
+            'description' => 'Ezeken a nyelveken írható meg egy cikk. Minden itt felvett nyelv külön fület kap a szerkesztőben.',
+            'add' => 'Nyelv hozzáadása',
+            'code' => 'Kód',
+            'display' => 'Név',
+            'flag' => 'Zászlókód',
+            'flag_help' => 'A zászlóhoz tartozó kétbetűs országkód, például gb vagy de.',
+        ],
+        'reading' => [
+            'section' => 'Olvasás',
+            'default_locale' => 'Alapértelmezett nyelv',
+            'default_locale_help' => 'Minden cikk először ezen a nyelven készül el, és hiányzó fordítás esetén is ez jelenik meg.',
+            'fallback' => 'Ha hiányzik a fordítás',
+        ],
+        'revisions' => [
+            'section' => 'Változatok',
+            'enabled' => 'Változatok rögzítése',
+            'enabled_help' => 'Amíg ez ki van kapcsolva, az új módosítások nem kerülnek rögzítésre, a már eltárolt előzmények megmaradnak, a Változatok fül pedig eltűnik a cikkszerkesztőből.',
+            'keep' => 'Megőrzött változatok nyelvenként',
+            'keep_help' => 'A régebbi változatok kiesnek, ahogy újak keletkeznek. A szám csökkentése most nem töröl semmit, csak a felső határt viszi lejjebb.',
+        ],
+    ],
 ];

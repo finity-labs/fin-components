@@ -13,6 +13,7 @@ use Filament\PanelProvider;
 use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\Reports;
+use FinityLabs\FinCodex\Tests\Fixtures\Pages\StaffHelpSettings;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\StaffHelpArticleResource;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\UserResource;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -65,7 +66,7 @@ final class StaffPanelProvider extends PanelProvider
                     ->navigationGroup(fn (): string => 'Support')
                     ->navigationSort(fn (): int => 5)
                     ->articleResource(StaffHelpArticleResource::class)
-                    ->settingsPage('Staff\\Filament\\Pages\\StaffHelpSettings')
+                    ->settingsPage(StaffHelpSettings::class)
                     ->coveragePage('Staff\\Filament\\Pages\\StaffHelpCoverage')
                     ->policyNamespace('Staff\\Policies'),
             );

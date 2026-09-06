@@ -4,6 +4,8 @@ use Filament\Facades\Filament;
 use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\Enums\NavigationGroup;
 use FinityLabs\FinCodex\FinCodexPlugin;
+use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpSettings;
+use FinityLabs\FinCodex\Tests\Fixtures\Pages\StaffHelpSettings;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\AdminHelpArticleResource;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\StaffHelpArticleResource;
 
@@ -35,7 +37,7 @@ function adminOptions(): array
         'navigationGroup' => 'Help',
         'navigationSort' => 90,
         'articleResource' => AdminHelpArticleResource::class,
-        'settingsPage' => 'App\\Filament\\Pages\\AdminHelpSettings',
+        'settingsPage' => AdminHelpSettings::class,
         'coveragePage' => 'App\\Filament\\Pages\\AdminHelpCoverage',
         'policyNamespace' => 'App\\Policies',
     ];
@@ -52,7 +54,7 @@ function staffOptions(): array
         'navigationGroup' => 'Support',
         'navigationSort' => 5,
         'articleResource' => StaffHelpArticleResource::class,
-        'settingsPage' => 'Staff\\Filament\\Pages\\StaffHelpSettings',
+        'settingsPage' => StaffHelpSettings::class,
         'coveragePage' => 'Staff\\Filament\\Pages\\StaffHelpCoverage',
         'policyNamespace' => 'Staff\\Policies',
     ];

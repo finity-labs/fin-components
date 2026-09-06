@@ -173,4 +173,31 @@ return [
             'done' => 'The file was deleted.',
         ],
     ],
+    'settings' => [
+        'navigation' => 'Help settings',
+        'title' => 'Help settings',
+        'saved' => 'Settings saved.',
+        'languages' => [
+            'section' => 'Languages',
+            'description' => 'The languages an article can be written in. The first language you add becomes available on the editor tabs.',
+            'add' => 'Add language',
+            'code' => 'Code',
+            'display' => 'Name',
+            'flag' => 'Flag code',
+            'flag_help' => 'Two-letter country code for the flag, for example gb or de.',
+        ],
+        'reading' => [
+            'section' => 'Reading',
+            'default_locale' => 'Default language',
+            'default_locale_help' => 'Every article is written in this language first, and it is the one a fallback shows.',
+            'fallback' => 'When a translation is missing',
+        ],
+        'revisions' => [
+            'section' => 'Revisions',
+            'enabled' => 'Record revisions',
+            'enabled_help' => 'While this is off, changes are no longer recorded, the history already stored is kept, and the Revisions tab disappears from the article editor.',
+            'keep' => 'Revisions kept per language',
+            'keep_help' => 'Older revisions are dropped as new ones are recorded. Lowering this number deletes nothing now; it only changes the ceiling from here on.',
+        ],
+    ],
 ];
