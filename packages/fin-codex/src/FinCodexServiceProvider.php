@@ -6,6 +6,7 @@ namespace FinityLabs\FinCodex;
 
 use Filament\Forms\Components\Field;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
+use FinityLabs\FinCodex\Coverage\SourceWarnings;
 use FinityLabs\FinCodex\Forms\CodexHelp;
 use FinityLabs\FinCodex\Help\ArticleLookup;
 use FinityLabs\FinCodex\Help\DeclaredContexts;
@@ -48,13 +49,17 @@ class FinCodexServiceProvider extends PackageServiceProvider
      * CoverageReport is scoped because the coverage page and the navigation
      * badge that links to it must show the same number, and because that
      * badge renders on every panel page: one route report and one
-     * ContentSource::all() per request, never one per surface.
+     * ContentSource::all() per request, never one per surface. SourceWarnings
+     * is scoped for the second half of that reason: no source memoises its
+     * warnings, and the declared-help decorator reads the inner source twice
+     * to produce them.
      */
     public function packageRegistered(): void
     {
         $this->app->scoped(CurrentPage::class);
         $this->app->scoped(ArticleLookup::class);
         $this->app->scoped(CoverageReport::class);
+        $this->app->scoped(SourceWarnings::class);
         $this->app->singleton(DeclaredContexts::class);
         $this->app->extend(ContentSource::class, static fn (ContentSource $inner, Container $app): ContentSource => new DeclaredContextsSource($inner, $app->make(DeclaredContexts::class)));
     }
