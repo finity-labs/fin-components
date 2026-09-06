@@ -148,6 +148,46 @@ class HelpSettings extends SettingsPage
     }
 
     /**
+     * The enum arrives as a FallbackBehaviour instance from toArray(). The
+     * Select would flatten it to its backing value on its own; doing it here
+     * keeps the form state plain scalars and mirrors the save mutator, so the
+     * pair reads as one round trip rather than as one half of it.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $fallback = $data['fallback'] ?? null;
+        $data['fallback'] = $fallback instanceof FallbackBehaviour ? $fallback->value : $fallback;
+
+        return $data;
+    }
+
+    /**
+     * Both casts are load-bearing. Settings::fill() assigns straight onto a
+     * property typed FallbackBehaviour, and SettingsMapper's enum cast throws
+     * "Invalid enum" for anything that is not a BackedEnum; TextInput::numeric()
+     * hands back a float, which a typed int property refuses.
+     *
+     * Languages need no mutation in either direction: the repeater dehydrates
+     * to a clean list of {code, display, flag-icon}, which is exactly the shape
+     * CodexSettings::$languages declares.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $data['fallback'] = FallbackBehaviour::from((int) $data['fallback']);
+        $data['revisions_keep'] = (int) $data['revisions_keep'];
+
+        return $data;
+    }
+
+    /**
      * The default-language options, read live from the languages repeater:
      * code => display, falling back to the code, with blank codes dropped so a
      * half-typed new row does not offer an empty option.
