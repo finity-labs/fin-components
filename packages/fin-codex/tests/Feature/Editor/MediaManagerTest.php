@@ -1,6 +1,7 @@
 <?php
 
 use Filament\Actions\Action;
+use FinityLabs\FinCodex\Resources\ArticleResource\Pages\CreateArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\EditArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\RelationManagers\MediaRelationManager;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
@@ -277,4 +278,144 @@ it('leaves the article other files alone', function (): void {
 
     Storage::disk('media')->assertMissing($doomed->path);
     Storage::disk('media')->assertExists($kept->path);
+});
+
+/*
+ * The page-level rows: the two managers side by side on the edit page.
+ *
+ * Mount ONE page per row. getCachedRelationManagers() memoises on the
+ * instance and activeRelationManager carries #[Url(as: 'relation')], which
+ * reads the test request's query string, so two mounts in one row can leak
+ * state between them.
+ */
+
+/** The wire:click handler Filament renders for one relation-manager tab. */
+function finCodexMediaTabHandler(string $key): string
+{
+    return sprintf('wire:click="$set(\'activeRelationManager\', \'%s\')"', $key);
+}
+
+/**
+ * The relation-manager tab strip only: from its container id to the end of
+ * the nav, so a title found here is a TAB LABEL and not a word from the
+ * rendered panel below it.
+ *
+ * role="tablist" alone is no anchor — the form's own language tabs render one
+ * on every edit and create page, so the count is 1 with no relation manager
+ * tab strip at all and 2 with one.
+ */
+function finCodexMediaTabStrip(string $html): string
+{
+    $start = strpos($html, 'id="content.relationManagerTabs"');
+
+    if ($start === false) {
+        return '';
+    }
+
+    $end = strpos($html, '</nav>', $start);
+
+    return $end === false ? '' : substr($html, $start, $end - $start);
+}
+
+it('shows a two-tab strip keyed revisions and media', function (): void {
+    finCodexMediaDisk();
+    enableRevisions(true);
+    $this->usesPanel('admin', finCodexMediaUser());
+
+    $article = finCodexMediaArticle();
+    finCodexMediaBody($article, 'How users work.');
+    finCodexMediaRow($article, ['name' => 'shot.png']);
+
+    $page = Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()]);
+    $html = $page->html();
+
+    // The two string keys are OUR contract: they are the ?relation= deep-link
+    // values and the wire:click payloads, so the literals are asserted.
+    expect(array_keys($page->instance()->getCachedRelationManagers()))->toBe(['revisions', 'media'])
+        ->and(finCodexMediaTabStrip($html))->not->toBe('')
+        ->and(str_contains($html, finCodexMediaTabHandler('revisions')))->toBeTrue()
+        ->and(str_contains($html, finCodexMediaTabHandler('media')))->toBeTrue()
+        ->and(substr_count($html, 'role="tablist"'))->toBe(2);
+});
+
+it('labels both tabs with their translated titles', function (): void {
+    finCodexMediaDisk();
+    enableRevisions(true);
+    $this->usesPanel('admin', finCodexMediaUser());
+
+    $article = finCodexMediaArticle();
+    finCodexMediaBody($article, 'How users work.');
+    finCodexMediaRow($article, ['name' => 'shot.png']);
+
+    $strip = finCodexMediaTabStrip(
+        Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])->html(),
+    );
+
+    expect($strip)
+        ->toContain((string) __('fin-codex::fin-codex.revisions.title'))
+        ->toContain((string) __('fin-codex::fin-codex.media.title'));
+});
+
+it('renders only the active tab panel', function (): void {
+    finCodexMediaDisk();
+    enableRevisions(true);
+    $this->usesPanel('admin', finCodexMediaUser());
+
+    $article = finCodexMediaArticle();
+    finCodexMediaBody($article, 'How users work.');
+    finCodexMediaRow($article, ['name' => 'shot.png']);
+
+    $page = Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()]);
+    $page->assertSet('activeRelationManager', 'revisions');
+
+    // Same active-tab-only branch 05-06 and 05-07 pinned for the language
+    // tabs: the other tab is a button with no panel markup at all.
+    expect($page->html())
+        ->toContain('content.relationManagerTabs.revisions')
+        ->not->toContain('content.relationManagerTabs.media');
+
+    $page->set('activeRelationManager', 'media')->assertSet('activeRelationManager', 'media');
+
+    expect($page->html())
+        ->toContain('content.relationManagerTabs.media')
+        ->not->toContain('content.relationManagerTabs.revisions');
+});
+
+it('renders the media manager bare when revisions are switched off', function (): void {
+    finCodexMediaDisk();
+    $this->usesPanel('admin', finCodexMediaUser());
+
+    $article = finCodexMediaArticle();
+    finCodexMediaBody($article, 'How users work.');
+    finCodexMediaRow($article, ['name' => 'shot.png']);
+
+    enableRevisions(false);
+
+    // A FRESH mount: getCachedRelationManagers() memoises on the instance.
+    $page = Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()]);
+    $html = $page->html();
+
+    // One visible manager renders with no tab strip at all, which is the
+    // concrete reason 06-04's toggle helper text says the Revisions tab
+    // disappears. The one remaining tablist is the form's language tabs.
+    expect(array_keys($page->instance()->getCachedRelationManagers()))->toBe(['media'])
+        ->and(finCodexMediaTabStrip($html))->toBe('')
+        ->and($html)->not->toContain('content.relationManagerTabs')
+        ->and($html)->not->toContain((string) __('fin-codex::fin-codex.revisions.title'))
+        ->and(substr_count($html, 'role="tablist"'))->toBe(1);
+});
+
+it('shows neither manager on the create page', function (): void {
+    finCodexMediaDisk();
+    enableRevisions(true);
+    $this->usesPanel('admin', finCodexMediaUser());
+
+    // A regression guard, not a feature: CreateRecord does not use
+    // HasRelationManagers at all.
+    $html = Livewire::test(CreateArticle::class)->html();
+
+    expect(finCodexMediaTabStrip($html))->toBe('')
+        ->and($html)->not->toContain('content.relationManagerTabs')
+        ->and($html)->not->toContain((string) __('fin-codex::fin-codex.revisions.title'))
+        ->and($html)->not->toContain((string) __('fin-codex::fin-codex.media.title'));
 });
