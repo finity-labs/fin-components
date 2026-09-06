@@ -32,9 +32,11 @@ use RuntimeException;
  * `linkOrphans()`.
  *
  * Nothing here deletes. An upload the admin removed from the body again
- * stays on disk as an orphan row — Phase 6's media manager owns deletion,
- * behind lin-codex's own reference guard, which reads the same URLs out of
- * the same bodies.
+ * stays on disk until the media manager clears it, and that manager refuses
+ * while Editor\MediaReferences still finds this URL in any body. The guard is
+ * ours, not the core's: lin-codex's Reading\MediaReferences answers a
+ * different question — which file-backed article owns a path under the media
+ * route prefix — and a database upload's disk URL never matches it.
  */
 final class MediaRecorder
 {
