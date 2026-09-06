@@ -64,7 +64,12 @@ it('labels the topbar button and its tooltip in the panel locale', function (str
         ->toContain('&quot;locale&quot;:&quot;'.$locale.'&quot;');
 
     if ($locale !== 'en') {
-        expect($html)->not->toContain('aria-label="Help"');
+        // Scoped to the button's own element: since Phase 5 the sidebar also
+        // carries the article resource's navigation group, which on this panel
+        // is the fixture's literal navigationGroup('Help') option. A host
+        // string is never translated by fin-codex, so a page-wide search for
+        // aria-label="Help" would now find the group, not a stale button.
+        expect($html)->not->toMatch('/data-codex-help-button[^>]*aria-label="Help"/');
     }
 })->with([
     ['en', 'Help'],

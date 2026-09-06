@@ -12,6 +12,7 @@ use Filament\Support\View\ViewManager;
 use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\Enums\NavigationGroup;
 use FinityLabs\FinCodex\Panel\HelpMount;
+use FinityLabs\FinCodex\Resources\ArticleResource;
 use Illuminate\Support\HtmlString;
 use UnitEnum;
 
@@ -96,6 +97,12 @@ class FinCodexPlugin implements Plugin
 
         $panel->renderHook(PanelsRenderHook::SIMPLE_PAGE_END, fn (array $scopes = []): HtmlString => $this->mount()->guestLink($this, $panel));
         $panel->renderHook(PanelsRenderHook::BODY_END, fn (array $scopes = []): HtmlString => $this->mount()->drawer($this, $panel));
+
+        // Panel::resources() appends to the host's list, it never replaces it. An
+        // articleResource() override must extend Resources\ArticleResource; navigation
+        // group and sort are not decided here but read from this plugin by the resource
+        // at navigation time, so each panel files the editor its own way.
+        $panel->resources([$this->getArticleResource() ?? ArticleResource::class]);
     }
 
     /** Resolved per call so the scoped CurrentPage is the current request's. */
@@ -246,7 +253,7 @@ class FinCodexPlugin implements Plugin
     }
 
     /**
-     * Swap in your own article resource (extend the built-in one once it exists).
+     * Swap in your own article resource; it must extend Resources\ArticleResource.
      *
      * @param  class-string  $resource
      */

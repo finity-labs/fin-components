@@ -13,6 +13,7 @@ use Filament\PanelProvider;
 use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\Reports;
+use FinityLabs\FinCodex\Tests\Fixtures\Resources\AdminHelpArticleResource;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\UserResource;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -63,7 +64,7 @@ final class AdminPanelProvider extends PanelProvider
                     ->globalSearch(false)
                     ->navigationGroup('Help')
                     ->navigationSort(90)
-                    ->articleResource('App\\Filament\\Resources\\AdminHelpArticleResource')
+                    ->articleResource(AdminHelpArticleResource::class)
                     ->settingsPage('App\\Filament\\Pages\\AdminHelpSettings')
                     ->coveragePage('App\\Filament\\Pages\\AdminHelpCoverage')
                     ->policyNamespace('App\\Policies'),
