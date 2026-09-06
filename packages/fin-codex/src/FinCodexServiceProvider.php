@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex;
 
+use FinityLabs\FinCodex\Help\ArticleLookup;
 use FinityLabs\FinCodex\Help\DeclaredContexts;
 use FinityLabs\FinCodex\Help\DeclaredContextsSource;
 use FinityLabs\FinCodex\Panel\CurrentPage;
@@ -35,10 +36,16 @@ class FinCodexServiceProvider extends PackageServiceProvider
      * instance map). DeclaredContexts is a singleton whose registry scan is
      * lazy: the panel providers register after this one, so the scan has to
      * wait for the first read.
+     *
+     * ArticleLookup is scoped for the same reason as CurrentPage: one lookup
+     * per request answers the title and the gate verdict for every field
+     * hint on a page, so ten hints cost one ContentSource::all() and one
+     * viewer.
      */
     public function packageRegistered(): void
     {
         $this->app->scoped(CurrentPage::class);
+        $this->app->scoped(ArticleLookup::class);
         $this->app->singleton(DeclaredContexts::class);
         $this->app->extend(ContentSource::class, static fn (ContentSource $inner, Container $app): ContentSource => new DeclaredContextsSource($inner, $app->make(DeclaredContexts::class)));
     }
