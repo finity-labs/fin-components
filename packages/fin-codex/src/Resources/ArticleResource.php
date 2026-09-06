@@ -6,6 +6,7 @@ namespace FinityLabs\FinCodex\Resources;
 
 use BackedEnum;
 use Filament\Resources\Pages\PageRegistration;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
@@ -14,6 +15,7 @@ use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\CreateArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\EditArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\ListArticles;
+use FinityLabs\FinCodex\Resources\ArticleResource\RelationManagers\RevisionsRelationManager;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ArticleForm;
 use FinityLabs\FinCodex\Resources\ArticleResource\Tables\ArticlesTable;
 use FinityLabs\LinCodex\Models\Article;
@@ -91,6 +93,21 @@ class ArticleResource extends Resource
             'index' => ListArticles::route('/'),
             'create' => CreateArticle::route('/create'),
             'edit' => EditArticle::route('/{record}/edit'),
+        ];
+    }
+
+    /**
+     * String keys on purpose: Tabs::getDefaultChildComponents() copies the
+     * array key onto the tab when livewireProperty() is set, so these become
+     * the activeRelationManager values, the wire:click handlers and the
+     * ?relation= deep link. A plain list would give ?relation=0.
+     *
+     * @return array<string, class-string<RelationManager>>
+     */
+    public static function getRelations(): array
+    {
+        return [
+            'revisions' => RevisionsRelationManager::class,
         ];
     }
 }

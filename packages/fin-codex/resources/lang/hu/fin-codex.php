@@ -125,4 +125,17 @@ return [
             'parent_missing' => 'Nem létezik cikk a(z) :parent helyen.',
         ],
     ],
+    'revisions' => [
+        'title' => 'Változatok',
+        'empty' => 'Még nincs változat.',
+        'empty_description' => 'Amíg a változatkövetés be van kapcsolva, minden mentett nyelvi módosítás ide kerül.',
+        'columns' => [
+            'time' => 'Mikor',
+            'locale' => 'Nyelv',
+            'author' => 'Szerző',
+            'reason' => 'Ok',
+            'title' => 'Cím',
+        ],
+        'no_author' => 'Ismeretlen',
+    ],
 ];

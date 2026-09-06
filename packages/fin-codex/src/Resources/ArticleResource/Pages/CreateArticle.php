@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace FinityLabs\FinCodex\Resources\ArticleResource\Pages;
 
 use Filament\Actions\Action;
-use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
 use FinityLabs\FinCodex\Editor\MediaRecorder;
+use FinityLabs\FinCodex\Panel\Concerns\ResolvesPanelUser;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Resources\ArticleResource\Actions\PreviewAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ContextsRepeater;
@@ -26,6 +26,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 final class CreateArticle extends CreateRecord
 {
+    use ResolvesPanelUser;
+
     protected static string $resource = ArticleResource::class;
 
     /** The language tab the admin is looking at; Tabs::livewireProperty() writes it. */
@@ -93,8 +95,6 @@ final class CreateArticle extends CreateRecord
     /** The panel user's id, or null for a panel without an authenticated user. Public: the header actions attribute their writes to it. */
     public function userId(): ?int
     {
-        $id = Filament::auth()->id();
-
-        return is_numeric($id) ? (int) $id : null;
+        return $this->panelUserId();
     }
 }

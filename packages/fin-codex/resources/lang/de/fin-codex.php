@@ -125,4 +125,17 @@ return [
             'parent_missing' => 'Unter :parent existiert kein Artikel.',
         ],
     ],
+    'revisions' => [
+        'title' => 'Revisionen',
+        'empty' => 'Noch keine Revisionen.',
+        'empty_description' => 'Solange Revisionen aktiv sind, wird hier jede gespeicherte Änderung an einer Sprache festgehalten.',
+        'columns' => [
+            'time' => 'Wann',
+            'locale' => 'Sprache',
+            'author' => 'Autor',
+            'reason' => 'Grund',
+            'title' => 'Titel',
+        ],
+        'no_author' => 'Unbekannt',
+    ],
 ];

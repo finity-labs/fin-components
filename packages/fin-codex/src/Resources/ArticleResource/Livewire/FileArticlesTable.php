@@ -7,7 +7,6 @@ namespace FinityLabs\FinCodex\Resources\ArticleResource\Livewire;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Concerns\InteractsWithSchemas;
 use Filament\Schemas\Contracts\HasSchemas;
@@ -18,6 +17,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use FinityLabs\FinCodex\Editor\FileArticleAdopter;
 use FinityLabs\FinCodex\FinCodexPlugin;
+use FinityLabs\FinCodex\Panel\Concerns\ResolvesPanelUser;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\LinCodex\Contracts\ContentSource;
@@ -58,6 +58,7 @@ final class FileArticlesTable extends Component implements HasActions, HasSchema
     use InteractsWithActions;
     use InteractsWithSchemas;
     use InteractsWithTable;
+    use ResolvesPanelUser;
 
     public function table(Table $table): Table
     {
@@ -220,8 +221,6 @@ final class FileArticlesTable extends Component implements HasActions, HasSchema
     /** The panel user's id, or null for a panel without an authenticated user. */
     private function userId(): ?int
     {
-        $id = Filament::auth()->id();
-
-        return is_numeric($id) ? (int) $id : null;
+        return $this->panelUserId();
     }
 }

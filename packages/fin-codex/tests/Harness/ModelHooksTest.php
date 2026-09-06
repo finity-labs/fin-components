@@ -3,7 +3,6 @@
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleRevision;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
-use FinityLabs\LinCodex\Settings\CodexSettings;
 
 /*
  * The first test Pest runs. It exists to fail loudly when the harness drops
@@ -11,13 +10,6 @@ use FinityLabs\LinCodex\Settings\CodexSettings;
  * order): parent_id, search_text and revisions would then silently stay empty
  * while every editor test still passed.
  */
-
-function enableRevisions(bool $enabled): void
-{
-    $settings = app(CodexSettings::class);
-    $settings->revisions_enabled = $enabled;
-    $settings->save();
-}
 
 it('writes parent_id, search_text and a revision through lin-codex model hooks', function (): void {
     enableRevisions(true);

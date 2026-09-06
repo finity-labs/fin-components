@@ -5,6 +5,7 @@ use FinityLabs\FinCodex\Help\DeclaredContexts;
 use FinityLabs\FinCodex\Panel\CurrentPage;
 use FinityLabs\FinCodex\Tests\TestCase;
 use FinityLabs\LinCodex\Contracts\ContentSource;
+use FinityLabs\LinCodex\Settings\CodexSettings;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
 use FinityLabs\LinCodex\View\PageHelpResolver;
 
@@ -42,4 +43,18 @@ function useFixtureDocs(): void
     app()->forgetInstance(FilesystemSource::class);
 
     forgetHelpMemo();
+}
+
+/**
+ * Flip the core's revisions switch for the rest of the test. It lives here
+ * rather than in a test file because Pest helpers are global and the
+ * revisions toggle is read by the harness, the editor and — since Phase 6 —
+ * the revisions relation manager's settings gate, so a single-file run of
+ * any of them needs it loaded.
+ */
+function enableRevisions(bool $enabled): void
+{
+    $settings = app(CodexSettings::class);
+    $settings->revisions_enabled = $enabled;
+    $settings->save();
 }

@@ -125,4 +125,17 @@ return [
             'parent_missing' => 'No article exists at :parent.',
         ],
     ],
+    'revisions' => [
+        'title' => 'Revisions',
+        'empty' => 'No revisions yet.',
+        'empty_description' => 'Every saved change to a language is recorded here while revisions are on.',
+        'columns' => [
+            'time' => 'When',
+            'locale' => 'Language',
+            'author' => 'Author',
+            'reason' => 'Reason',
+            'title' => 'Title',
+        ],
+        'no_author' => 'Unknown',
+    ],
 ];
