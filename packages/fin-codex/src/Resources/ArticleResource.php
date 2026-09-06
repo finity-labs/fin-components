@@ -11,6 +11,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use FinityLabs\FinCodex\Coverage\SourceWarnings;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\CreateArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\EditArticle;
@@ -73,6 +74,26 @@ class ArticleResource extends Resource
     public static function getNavigationLabel(): string
     {
         return (string) __('fin-codex::fin-codex.editor.navigation');
+    }
+
+    /**
+     * The content-source warnings count. The uncovered count lives on the
+     * coverage page's own item: one number per navigation item, each meaning
+     * one thing. Filament reads this eagerly when the navigation item is
+     * built, once per panel page render, which is why SourceWarnings is
+     * request-scoped; a host that does not want the reading at all overrides
+     * this with `return null;` on its own subclass.
+     */
+    public static function getNavigationBadge(): ?string
+    {
+        $count = app(SourceWarnings::class)->count();
+
+        return $count === 0 ? null : (string) $count;
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'warning';
     }
 
     public static function form(Schema $schema): Schema
