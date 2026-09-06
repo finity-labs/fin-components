@@ -1,14 +1,23 @@
 <?php
 
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Schema;
+use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\Editor\ContextPicker;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\CreateArticle;
+use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpCoverage;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\AdminHelpArticleResource;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\UserResource;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleContext;
+use FinityLabs\LinCodex\Sources\FilesystemSource;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
@@ -208,4 +217,257 @@ it('changes nothing at all without a query string', function (): void {
         ->and(finCodexActionsState(finCodexActionsCreate())['contexts'])->toBe([])
         ->and(finCodexActionsState(finCodexActionsCreate())['translations']['en']['title'])->toBeNull()
         ->and(Filament::getCurrentPanel()?->getId())->toBe('admin');
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * The row actions on the coverage page itself.
+ * -----------------------------------------------------------------------
+ */
+
+/** The admin coverage page with every row on one page, as HelpCoverageTest mounts it. */
+function finCodexActionsPage(): Testable
+{
+    return Livewire::test(AdminHelpCoverage::class)->set('tableRecordsPerPage', 'all');
+}
+
+/** The report's own key for one screen, so a fixture change cannot make a row vacuous. */
+function finCodexActionsRowKey(?string $panelId, ?string $helpClass): string
+{
+    foreach (app(CoverageReport::class)->rows() as $row) {
+        if ($row->panelId === $panelId && $row->helpClass === $helpClass) {
+            return $row->key;
+        }
+    }
+
+    throw new RuntimeException('No coverage row for '.($panelId ?? 'no panel').' / '.($helpClass ?? 'no class'));
+}
+
+/** The rows the page is showing, keyed by the row key. */
+function finCodexActionsRecords(Testable $page): Collection
+{
+    return $page->instance()->getTableRecords()->getCollection();
+}
+
+/** A public database article with one English translation and no context. */
+function finCodexActionsArticle(string $slug): Article
+{
+    return Article::factory()->public()
+        ->withTranslation('en', ['title' => Str::headline($slug), 'body' => 'About '.$slug.'.'])
+        ->create(['slug' => $slug]);
+}
+
+/**
+ * A docs tree with one file article whose front matter carries a stored
+ * context on the admin users screen. The fixture docs cannot serve here: the
+ * article they cover is covered by a HasHelp DECLARATION, and a declared row
+ * is exactly the row that must not offer an import.
+ */
+function finCodexActionsFileDocs(): string
+{
+    $dir = sys_get_temp_dir().'/fin-codex-coverage-docs';
+
+    if (is_dir($dir)) {
+        foreach ((array) glob($dir.'/en/*.md') as $file) {
+            @unlink((string) $file);
+        }
+    }
+
+    @mkdir($dir.'/en', 0777, true);
+
+    // Single-quoted YAML, so the class name's backslashes stay backslashes.
+    $context = "admin:class:".UserResource::class;
+
+    file_put_contents($dir.'/en/handbook.md', <<<MD
+        ---
+        visibility: public
+        contexts:
+          - '{$context}'
+        ---
+
+        # Handbook
+
+        The handbook.
+        MD);
+
+    config()->set('lin-codex.sources.filesystem.paths', [$dir]);
+
+    app()->forgetInstance(FilesystemSource::class);
+
+    forgetHelpMemo();
+
+    return $dir;
+}
+
+it('offers "Write article" on a gap, carrying that screen and its panel into the form', function (): void {
+    finCodexActionsUser();
+    forgetHelpMemo();
+
+    $key = finCodexActionsRowKey('admin', UserResource::class);
+    $page = finCodexActionsPage();
+    $label = (string) finCodexActionsRecords($page)[$key]['label'];
+
+    // The same builder the page uses, so a renamed parameter reddens this row
+    // rather than opening an empty form in a browser.
+    $expected = AdminHelpArticleResource::getUrl('create', [
+        'context_type' => ContextType::PageClass->key(),
+        'context_key' => UserResource::class,
+        'panel' => 'admin',
+        'title' => $label,
+    ], panel: 'admin');
+
+    $page->assertTableActionVisible('write', $key)
+        ->assertTableActionVisible('attach', $key)
+        ->assertTableActionHasUrl('write', $expected, $key);
+
+    expect($expected)->toContain('context_type='.ContextType::PageClass->key())
+        ->toContain('context_key='.urlencode(UserResource::class))
+        ->toContain('panel=admin');
+});
+
+it('prefills a route context for a screen that is not a Filament page', function (): void {
+    Route::get('/shop', fn (): string => '')->name('shop.index')->middleware('web');
+
+    finCodexActionsUser();
+    forgetHelpMemo();
+
+    $page = finCodexActionsPage()->filterTable('panel', CoverageReport::OUTSIDE_PANELS);
+    $label = (string) finCodexActionsRecords($page)['shop.index']['label'];
+
+    $expected = AdminHelpArticleResource::getUrl('create', [
+        'context_type' => ContextType::Route->key(),
+        'context_key' => 'shop.index',
+        'panel' => ContextPicker::ANY_PANEL,
+        'title' => $label,
+    ], panel: 'admin');
+
+    $page->assertTableActionHasUrl('write', $expected, 'shop.index');
+
+    expect($expected)->toContain('context_type='.ContextType::Route->key())
+        ->toContain('context_key=shop.index')
+        ->toContain('panel='.urlencode(ContextPicker::ANY_PANEL));
+});
+
+it('attaches the screen to an article the admin already has, and the row goes green', function (): void {
+    $user = finCodexActionsUser();
+    $article = finCodexActionsArticle('handbook');
+    forgetHelpMemo();
+
+    $key = finCodexActionsRowKey('admin', UserResource::class);
+
+    finCodexActionsPage()
+        ->callTableAction('attach', $key, ['article' => 'handbook'])
+        ->assertHasNoTableActionErrors()
+        ->assertNotified(__('fin-codex::fin-codex.coverage.attach.attached'));
+
+    expect(finCodexActionsContexts($article))->toBe(['admin:class:'.UserResource::class])
+        ->and($article->fresh()->updated_by)->toBe($user->id);
+
+    // The report memoises one reading of the source per request, so the row
+    // flips on the next render, not inside this one.
+    forgetHelpMemo();
+
+    $row = finCodexActionsRecords(finCodexActionsPage())[$key];
+
+    expect($row['covered'])->toBeTrue()
+        ->and($row['slug'])->toBe('handbook');
+});
+
+it('refuses the second attach of the same context instead of writing a copy', function (): void {
+    finCodexActionsUser();
+    $article = finCodexActionsArticle('handbook');
+    forgetHelpMemo();
+
+    $key = finCodexActionsRowKey('admin', UserResource::class);
+
+    finCodexActionsPage()->callTableAction('attach', $key, ['article' => 'handbook']);
+
+    forgetHelpMemo();
+
+    finCodexActionsPage()
+        ->callTableAction('attach', $key, ['article' => 'handbook'])
+        ->assertNotified(__('fin-codex::fin-codex.coverage.attach.duplicate'));
+
+    expect(finCodexActionsContexts($article))->toBe(['admin:class:'.UserResource::class]);
+});
+
+it('offers only articles that live in the database, because a file has no row to hang a context on', function (): void {
+    finCodexActionsUser();
+    finCodexActionsArticle('handbook');
+    useFixtureDocs();
+
+    $key = finCodexActionsRowKey('admin', UserResource::class);
+    $page = finCodexActionsPage();
+    $page->mountTableAction('attach', $key);
+
+    $schema = $page->instance()->getMountedAction()->getSchema(Schema::make($page->instance()));
+    $select = $schema?->getComponent(fn (Component $component): bool => $component instanceof Select);
+    $options = $select instanceof Select ? $select->getOptions() : [];
+
+    expect(array_keys($options))->toContain('handbook')
+        ->not->toContain('intro')
+        ->not->toContain('users/roles');
+});
+
+it('takes a covered row straight to the article that covers it', function (): void {
+    finCodexActionsUser();
+    $article = finCodexActionsArticle('handbook');
+    $article->contexts()->create([
+        'panel_id' => 'admin',
+        'type' => ContextType::PageClass,
+        'key' => UserResource::class,
+        'sort_order' => 0,
+    ]);
+    forgetHelpMemo();
+
+    $key = finCodexActionsRowKey('admin', UserResource::class);
+    $expected = AdminHelpArticleResource::getUrl('edit', ['record' => $article->id], panel: 'admin');
+
+    finCodexActionsPage()
+        ->assertTableColumnExists('slug', fn ($column): bool => $column->getUrl() === $expected, $key)
+        ->assertTableActionHidden('write', $key)
+        ->assertTableActionHidden('attach', $key)
+        ->assertTableActionHidden('import', $key);
+});
+
+it('says plainly when a screen is covered by a declaration in code, and offers no way to edit it', function (): void {
+    finCodexActionsUser();
+    useFixtureDocs();
+
+    $key = finCodexActionsRowKey('admin', UserResource::class);
+    $page = finCodexActionsPage();
+    $row = finCodexActionsRecords($page)[$key];
+
+    expect($row['covered'])->toBeTrue()
+        ->and($row['declared'])->toBeTrue();
+
+    $page->assertTableColumnExists('slug', fn ($column): bool => $column->getUrl() === null, $key)
+        ->assertTableColumnHasDescription('slug', __('fin-codex::fin-codex.coverage.declared'), $key)
+        ->assertTableActionHidden('import', $key)
+        ->assertTableActionHidden('write', $key);
+});
+
+it('imports the file first when the article covering a screen has no database row yet', function (): void {
+    $user = finCodexActionsUser();
+    finCodexActionsFileDocs();
+
+    $key = finCodexActionsRowKey('admin', UserResource::class);
+    $page = finCodexActionsPage();
+    $row = finCodexActionsRecords($page)[$key];
+
+    expect($row['covered'])->toBeTrue()
+        ->and($row['file_only'])->toBeTrue()
+        ->and($row['declared'])->toBeFalse();
+
+    $page->assertTableColumnExists('slug', fn ($column): bool => $column->getUrl() === null, $key)
+        ->assertTableActionVisible('import', $key)
+        ->callTableAction('import', $key)
+        ->assertHasNoTableActionErrors();
+
+    $article = Article::query()->where('slug', 'handbook')->firstOrFail();
+
+    $page->assertRedirect(AdminHelpArticleResource::getUrl('edit', ['record' => $article], panel: 'admin'));
+
+    expect($article->created_by)->toBe($user->id)
+        ->and($article->source_path)->toBe('en/handbook.md');
 });
