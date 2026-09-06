@@ -257,3 +257,75 @@ it('gates the manager on the settings switch', function (): void {
     enableRevisions(false);
     expect(RevisionsRelationManager::canViewForRecord($article, EditArticle::class))->toBeFalse();
 });
+
+/*
+ * REV-01's second half, proven on the PAGE. Membership only, never equality
+ * and never a whole-page absence claim: 06-03 adds a media manager with no
+ * canViewForRecord() override, and Filament's default allows when no policy
+ * exists, so the real keys become ['revisions', 'media'] and ['media'] and a
+ * lazy placeholder sits on the page even with revisions off.
+ */
+
+/** The relation-manager keys the edit page cached for this mount. */
+function finCodexRevisionPageManagers(Testable $page): array
+{
+    $instance = $page->instance();
+
+    expect($instance)->toBeInstanceOf(EditArticle::class);
+
+    return array_keys($instance->getCachedRelationManagers());
+}
+
+it('carries the revisions manager on the edit page while revisions are on', function (): void {
+    enableRevisions(true);
+    $user = finCodexRevisionUser();
+    $this->usesPanel('admin', $user);
+
+    $article = finCodexRevisionArticle();
+    finCodexRevisionRow($article, 'First draft', userId: $user->id);
+    finCodexRevisionRow($article, 'Second draft', userId: $user->id);
+
+    $page = Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()]);
+
+    // The placeholder IS the proof: the manager is lazy, so the table markup
+    // is not in the page HTML at all until the browser loads it.
+    expect(finCodexRevisionPageManagers($page))->toContain('revisions')
+        ->and($page->html())->toContain('__lazyLoad');
+});
+
+it('drops the revisions manager from the edit page while revisions are off', function (): void {
+    $user = finCodexRevisionUser();
+    $this->usesPanel('admin', $user);
+
+    $article = finCodexRevisionArticle();
+    finCodexRevisionRow($article, 'First draft', userId: $user->id);
+    finCodexRevisionRow($article, 'Second draft', userId: $user->id);
+
+    enableRevisions(false);
+
+    // A FRESH mount: getCachedRelationManagers() memoises on the instance, so
+    // toggling the setting and re-reading the same page would answer stale.
+    $page = Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()]);
+
+    expect(finCodexRevisionPageManagers($page))->not->toContain('revisions')
+        ->and($page->html())->not->toContain(__('fin-codex::fin-codex.revisions.title'));
+});
+
+it('403s the next round trip on a manager whose gate closed', function (): void {
+    enableRevisions(true);
+    $user = finCodexRevisionUser();
+    $this->usesPanel('admin', $user);
+
+    $article = finCodexRevisionArticle();
+    finCodexRevisionRow($article, 'First draft', userId: $user->id);
+    finCodexRevisionRow($article, 'Second draft', userId: $user->id);
+
+    // The initial mount is allowed because CanAuthorizeAccess checks the gate
+    // in a Livewire *hydrate* hook, which the first render never runs; only
+    // the next request pays it.
+    $manager = finCodexRevisionManager($article);
+
+    enableRevisions(false);
+
+    $manager->set('tableSearch', 'x')->assertForbidden();
+});
