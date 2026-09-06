@@ -49,6 +49,19 @@ class ArticleResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'slug';
 
+    /**
+     * Help never reaches global search through the resource.
+     *
+     * Filament's default is true, and with $recordTitleAttribute set the default
+     * provider would run Article::query() directly: unpublished and members-only
+     * articles included, ArticleGate never consulted, file articles missing, and
+     * the row linking at the edit page instead of the article. The plugin's own
+     * globalSearch() option wraps the panel's provider instead and asks Searcher,
+     * which gates before it reads. A host's articleResource() subclass inherits
+     * this property, so the rule travels with the override.
+     */
+    protected static bool $isGloballySearchable = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBookOpen;
 
     public static function getNavigationGroup(): string|UnitEnum|null
