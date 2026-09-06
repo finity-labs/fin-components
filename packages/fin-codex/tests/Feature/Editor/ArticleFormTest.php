@@ -1,6 +1,11 @@
 <?php
 
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Field;
+use Filament\Forms\Components\Select;
+use Filament\Infolists\Components\Entry;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Component;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\CreateArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\EditArticle;
@@ -12,6 +17,7 @@ use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleRevision;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
 /*
@@ -276,4 +282,242 @@ it('works on the staff panel through the override', function (): void {
     expect(Filament::getCurrentPanel()?->getId())->toBe('staff')
         ->and($article->created_by)->toBe($user->id)
         ->and($article->updated_by)->toBe($user->id);
+});
+
+/*
+ * EDIT-03's sidebar and the slug rules, proven through the same two pages:
+ * the path pattern, uniqueness, the parent that may live in the database or
+ * in a file, the live suggestion, the read-only parent, the icon select, the
+ * related list and the enum round trip with an HTML article's format locked.
+ */
+
+/**
+ * The schema component of the page under test, found by name. Only fields and
+ * entries carry a name (Tabs and Section do not), so the search is scoped to
+ * those two; getFlatFields() would work for the sidebar fields but not for the
+ * parent TextEntry, and it prefixes a tab field with its tab key
+ * ("en.translations.en.title").
+ */
+function finCodexFormComponent(Testable $component, string $name): ?Component
+{
+    $found = $component->instance()->form->getComponent(
+        fn (mixed $schemaComponent): bool => ($schemaComponent instanceof Field || $schemaComponent instanceof Entry)
+            && $schemaComponent->getName() === $name,
+    );
+
+    return $found instanceof Component ? $found : null;
+}
+
+it('rejects slugs that are not kebab-case slash paths', function (string $slug): void {
+    $user = finCodexFormUser();
+    $this->usesPanel('admin', $user);
+
+    $component = Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexFormState(['slug' => $slug]))
+        ->call('create')
+        ->assertHasFormErrors(['slug']);
+
+    expect($component->html())->toContain((string) __('fin-codex::fin-codex.editor.validation.slug_format'))
+        ->and(Article::query()->count())->toBe(0);
+})->with(['Users', 'users roles', 'users//roles', '/users', 'users/', 'users_roles', 'users/Roles']);
+
+it('rejects a duplicate slug and accepts the record\'s own slug on edit', function (): void {
+    $user = finCodexFormUser();
+    $article = app(ArticleWriter::class)->create(finCodexFormState(), $user->id);
+
+    $this->usesPanel('admin', $user);
+
+    Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexFormState())
+        ->call('create')
+        ->assertHasFormErrors(['slug' => 'unique']);
+
+    Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])
+        ->fillForm(['slug' => 'users'])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect(Article::query()->count())->toBe(1);
+});
+
+it('requires an existing parent for nested paths, database or file', function (): void {
+    $user = finCodexFormUser();
+    $this->usesPanel('admin', $user);
+
+    $component = Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexFormState(['slug' => 'roles/x']))
+        ->call('create')
+        ->assertHasFormErrors(['slug']);
+
+    expect($component->html())->toContain((string) __('fin-codex::fin-codex.editor.validation.parent_missing', ['parent' => 'roles']));
+
+    // A file-only parent counts: the composite source knows users from the
+    // docs tree, and the row that lands keeps parent_id null until someone
+    // imports users (the core relinks it then).
+    useFixtureDocs();
+
+    Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexFormState(['slug' => 'users/x']))
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Article::query()->where('slug', 'users/x')->sole()->parent_id)->toBeNull();
+
+    // And so does a database parent.
+    app(ArticleWriter::class)->create(finCodexFormState(), $user->id);
+    forgetHelpMemo();
+
+    Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexFormState(['slug' => 'users/y']))
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Article::query()->where('slug', 'users/y')->sole()->parent_id)
+        ->toBe(Article::query()->where('slug', 'users')->sole()->id);
+});
+
+it('suggests the slug from the default title until the admin overrides it', function (): void {
+    $user = finCodexFormUser();
+    $this->usesPanel('admin', $user);
+
+    Livewire::test(CreateArticle::class)
+        ->set('data.translations.en.title', 'Getting Started')
+        ->assertSet('data.slug', 'getting-started')
+        ->set('data.translations.en.title', 'Getting Started Now')
+        ->assertSet('data.slug', 'getting-started-now')
+        ->set('data.slug', 'custom')
+        ->set('data.translations.en.title', 'Other')
+        ->assertSet('data.slug', 'custom');
+
+    $article = app(ArticleWriter::class)->create(finCodexFormState(), $user->id);
+
+    Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])
+        ->set('data.translations.en.title', 'Renamed')
+        ->assertSet('data.slug', 'users');
+});
+
+it('shows the derived parent read-only', function (): void {
+    $user = finCodexFormUser();
+    app(ArticleWriter::class)->create(finCodexFormState(), $user->id);
+    $roles = app(ArticleWriter::class)->create(finCodexFormState([
+        'slug' => 'users/roles',
+        'translations' => ['en' => ['title' => 'Roles', 'excerpt' => null, 'body' => 'Roles body.']],
+    ]), $user->id);
+
+    $this->usesPanel('admin', $user);
+
+    $edit = Livewire::test(EditArticle::class, ['record' => $roles->getRouteKey()]);
+
+    expect(finCodexFormComponent($edit, 'parent'))->toBeInstanceOf(TextEntry::class)
+        ->and(finCodexFormComponent($edit, 'parent')?->getState())->toBe('users')
+        ->and($edit->html())->toContain((string) __('fin-codex::fin-codex.editor.form.parent'))
+        ->and(data_get($edit->instance()->data, 'parent'))->toBeNull();
+
+    $create = Livewire::test(CreateArticle::class);
+
+    expect(finCodexFormComponent($create, 'parent')?->getState())
+        ->toBe((string) __('fin-codex::fin-codex.editor.form.no_parent'));
+});
+
+it('offers outlined heroicons and stores the heroicon-o- name', function (): void {
+    $user = finCodexFormUser();
+    $this->usesPanel('admin', $user);
+
+    $component = Livewire::test(CreateArticle::class);
+    $icon = finCodexFormComponent($component, 'icon');
+
+    expect($icon)->toBeInstanceOf(Select::class);
+
+    /** @var Select $icon */
+    $options = $icon->getOptions();
+
+    expect(count($options))->toBeGreaterThan(300)
+        ->and(collect(array_keys($options))->every(fn (string $name): bool => str_starts_with($name, 'heroicon-o-')))->toBeTrue()
+        ->and(reset($options))->toContain('<svg');
+
+    $component->fillForm(finCodexFormState(['icon' => 'heroicon-o-academic-cap']))
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Article::query()->where('slug', 'users')->sole()->icon)->toBe('heroicon-o-academic-cap');
+});
+
+it('lists related articles by title with the slug as hint and excludes the article itself', function (): void {
+    useFixtureDocs();
+    $user = finCodexFormUser();
+
+    $billing = app(ArticleWriter::class)->create(finCodexFormState([
+        'slug' => 'billing',
+        'translations' => ['en' => ['title' => 'Billing', 'excerpt' => null, 'body' => 'Billing body.']],
+    ]), $user->id);
+
+    forgetHelpMemo();
+    $this->usesPanel('admin', $user);
+
+    $component = Livewire::test(EditArticle::class, ['record' => $billing->getRouteKey()]);
+    $related = finCodexFormComponent($component, 'related');
+
+    expect($related)->toBeInstanceOf(Select::class);
+
+    /** @var Select $related */
+    $options = $related->getOptions();
+
+    expect($options)->toHaveKey('users/roles', 'Roles (users/roles)')
+        ->and($options)->toHaveKey('intro', 'Introduction (intro)')
+        ->and($options)->toHaveKey('users', 'Users (users)')
+        ->and($options)->not->toHaveKey('billing');
+
+    $component->fillForm(['related' => ['users/roles', 'intro'], 'keywords' => ['a', 'b']])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    $billing->refresh();
+
+    expect($billing->related)->toBe(['users/roles', 'intro'])
+        ->and($billing->keywords)->toBe(['a', 'b']);
+});
+
+it('round-trips format, published and visibility and keeps an HTML article on HTML', function (): void {
+    $user = finCodexFormUser();
+    $this->usesPanel('admin', $user);
+
+    Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexFormState([
+            'format' => ArticleFormat::Markdown->value,
+            'is_published' => false,
+            'visibility' => Visibility::Authenticated->value,
+        ]))
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $article = Article::query()->where('slug', 'users')->sole();
+
+    expect($article->format)->toBe(ArticleFormat::Markdown)
+        ->and($article->is_published)->toBeFalse()
+        ->and($article->visibility)->toBe(Visibility::Authenticated);
+
+    Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])
+        ->assertFormSet([
+            'format' => ArticleFormat::Markdown->value,
+            'is_published' => false,
+            'visibility' => Visibility::Authenticated->value,
+        ]);
+
+    $legacy = Article::factory()->html()->create(['slug' => 'legacy']);
+    ArticleTranslation::factory()->create([
+        'article_id' => $legacy->id,
+        'locale' => 'en',
+        'title' => 'Legacy',
+        'body' => '<p>Legacy</p>',
+    ]);
+
+    $component = Livewire::test(EditArticle::class, ['record' => $legacy->getRouteKey()]);
+
+    expect(finCodexFormComponent($component, 'format')?->isDisabled())->toBeTrue();
+
+    $component->fillForm(['translations' => ['en' => ['title' => 'Legacy v2']]])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($legacy->fresh()->format)->toBe(ArticleFormat::Html);
 });
