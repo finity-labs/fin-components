@@ -13,12 +13,20 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * answers 403 for a user that is not a FilamentUser outside app.env=local,
  * so the fixture implements the contract; no $fillable guard so ::create()
  * works with plain arrays.
+ *
+ * password defaults to null so the attribute is always present: Laravel's
+ * AuthenticateSession middleware reads getAuthPassword() on every request,
+ * actingAs() clears wasRecentlyCreated on the signed-in instance, and strict
+ * models throw for an attribute a retrieved model does not carry.
  */
 final class User extends Authenticatable implements FilamentUser
 {
     protected $table = 'users';
 
     protected $guarded = [];
+
+    /** @var array<string, mixed> */
+    protected $attributes = ['password' => null];
 
     public function canAccessPanel(Panel $panel): bool
     {

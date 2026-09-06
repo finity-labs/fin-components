@@ -65,11 +65,18 @@ class TestCase extends Orchestra
         'create_codex_media_table',
     ];
 
+    /**
+     * The whole suite runs under strict models: the editor's write path has
+     * to survive them, and a Phase 3/4 path that lazy-loads a relation on a
+     * collection or silently discards an attribute shows up here instead of
+     * in a host application.
+     */
     protected function setUp(): void
     {
         parent::setUp();
 
         Model::clearBootedModels();
+        Model::shouldBeStrict();
     }
 
     /**
@@ -125,6 +132,9 @@ class TestCase extends Orchestra
      * Runs after the providers boot, so model listeners registered during the
      * migrations survive. Host tables first (users, settings), then lin-codex's
      * migrations by include()->up() in dependency order, then the settings seed.
+     * The users table carries a nullable password column because Laravel's
+     * AuthenticateSession middleware reads getAuthPassword() on every panel
+     * request, which strict models turn into a MissingAttributeException.
      */
     protected function defineDatabaseMigrations(): void
     {
@@ -132,6 +142,7 @@ class TestCase extends Orchestra
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('password')->nullable();
             $table->timestamps();
         });
 
