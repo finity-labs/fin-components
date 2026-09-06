@@ -9,6 +9,7 @@ use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -18,6 +19,7 @@ use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use UnitEnum;
 
 /**
@@ -111,23 +113,70 @@ class HelpCoverage extends Page implements HasTable
         ]);
     }
 
+    /**
+     * The closure injections are resolved by PARAMETER NAME, so none of these
+     * may be renamed: search, sort ([column, direction], both null until a
+     * header is clicked), filters (the raw table filter state), page and
+     * recordsPerPage (which can be the string 'all').
+     */
     public function table(Table $table): Table
     {
         return $table
-            ->records(fn (int|string $page, int|string $recordsPerPage): LengthAwarePaginator => $this->paginate([], (int) $page, $recordsPerPage))
+            ->records(fn (?string $search, array $sort, ?array $filters, int|string $page, int|string $recordsPerPage): LengthAwarePaginator => $this->paginate($search, $sort, $filters, (int) $page, $recordsPerPage))
             ->columns([
                 TextColumn::make('label')
-                    ->label(__('fin-codex::fin-codex.coverage.columns.page')),
-            ]);
+                    ->label(__('fin-codex::fin-codex.coverage.columns.page'))
+                    ->searchable()
+                    ->sortable()
+                    ->weight(FontWeight::Medium),
+                TextColumn::make('panel')
+                    ->label(__('fin-codex::fin-codex.coverage.columns.panel'))
+                    ->badge()
+                    ->color('gray')
+                    ->formatStateUsing(fn (?string $state): string => $state ?? (string) __('fin-codex::fin-codex.coverage.outside_panels')),
+                TextColumn::make('routes')
+                    ->label(__('fin-codex::fin-codex.coverage.columns.routes'))
+                    ->alignRight()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('route')
+                    ->label(__('fin-codex::fin-codex.coverage.columns.route'))
+                    ->color('gray')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('uri')
+                    ->label(__('fin-codex::fin-codex.coverage.columns.uri'))
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('matched')
+                    ->label(__('fin-codex::fin-codex.coverage.columns.matched'))
+                    ->color('gray')
+                    ->placeholder('—'),
+                TextColumn::make('slug')
+                    ->label(__('fin-codex::fin-codex.coverage.columns.article'))
+                    ->badge()
+                    ->color(fn (array $record): string => $record['covered'] ? 'success' : 'danger')
+                    ->placeholder('—'),
+            ])
+            ->emptyStateHeading(__('fin-codex::fin-codex.coverage.empty'))
+            ->emptyStateDescription(__('fin-codex::fin-codex.coverage.empty_description'))
+            ->emptyStateIcon(Heroicon::OutlinedClipboardDocumentCheck);
     }
 
     /**
      * One page of rows, keyed by the row key.
      *
-     * @param  array<string, array<string, mixed>>  $rows
+     * A paginator rather than a plain array for two reasons: a host panel has
+     * 50 to 400 screens, and the "all records" count Filament reaches for on
+     * anything that is not a paginator would go through a query this table
+     * does not have.
+     *
+     * @param  array{0: string|null, 1: string|null}  $sort
+     * @param  array<string, mixed>|null  $filters
      */
-    private function paginate(array $rows, int $page, int|string $recordsPerPage): LengthAwarePaginator
+    private function paginate(?string $search, array $sort, ?array $filters, int $page, int|string $recordsPerPage): LengthAwarePaginator
     {
+        $rows = $this->rows($search, $sort, $filters);
         $perPage = $recordsPerPage === 'all' ? max(1, count($rows)) : (int) $recordsPerPage;
 
         return new LengthAwarePaginator(
@@ -136,5 +185,81 @@ class HelpCoverage extends Page implements HasTable
             $perPage,
             $page,
         );
+    }
+
+    /**
+     * Every screen the report knows, filtered, searched and ordered.
+     *
+     * The report is asked once and closed over: it memoises one reading of the
+     * content source per request, and a per-row read would be one reading per
+     * screen.
+     *
+     * @param  array{0: string|null, 1: string|null}  $sort
+     * @param  array<string, mixed>|null  $filters
+     *
+     * @return array<string, array<string, mixed>> keyed by CoverageRow::$key
+     */
+    private function rows(?string $search, array $sort, ?array $filters): array
+    {
+        $rows = [];
+
+        foreach (app(CoverageReport::class)->rows() as $row) {
+            $rows[$row->key] = $row->toArray();
+        }
+
+        $rows = $this->filtered($rows, $filters);
+
+        if (filled($search)) {
+            $rows = array_filter($rows, fn (array $row): bool => Str::contains((string) $row['label'], $search, ignoreCase: true)
+                || Str::contains((string) $row['route'], $search, ignoreCase: true));
+        }
+
+        // Only the two sortable columns can arrive here; anything else keeps
+        // the opening order, which puts the gap first and orders each block by
+        // the screen's name.
+        $column = in_array($sort[0] ?? null, ['label', 'route'], true) ? $sort[0] : null;
+        $direction = ($sort[1] ?? 'asc') === 'desc' ? -1 : 1;
+
+        uasort($rows, function (array $a, array $b) use ($column, $direction): int {
+            if ($column === null) {
+                return ($a['covered'] <=> $b['covered']) ?: strnatcasecmp((string) $a['label'], (string) $b['label']);
+            }
+
+            return $direction * strnatcasecmp((string) $a[$column], (string) $b[$column]);
+        });
+
+        return $rows;
+    }
+
+    /**
+     * The panel filter first — it is the default view — then the covered one.
+     *
+     * The state shape is the filter's own form field: a select filter's field
+     * is named `value`. `blank()` is what makes the ternary's `0` and `'0'`
+     * read as "no article" rather than as "no filter"; a browser sends those
+     * two and a test sends a real bool.
+     *
+     * @param  array<string, array<string, mixed>>  $rows
+     * @param  array<string, mixed>|null  $filters
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    private function filtered(array $rows, ?array $filters): array
+    {
+        $panel = $filters['panel']['value'] ?? null;
+
+        if (filled($panel)) {
+            $rows = array_filter($rows, fn (array $row): bool => $panel === CoverageReport::OUTSIDE_PANELS
+                ? $row['panel'] === null
+                : $row['panel'] === $panel);
+        }
+
+        $covered = $filters['covered']['value'] ?? null;
+
+        if (! blank($covered)) {
+            $rows = array_filter($rows, fn (array $row): bool => $row['covered'] === (bool) $covered);
+        }
+
+        return $rows;
     }
 }

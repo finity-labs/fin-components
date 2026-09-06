@@ -329,16 +329,21 @@ it('re-orders on a header click, which drops the uncovered-first opening order',
 
     $dashboardKey = finCodexPageRowKey('admin', Dashboard::class);
     $opening = finCodexPageKeys(finCodexPageTable());
+    $gap = finCodexPageRecords(finCodexPageTable())->reject(fn (array $row): bool => $row['covered'])->count();
 
-    // The one covered row opens last, under every uncovered screen.
-    expect(array_search($dashboardKey, $opening, true))->toBe(count($opening) - 1);
+    // The covered dashboard opens at the head of the covered block, under
+    // every screen that still needs an article.
+    $openingIndex = array_search($dashboardKey, $opening, true);
 
-    $sorted = finCodexPageRecords(finCodexPageTable()->sortTable('label'));
-    $labels = $sorted->pluck('label')->values()->all();
+    expect($openingIndex)->toBe($gap);
 
+    $page = finCodexPageTable()->sortTable('label');
+    $labels = finCodexPageRecords($page)->pluck('label')->values()->all();
+
+    // A header click orders by that column alone, so the covered row moves up
+    // to where its name puts it.
     expect($labels)->toBe(collect($labels)->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()->all())
-        ->and(array_search($dashboardKey, finCodexPageKeys(finCodexPageTable()->sortTable('label')), true))
-        ->not->toBe(count($opening) - 1);
+        ->and(array_search($dashboardKey, finCodexPageKeys($page), true))->toBeLessThan($openingIndex);
 });
 
 it('paginates instead of dumping every screen on one page', function (): void {
