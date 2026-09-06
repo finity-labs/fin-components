@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FinityLabs\FinCodex\Resources\ArticleResource\Schemas;
 
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -14,11 +15,13 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinCodex\Editor\MediaRecorder;
 use FinityLabs\FinCodex\Editor\OutdatedTranslations;
 use FinityLabs\FinCodex\Editor\SlugRules;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Illuminate\Database\QueryException;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Spatie\LaravelSettings\Exceptions\MissingSettings;
 
 /**
@@ -181,11 +184,45 @@ final class TranslationTabs
             Textarea::make("translations.{$code}.excerpt")
                 ->label(__('fin-codex::fin-codex.editor.form.excerpt'))
                 ->rows(3),
-            MarkdownEditor::make("translations.{$code}.body")
-                ->label(__('fin-codex::fin-codex.editor.form.body'))
-                ->required($isDefault),
+            self::body($code)->required($isDefault),
             self::copyFromDefault($code, $default),
         ];
+    }
+
+    /**
+     * The Markdown body, with image uploads pointed at the core's media disk.
+     *
+     * The disk and the directory are read from lin-codex's config through
+     * closures, so they are resolved when the editor renders and not when
+     * the schema class is loaded; the accepted types are the five raster
+     * formats a browser draws, never a vector one. Filament refuses anything
+     * else before MediaRecorder is called at all.
+     *
+     * Attachment visibility is deliberately never set here: MarkdownEditor
+     * throws on that setter, because static Markdown cannot carry a
+     * temporary signed URL. Attachments are public, which is what the images
+     * in a help article are.
+     */
+    private static function body(string $code): MarkdownEditor
+    {
+        return MarkdownEditor::make("translations.{$code}.body")
+            ->label(__('fin-codex::fin-codex.editor.form.body'))
+            ->fileAttachmentsDisk(static fn (): string => (string) config('lin-codex.media.disk', 'public'))
+            ->fileAttachmentsDirectory(static fn (): string => (string) config('lin-codex.media.directory', 'codex'))
+            ->fileAttachmentsAcceptedFileTypes(['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/avif'])
+            ->fileAttachmentsMaxSize(4096)
+            ->saveUploadedFileAttachmentUsing(
+                static fn (TemporaryUploadedFile $file, ?Article $record): string => app(MediaRecorder::class)
+                    ->store($file, $record, self::userId()),
+            );
+    }
+
+    /** The panel user's id, or null for a panel without an authenticated user. */
+    private static function userId(): ?int
+    {
+        $id = Filament::auth()->id();
+
+        return is_numeric($id) ? (int) $id : null;
     }
 
     /**

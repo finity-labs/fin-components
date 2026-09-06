@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\EditRecord;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
+use FinityLabs\FinCodex\Editor\MediaRecorder;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ContextsRepeater;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
@@ -116,6 +117,21 @@ final class EditArticle extends EditRecord
         $data['contexts'] = ContextsRepeater::dehydrate(is_array($rows) ? array_values($rows) : []);
 
         return $data;
+    }
+
+    /**
+     * An upload made on this page is linked to the article the moment it is
+     * stored, so this only catches a body that quotes an image someone
+     * uploaded elsewhere and never saved — the create page's orphans. It
+     * links; it never deletes and never takes an image off another article.
+     */
+    protected function afterSave(): void
+    {
+        $record = $this->getRecord();
+
+        if ($record instanceof Article) {
+            app(MediaRecorder::class)->linkOrphans($record);
+        }
     }
 
     protected function afterFill(): void

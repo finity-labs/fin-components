@@ -7,9 +7,11 @@ namespace FinityLabs\FinCodex\Resources\ArticleResource\Pages;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
+use FinityLabs\FinCodex\Editor\MediaRecorder;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ContextsRepeater;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
+use FinityLabs\LinCodex\Models\Article;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -49,6 +51,20 @@ final class CreateArticle extends CreateRecord
         $data['contexts'] = ContextsRepeater::dehydrate(is_array($rows) ? array_values($rows) : []);
 
         return $data;
+    }
+
+    /**
+     * Images uploaded while the article did not exist yet have no article id
+     * on their codex_media row; the record they belong to is only known now.
+     * Rows no body mentions stay orphans, and nothing is deleted here.
+     */
+    protected function afterCreate(): void
+    {
+        $record = $this->getRecord();
+
+        if ($record instanceof Article) {
+            app(MediaRecorder::class)->linkOrphans($record);
+        }
     }
 
     protected function afterFill(): void
