@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace FinityLabs\FinCodex\Pages;
 
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\EmbeddedTable;
 use Filament\Schemas\Schema;
@@ -19,10 +22,22 @@ use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\Coverage\WarningsSection;
+use FinityLabs\FinCodex\Editor\ArticleWriter;
+use FinityLabs\FinCodex\Editor\ContextPicker;
+use FinityLabs\FinCodex\Editor\FileArticleAdopter;
 use FinityLabs\FinCodex\FinCodexPlugin;
+use FinityLabs\FinCodex\Panel\Concerns\ResolvesPanelUser;
+use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
+use FinityLabs\LinCodex\Contracts\ContentSource;
+use FinityLabs\LinCodex\Data\ArticleData;
+use FinityLabs\LinCodex\Enums\ContextType;
+use FinityLabs\LinCodex\Models\Article;
+use FinityLabs\LinCodex\Sources\SlugPath;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
+use RuntimeException;
 use UnitEnum;
 
 /**
@@ -51,6 +66,7 @@ use UnitEnum;
 class HelpCoverage extends Page implements HasTable
 {
     use InteractsWithTable;
+    use ResolvesPanelUser;
 
     protected static ?string $slug = 'help-coverage';
 
@@ -163,8 +179,44 @@ class HelpCoverage extends Page implements HasTable
                 TextColumn::make('slug')
                     ->label(__('fin-codex::fin-codex.coverage.columns.article'))
                     ->badge()
-                    ->color(fn (array $record): string => $record['covered'] ? 'success' : 'danger')
+                    ->color(fn (array $record): string => match (true) {
+                        ! $record['covered'] => 'danger',
+                        $record['declared'] => 'gray',
+                        default => 'success',
+                    })
+                    ->description(fn (array $record): ?string => $record['declared'] ? (string) __('fin-codex::fin-codex.coverage.declared') : null)
+                    ->url(fn (array $record): ?string => $this->editUrl($record))
                     ->placeholder('—'),
+            ])
+            ->recordActions([
+                Action::make('write')
+                    ->label(__('fin-codex::fin-codex.coverage.actions.write'))
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->visible(fn (array $record): bool => ! $record['covered'])
+                    ->url(fn (array $record): string => $this->writeUrl($record)),
+
+                Action::make('attach')
+                    ->label(__('fin-codex::fin-codex.coverage.actions.attach'))
+                    ->icon(Heroicon::OutlinedLink)
+                    ->visible(fn (array $record): bool => ! $record['covered'])
+                    ->modalHeading(fn (array $record): string => (string) __('fin-codex::fin-codex.coverage.attach.heading', ['page' => $record['label']]))
+                    ->modalDescription(__('fin-codex::fin-codex.coverage.attach.description'))
+                    ->modalSubmitActionLabel(__('fin-codex::fin-codex.coverage.attach.submit'))
+                    ->schema([
+                        Select::make('article')
+                            ->label(__('fin-codex::fin-codex.coverage.attach.article'))
+                            ->helperText(__('fin-codex::fin-codex.coverage.attach.article_help'))
+                            ->options(fn (): array => $this->attachOptions())
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->action(fn (array $record, array $data) => $this->attach($record, (string) $data['article'])),
+
+                Action::make('import')
+                    ->label(__('fin-codex::fin-codex.coverage.actions.import'))
+                    ->icon(Heroicon::OutlinedArrowDownTray)
+                    ->visible(fn (array $record): bool => $record['covered'] && $record['file_only'] && ! $record['declared'])
+                    ->action(fn (array $record) => $this->import((string) $record['slug'])),
             ])
             ->filters([
                 TernaryFilter::make('covered')
@@ -250,6 +302,166 @@ class HelpCoverage extends Page implements HasTable
         });
 
         return $rows;
+    }
+
+    /**
+     * The create page, already knowing which screen the article is about.
+     *
+     * One row produces exactly ONE context: `class:` for a screen behind a
+     * Filament page — the key the picker offers, the key the drawer matches
+     * and the key that flips this row to covered — and `route:` for a
+     * standalone route. Prefilling `route:` for a resource would take three
+     * or four rows and still not be what the drawer resolves.
+     *
+     * @param  array<string, mixed>  $record
+     */
+    private function writeUrl(array $record): string
+    {
+        $isClass = $record['help_class'] !== null;
+
+        return $this->articleResource()::getUrl('create', [
+            'context_type' => $isClass ? ContextType::PageClass->key() : ContextType::Route->key(),
+            'context_key' => $isClass ? $record['help_class'] : $record['route'],
+            'panel' => $record['panel'] ?? ContextPicker::ANY_PANEL,
+            'title' => $record['label'],
+        ]);
+    }
+
+    /**
+     * The same (type, key, panel) triple the write URL carries.
+     *
+     * @param  array<string, mixed>  $record
+     *
+     * @return array{panel_id: string|null, type: string, key: string}
+     */
+    private function contextFor(array $record): array
+    {
+        $isClass = $record['help_class'] !== null;
+
+        return [
+            'panel_id' => $record['panel'] === null ? ContextPicker::ANY_PANEL : (string) $record['panel'],
+            'type' => $isClass ? ContextType::PageClass->key() : ContextType::Route->key(),
+            'key' => (string) ($isClass ? $record['help_class'] : $record['route']),
+        ];
+    }
+
+    /**
+     * Database articles only: a file article has no row to hang a context on,
+     * and guessing a slug for it is out of the question — the slug becomes the
+     * article's permanent identity and its file path. The helper text says to
+     * import the file first.
+     *
+     * @return array<string, string>
+     */
+    private function attachOptions(): array
+    {
+        $default = TranslationTabs::languages()['default'];
+
+        return collect(app(ContentSource::class)->all())
+            ->reject(fn (ArticleData $article): bool => $article->id === null)
+            ->mapWithKeys(fn (ArticleData $article): array => [
+                $article->slug => ($article->translation($default)->title
+                    ?? SlugPath::humanise(SlugPath::lastSegment($article->slug))).' ('.$article->slug.')',
+            ])
+            ->all();
+    }
+
+    /**
+     * Add this screen's context to an article that already exists.
+     *
+     * The write goes through ArticleWriter like every other context row, so it
+     * runs in one transaction attributed to the panel user. An article that
+     * already carries the identical context is left alone and the admin is
+     * told; a wider or overlapping context is a legitimate thing to have and
+     * is appended without comment.
+     *
+     * The admin stays on the page. The report memoises one reading of the
+     * content source per request, so the row goes green on the next render.
+     *
+     * @param  array<string, mixed>  $record
+     */
+    private function attach(array $record, string $slug): void
+    {
+        $article = Article::query()->where('slug', $slug)->first();
+
+        if ($article === null) {
+            return;
+        }
+
+        $title = $article->translations()->where('locale', TranslationTabs::languages()['default'])->value('title') ?? $slug;
+        $appended = app(ArticleWriter::class)->appendContext($article, $this->contextFor($record), $this->userId());
+
+        Notification::make()
+            ->{$appended ? 'success' : 'warning'}()
+            ->title(__($appended ? 'fin-codex::fin-codex.coverage.attach.attached' : 'fin-codex::fin-codex.coverage.attach.duplicate'))
+            ->body(__($appended ? 'fin-codex::fin-codex.coverage.attach.attached_body' : 'fin-codex::fin-codex.coverage.attach.duplicate_body', [
+                'title' => $title,
+                'page' => $record['label'],
+            ]))
+            ->send();
+    }
+
+    /**
+     * Import the file article covering this screen and open it, mirroring the
+     * files tab's own action: the notification is persistent and sent before
+     * the redirect, because Notification::send() pushes it into the session
+     * where the edit page picks it up.
+     */
+    private function import(string $slug): void
+    {
+        try {
+            $article = app(FileArticleAdopter::class)->adopt($slug, $this->userId());
+        } catch (RuntimeException $e) {
+            Notification::make()
+                ->danger()
+                ->title(__('fin-codex::fin-codex.editor.imported.failed'))
+                ->body($e->getMessage())
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->warning()
+            ->persistent()
+            ->title(__('fin-codex::fin-codex.editor.imported.title'))
+            ->body(__('fin-codex::fin-codex.editor.imported.body', ['path' => (string) $article->source_path]))
+            ->send();
+
+        $this->redirect($this->articleResource()::getUrl('edit', ['record' => $article]));
+    }
+
+    /**
+     * Null for an uncovered row, for a row covered by a declaration in code
+     * (there is nothing to open) and for a file article that has no database
+     * row yet (the import action is what that row offers).
+     *
+     * @param  array<string, mixed>  $record
+     */
+    private function editUrl(array $record): ?string
+    {
+        return $record['covered'] && ! $record['declared'] && $record['article_id'] !== null
+            ? $this->articleResource()::getUrl('edit', ['record' => $record['article_id']])
+            : null;
+    }
+
+    /**
+     * The resource the current panel registered, so a host's
+     * articleResource() override builds both URLs.
+     *
+     * @return class-string<ArticleResource>
+     */
+    private function articleResource(): string
+    {
+        $resource = FinCodexPlugin::get()->getArticleResource();
+
+        return is_a($resource, ArticleResource::class, true) ? $resource : ArticleResource::class;
+    }
+
+    /** The panel user's id, the attribution of the attach and the import. */
+    private function userId(): ?int
+    {
+        return $this->panelUserId();
     }
 
     /**

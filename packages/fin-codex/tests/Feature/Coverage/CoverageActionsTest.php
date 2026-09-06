@@ -2,9 +2,11 @@
 
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
+use Filament\Pages\Dashboard;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Schema;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
+use FinityLabs\FinCodex\Editor\ArticleWriter;
 use FinityLabs\FinCodex\Editor\ContextPicker;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\CreateArticle;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpCoverage;
@@ -276,7 +278,7 @@ function finCodexActionsFileDocs(): string
     @mkdir($dir.'/en', 0777, true);
 
     // Single-quoted YAML, so the class name's backslashes stay backslashes.
-    $context = "admin:class:".UserResource::class;
+    $context = 'admin:class:'.UserResource::class;
 
     file_put_contents($dir.'/en/handbook.md', <<<MD
         ---
@@ -373,7 +375,7 @@ it('attaches the screen to an article the admin already has, and the row goes gr
         ->and($row['slug'])->toBe('handbook');
 });
 
-it('refuses the second attach of the same context instead of writing a copy', function (): void {
+it('takes both gap actions away once the row is covered, so nobody attaches twice', function (): void {
     finCodexActionsUser();
     $article = finCodexActionsArticle('handbook');
     forgetHelpMemo();
@@ -385,10 +387,47 @@ it('refuses the second attach of the same context instead of writing a copy', fu
     forgetHelpMemo();
 
     finCodexActionsPage()
-        ->callTableAction('attach', $key, ['article' => 'handbook'])
-        ->assertNotified(__('fin-codex::fin-codex.coverage.attach.duplicate'));
+        ->assertTableActionHidden('attach', $key)
+        ->assertTableActionHidden('write', $key);
 
     expect(finCodexActionsContexts($article))->toBe(['admin:class:'.UserResource::class]);
+});
+
+it('writes nothing when the row went green while the modal was open', function (): void {
+    finCodexActionsUser();
+    $article = finCodexActionsArticle('handbook');
+    forgetHelpMemo();
+
+    $key = finCodexActionsRowKey('admin', UserResource::class);
+
+    // The modal is open on a row that is still a gap.
+    $page = finCodexActionsPage();
+    $page->mountTableAction('attach', $key);
+
+    expect($page->instance()->getMountedAction())->not->toBeNull();
+
+    // Another admin attaches the same context while the modal sits open.
+    app(ArticleWriter::class)->appendContext($article, [
+        'panel_id' => 'admin',
+        'type' => ContextType::PageClass->key(),
+        'key' => UserResource::class,
+    ], null);
+
+    forgetHelpMemo();
+
+    // Filament re-resolves the record before it runs a mounted action, sees a
+    // covered row and refuses: the action stays mounted and nothing is
+    // written. So the writer's own duplicate refusal (proven in
+    // ArticleWriterTest) is a second line of defence rather than the one the
+    // admin ever meets — nothing reaches it through this page.
+    $page->setTableActionData(['article' => 'handbook'])
+        ->callMountedTableAction();
+
+    $mounted = $page->instance()->getMountedAction();
+
+    expect($mounted?->getName())->toBe('attach')
+        ->and($mounted?->isVisible())->toBeFalse()
+        ->and(finCodexActionsContexts($article))->toBe(['admin:class:'.UserResource::class]);
 });
 
 it('offers only articles that live in the database, because a file has no row to hang a context on', function (): void {
@@ -396,7 +435,9 @@ it('offers only articles that live in the database, because a file has no row to
     finCodexActionsArticle('handbook');
     useFixtureDocs();
 
-    $key = finCodexActionsRowKey('admin', UserResource::class);
+    // The Dashboard row, not the users one: the fixture docs cover users
+    // through a declaration, and a covered row offers no attach at all.
+    $key = finCodexActionsRowKey('admin', Dashboard::class);
     $page = finCodexActionsPage();
     $page->mountTableAction('attach', $key);
 
@@ -412,12 +453,13 @@ it('offers only articles that live in the database, because a file has no row to
 it('takes a covered row straight to the article that covers it', function (): void {
     finCodexActionsUser();
     $article = finCodexActionsArticle('handbook');
-    $article->contexts()->create([
+
+    app(ArticleWriter::class)->appendContext($article, [
         'panel_id' => 'admin',
-        'type' => ContextType::PageClass,
+        'type' => ContextType::PageClass->key(),
         'key' => UserResource::class,
-        'sort_order' => 0,
-    ]);
+    ], null);
+
     forgetHelpMemo();
 
     $key = finCodexActionsRowKey('admin', UserResource::class);
