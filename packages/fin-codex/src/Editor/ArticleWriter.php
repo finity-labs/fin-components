@@ -98,6 +98,65 @@ final class ArticleWriter
     }
 
     /**
+     * Append one context to an existing article, attributed to the panel
+     * user. This is what the coverage page's attach action writes through.
+     *
+     * update() cannot do it: split() pulls `translations` out with a `[]`
+     * default and writeTranslations() then refuses the write because the
+     * default locale has no title, and even with a synthesized payload it
+     * would delete and recreate every context the article already has. So
+     * this is a narrow append rather than a second write path — a context row
+     * is still never created outside this class.
+     *
+     * Returns false without writing when the identical (type, key, panel) row
+     * is already there. A wider "any panel" row or a route: context that
+     * overlaps an existing class: one is legitimate and is appended silently:
+     * no overlap heuristics, because a false warning trains admins to ignore
+     * warnings.
+     *
+     * sort_order is the current maximum plus one, so an article with no
+     * contexts yet gets its first at 1. Only the order matters — the core
+     * reads the rows by it and the next full save renumbers them from 0.
+     *
+     * @param  array{panel_id?: string|null, type: string, key: string}  $context
+     */
+    public function appendContext(Article $article, array $context, ?int $userId): bool
+    {
+        $type = ContextType::fromKey((string) $context['type']);
+        $key = (string) $context['key'];
+        $panel = $this->panelId($context['panel_id'] ?? null);
+
+        return DB::transaction(fn (): bool => $this->revisions->attributing(RevisionReason::Manual, $userId, function () use ($article, $type, $key, $panel, $userId): bool {
+            $exists = $article->contexts()
+                ->where('type', $type)
+                ->where('key', $key)
+                ->when(
+                    $panel === null,
+                    fn ($query) => $query->whereNull('panel_id'),
+                    fn ($query) => $query->where('panel_id', $panel),
+                )
+                ->exists();
+
+            if ($exists) {
+                return false;
+            }
+
+            $article->contexts()->create([
+                'panel_id' => $panel,
+                'type' => $type,
+                'key' => $key,
+                'sort_order' => (int) $article->contexts()->max('sort_order') + 1,
+            ]);
+
+            // The one attribute assignment: strict models throw on a stray
+            // key, and this is what makes the write show up as the admin's.
+            $article->fill(['updated_by' => $userId])->save();
+
+            return true;
+        }));
+    }
+
+    /**
      * Convert an HTML article to Markdown in one transaction: the format is
      * saved first under attributing(), so the core's updating hook records
      * one revision per translation carrying the original Html format and
