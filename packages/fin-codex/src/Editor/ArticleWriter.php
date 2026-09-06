@@ -7,6 +7,7 @@ namespace FinityLabs\FinCodex\Editor;
 use FinityLabs\LinCodex\Enums\ArticleFormat;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Enums\RevisionReason;
+use FinityLabs\LinCodex\Enums\Visibility;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Revisions\RevisionManager;
@@ -125,6 +126,37 @@ final class ArticleWriter
 
             return $article;
         }));
+    }
+
+    /**
+     * Hard delete, the locked decision: the core cascades the translations,
+     * contexts and revisions with the row, orphans the direct children
+     * (parent_id null) and keeps the media files with article_id null. A
+     * section is a slug prefix, not an owner, so no descendant is deleted
+     * with it and no slug is rewritten.
+     *
+     * $keepChildrenHidden is the EDIT-10 reconciliation. Deleting an
+     * authenticated article would otherwise hand its published, public
+     * descendants to guests, because the folder group the slug leaves
+     * behind hides nothing; with the flag on, the descendants
+     * DeleteSummary counts as exposed are set to Authenticated in the same
+     * transaction, before the row goes. The 05-07 modal defaults the flag
+     * on and shows the note either way.
+     *
+     * No attributing() scope: a visibility change records no revision (only
+     * a format change does) and the delete cascades the revisions anyway.
+     */
+    public function delete(Article $article, bool $keepChildrenHidden, ?int $userId): void
+    {
+        DB::transaction(function () use ($article, $keepChildrenHidden, $userId): void {
+            if ($keepChildrenHidden) {
+                foreach (DeleteSummary::exposedDescendants($article) as $descendant) {
+                    $descendant->fill(['visibility' => Visibility::Authenticated, 'updated_by' => $userId])->save();
+                }
+            }
+
+            $article->delete();
+        });
     }
 
     /**
