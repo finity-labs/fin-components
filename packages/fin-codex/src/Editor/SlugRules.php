@@ -31,13 +31,18 @@ final class SlugRules
      * The regex message comes from the field's validationMessages(); the
      * closure names the missing parent itself.
      *
+     * The parent rule is wrapped in a closure that returns it: Filament
+     * evaluates every Closure it is handed as a rule *factory* with its own
+     * dependency injection, so a bare validation closure would be called with
+     * $attribute and blow up before Laravel ever sees it.
+     *
      * @return list<mixed>
      */
     public static function rules(): array
     {
         return [
             'regex:'.self::PATTERN,
-            static function (string $attribute, mixed $value, Closure $fail): void {
+            static fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
                 if (is_string($value) && ! self::parentExists($value)) {
                     $fail((string) __('fin-codex::fin-codex.editor.validation.parent_missing', [
                         'parent' => (string) SlugPath::parentOf($value),
