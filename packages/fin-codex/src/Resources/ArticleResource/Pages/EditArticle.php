@@ -10,6 +10,7 @@ use Filament\Resources\Pages\EditRecord;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
 use FinityLabs\FinCodex\Editor\MediaRecorder;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Resources\ArticleResource\Actions\PreviewAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ContextsRepeater;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\LinCodex\Models\Article;
@@ -22,10 +23,9 @@ use Illuminate\Database\Eloquent\Model;
  * language tabs and its contexts are written in one transaction under the
  * panel user's attribution and the revision carries that user's id.
  *
- * The header stays empty for now: preview, convert and delete arrive in
- * 05-07, delete behind the confirmation modal that lists what a delete takes
- * with it. A bare DeleteAction would hide those consequences. The subheading
- * is the standing notice for an article that shadows a file.
+ * The header carries the preview slide-over; convert and delete join it
+ * below. The subheading is the standing notice for an article that shadows a
+ * file.
  */
 final class EditArticle extends EditRecord
 {
@@ -144,11 +144,11 @@ final class EditArticle extends EditRecord
      */
     protected function getHeaderActions(): array
     {
-        return [];
+        return [PreviewAction::make()];
     }
 
-    /** The panel user's id, or null for a panel without an authenticated user. */
-    protected function userId(): ?int
+    /** The panel user's id, or null for a panel without an authenticated user. Public: the header actions attribute their writes to it. */
+    public function userId(): ?int
     {
         $id = Filament::auth()->id();
 

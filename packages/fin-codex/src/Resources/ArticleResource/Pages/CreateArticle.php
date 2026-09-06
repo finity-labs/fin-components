@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex\Resources\ArticleResource\Pages;
 
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Resources\Pages\CreateRecord;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
 use FinityLabs\FinCodex\Editor\MediaRecorder;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Resources\ArticleResource\Actions\PreviewAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\ContextsRepeater;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\LinCodex\Models\Article;
@@ -77,8 +79,19 @@ final class CreateArticle extends CreateRecord
         return self::getResource()::getUrl('edit', ['record' => $this->getRecord()]);
     }
 
-    /** The panel user's id, or null for a panel without an authenticated user. */
-    protected function userId(): ?int
+    /**
+     * Preview only. Convert and delete need a record, so they live on the
+     * edit page the create redirects to.
+     *
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [PreviewAction::make()];
+    }
+
+    /** The panel user's id, or null for a panel without an authenticated user. Public: the header actions attribute their writes to it. */
+    public function userId(): ?int
     {
         $id = Filament::auth()->id();
 

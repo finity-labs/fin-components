@@ -94,6 +94,11 @@ return [
             'declared' => 'Im Code deklariert',
             'declared_by' => 'Deklariert von :class für Panel :panel',
         ],
+        'preview' => [
+            'label' => 'Vorschau',
+            'heading' => 'Vorschau (:locale)',
+            'close' => 'Schließen',
+        ],
         'copy' => [
             'label' => 'Aus der Standardsprache kopieren',
             'heading' => 'Diese Übersetzung überschreiben?',

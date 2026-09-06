@@ -94,6 +94,11 @@ return [
             'declared' => 'Kódban deklarálva',
             'declared_by' => ':class deklarálta a(z) :panel panelhez',
         ],
+        'preview' => [
+            'label' => 'Előnézet',
+            'heading' => 'Előnézet (:locale)',
+            'close' => 'Bezárás',
+        ],
         'copy' => [
             'label' => 'Másolás az alapértelmezett nyelvből',
             'heading' => 'Felülírja ezt a fordítást?',

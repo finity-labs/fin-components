@@ -94,6 +94,11 @@ return [
             'declared' => 'Declared in code',
             'declared_by' => 'Declared by :class for panel :panel',
         ],
+        'preview' => [
+            'label' => 'Preview',
+            'heading' => 'Preview (:locale)',
+            'close' => 'Close',
+        ],
         'copy' => [
             'label' => 'Copy from default language',
             'heading' => 'Overwrite this translation?',
