@@ -12,6 +12,7 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\FinCodexPlugin;
+use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpCoverage;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpSettings;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\Reports;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\AdminHelpArticleResource;
@@ -67,7 +68,7 @@ final class AdminPanelProvider extends PanelProvider
                     ->navigationSort(90)
                     ->articleResource(AdminHelpArticleResource::class)
                     ->settingsPage(AdminHelpSettings::class)
-                    ->coveragePage('App\\Filament\\Pages\\AdminHelpCoverage')
+                    ->coveragePage(AdminHelpCoverage::class)
                     ->policyNamespace('App\\Policies'),
             );
     }

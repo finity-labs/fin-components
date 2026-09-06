@@ -11,6 +11,7 @@ use Filament\Support\Concerns\EvaluatesClosures;
 use Filament\Support\View\ViewManager;
 use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\Enums\NavigationGroup;
+use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Panel\HelpMount;
 use FinityLabs\FinCodex\Resources\ArticleResource;
@@ -105,10 +106,14 @@ class FinCodexPlugin implements Plugin
         // at navigation time, so each panel files the editor its own way.
         $panel->resources([$this->getArticleResource() ?? ArticleResource::class]);
 
-        // Same rule for the settings page: Panel::pages() appends to the host's
-        // list, a settingsPage() override must extend Pages\HelpSettings, and the
-        // page reads this plugin's navigation group and sort at navigation time.
-        $panel->pages([$this->getSettingsPage() ?? HelpSettings::class]);
+        // Same rule for both package pages: Panel::pages() appends to the host's
+        // list, a settingsPage() or coveragePage() override must extend the class
+        // it replaces, and each page reads this plugin's navigation group and sort
+        // at navigation time.
+        $panel->pages([
+            $this->getSettingsPage() ?? HelpSettings::class,
+            $this->getCoveragePage() ?? HelpCoverage::class,
+        ]);
     }
 
     /** Resolved per call so the scoped CurrentPage is the current request's. */
