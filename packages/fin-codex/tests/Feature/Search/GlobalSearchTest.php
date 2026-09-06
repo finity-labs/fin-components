@@ -5,6 +5,10 @@ use Filament\Facades\Filament;
 use Filament\GlobalSearch\GlobalSearchResult;
 use Filament\GlobalSearch\GlobalSearchResults;
 use Filament\GlobalSearch\Providers\Contracts\GlobalSearchProvider;
+use Filament\GlobalSearch\Providers\DefaultGlobalSearchProvider;
+use Filament\Panel;
+use Filament\Support\View\ViewManager;
+use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Search\HelpSearchProvider;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\AdminHelpArticleResource;
@@ -380,4 +384,106 @@ it('leaves a panel without the plugin exactly as its own provider answered', fun
 
     expect(finCodexSearchCategoryNames($results))->toBe([HostGlobalSearchProvider::CATEGORY])
         ->and(finCodexSearchCategory($results, HostGlobalSearchProvider::CATEGORY))->toHaveCount(1);
+});
+
+/*
+ * GS-01's registration clause: the wrapper is installed per panel in
+ * FinCodexPlugin::boot(), on the container and never on the Panel object.
+ */
+
+/**
+ * The plugin instance the panel carries, for a second boot() call.
+ */
+function finCodexSearchPluginOf(Panel $panel): FinCodexPlugin
+{
+    $plugin = $panel->getPlugin('fin-codex');
+
+    expect($plugin)->toBeInstanceOf(FinCodexPlugin::class);
+
+    /** @var FinCodexPlugin $plugin */
+    return $plugin;
+}
+
+it('wraps the panel provider on a panel whose plugin asked for it', function (): void {
+    $panel = $this->usesPanel('staff', finCodexSearchUser());
+
+    $provider = Filament::getGlobalSearchProvider();
+
+    expect($provider)->toBeInstanceOf(HelpSearchProvider::class);
+
+    /** @var HelpSearchProvider $provider */
+    expect($provider->inner())->toBeInstanceOf(DefaultGlobalSearchProvider::class)
+        ->and($provider->inner())->not->toBeInstanceOf(HelpSearchProvider::class)
+        ->and($panel->getGlobalSearchProvider())->toBeInstanceOf(HelpSearchProvider::class);
+});
+
+it('leaves the provider alone on a panel whose plugin did not ask', function (string $panelId): void {
+    $this->usesPanel($panelId, finCodexSearchUser());
+
+    expect(Filament::getGlobalSearchProvider())
+        ->toBeInstanceOf(DefaultGlobalSearchProvider::class)
+        ->not->toBeInstanceOf(HelpSearchProvider::class);
+})->with(['admin', 'portal']);
+
+/*
+ * Panel::globalSearch(false) — Filament's own setter, unrelated to the
+ * plugin option of the same name — leaves the panel with no provider at
+ * all, so there is nothing to wrap and nothing is registered.
+ */
+it('registers nothing when the panel has turned global search off entirely', function (): void {
+    $panel = Filament::getPanel('staff');
+    $panel->globalSearch(false);
+
+    finCodexSearchPluginOf($panel)->boot($panel);
+
+    expect($panel->getGlobalSearchProvider())->toBeNull()
+        ->and(app(DefaultGlobalSearchProvider::class))->not->toBeInstanceOf(HelpSearchProvider::class);
+});
+
+it('wraps exactly once however often the panel boots', function (): void {
+    $panel = $this->usesPanel('staff', finCodexSearchUser());
+
+    finCodexSearchPluginOf($panel)->boot($panel);
+    finCodexSearchPluginOf($panel)->boot($panel);
+
+    $provider = Filament::getGlobalSearchProvider();
+
+    expect($provider)->toBeInstanceOf(HelpSearchProvider::class);
+
+    /** @var HelpSearchProvider $provider */
+    expect($provider->inner())->not->toBeInstanceOf(HelpSearchProvider::class)
+        ->and($provider->inner())->toBeInstanceOf(DefaultGlobalSearchProvider::class);
+});
+
+it('appends Help to a host provider through the real panel wiring', function (): void {
+    finCodexSearchSeedUsers();
+
+    $panel = $this->usesPanel('staff', finCodexSearchUser());
+    $panel->globalSearch(HostGlobalSearchProvider::class);
+
+    finCodexSearchPluginOf($panel)->boot($panel);
+
+    $results = Filament::getGlobalSearchProvider()?->getResults('users');
+
+    expect(finCodexSearchCategoryNames($results))
+        ->toBe([HostGlobalSearchProvider::CATEGORY, finCodexSearchHelpCategory()])
+        ->and(finCodexSearchTitles(finCodexSearchHelpResults($results)))->toContain('Users overview');
+});
+
+/*
+ * The Phase 4 SPA exception is the regression the boot() split is really
+ * about: it used to be the whole method body, and appending the global
+ * search block after its early return would have skipped it on every
+ * non-SPA panel.
+ */
+it('still appends the help-center SPA exception after the boot split', function (): void {
+    Filament::getPanel('admin')->spa();
+
+    $this->usesPanel('admin', finCodexSearchUser());
+
+    $view = app(ViewManager::class);
+
+    expect($view->hasSpaMode())->toBeTrue()
+        ->and($view->hasSpaMode('/admin/users'))->toBeTrue()
+        ->and($view->hasSpaMode('/help/users'))->toBeFalse();
 });
