@@ -5,3 +5,9 @@ parameters:
     paths:
         - src
     level: 5
+    ignoreErrors:
+        # WithHelp is meant for host resources and pages; nothing under src/ uses it,
+        # so PHPStan has no using class to analyse it against.
+        -
+            identifier: trait.unused
+            path: src/Help/WithHelp.php
