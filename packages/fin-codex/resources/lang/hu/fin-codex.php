@@ -13,4 +13,7 @@ return [
     'guest' => [
         'link' => 'Segítségre van szüksége?',
     ],
+    'hint' => [
+        'open' => 'Súgó megnyitása',
+    ],
 ];

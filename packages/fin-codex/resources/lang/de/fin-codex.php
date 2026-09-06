@@ -13,4 +13,7 @@ return [
     'guest' => [
         'link' => 'Brauchen Sie Hilfe?',
     ],
+    'hint' => [
+        'open' => 'Hilfe öffnen',
+    ],
 ];

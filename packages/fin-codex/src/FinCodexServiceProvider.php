@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex;
 
+use Filament\Forms\Components\Field;
+use FinityLabs\FinCodex\Forms\CodexHelp;
 use FinityLabs\FinCodex\Help\ArticleLookup;
 use FinityLabs\FinCodex\Help\DeclaredContexts;
 use FinityLabs\FinCodex\Help\DeclaredContextsSource;
@@ -48,5 +50,21 @@ class FinCodexServiceProvider extends PackageServiceProvider
         $this->app->scoped(ArticleLookup::class);
         $this->app->singleton(DeclaredContexts::class);
         $this->app->extend(ContentSource::class, static fn (ContentSource $inner, Container $app): ContentSource => new DeclaredContextsSource($inner, $app->make(DeclaredContexts::class)));
+    }
+
+    /**
+     * The Field::codexHelp($slug, $heading) sugar over
+     * hintAction(CodexHelp::make(...)). Filament's Macroable binds the closure
+     * to the field instance and its getMacro() walks class_parents(), so one
+     * macro on Field reaches TextInput, Select and every other field. Macros
+     * are a static map: booting once is enough and no Filament boot order
+     * matters.
+     */
+    public function packageBooted(): void
+    {
+        Field::macro('codexHelp', function (string $slug, ?string $heading = null): Field {
+            // Macroable binds the closure to the field; PHPStan types $this as the provider.
+            return $this->hintAction(CodexHelp::make($slug, $heading)); // @phpstan-ignore method.notFound
+        });
     }
 }
