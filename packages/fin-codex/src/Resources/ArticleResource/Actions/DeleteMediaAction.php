@@ -6,7 +6,10 @@ namespace FinityLabs\FinCodex\Resources\ArticleResource\Actions;
 
 use Filament\Actions\DeleteAction;
 use Filament\Support\Exceptions\Halt;
+use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\FinCodex\Editor\MediaReferences;
+use FinityLabs\FinCodex\Resources\ArticleResource\RelationManagers\MediaRelationManager;
+use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\Media;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Storage;
@@ -25,16 +28,27 @@ use Illuminate\Support\Facades\Storage;
  * modal was open. Halt is caught by InteractsWithActions, so no notification
  * fires, which is the right outcome for "nothing happened".
  *
- * DeleteAction rather than a plain Action for the danger colour, the trash
- * icon, the confirmation and — the part that matters later — the delete
- * authorization hook Phase 8's policy work will use. using() replaces only the
- * model delete.
+ * DeleteAction rather than a plain Action for the danger colour, the trash icon
+ * and the confirmation. using() replaces only the model delete.
+ *
+ * The authorize() closure is required rather than decorative. Filament falls
+ * back to the record's own model policy only while no authorization was set,
+ * and that fallback asks about Media — which on a panel with
+ * strictAuthorization() is a LogicException, not a denial, and would re-open
+ * the hole MediaRelationManager::canViewForRecord() just closed. Never the
+ * string form either: Filament unshifts the action's own record as the gate
+ * subject, and here that record is a Media row, not the article.
  */
 final class DeleteMediaAction
 {
     public static function make(): DeleteAction
     {
         return DeleteAction::make()
+            ->authorize(static function (MediaRelationManager $livewire): bool {
+                $owner = $livewire->getOwnerRecord();
+
+                return $owner instanceof Article && ArticleAbility::allows('update', $owner);
+            })
             ->modalHeading(static fn (Media $record): string => (string) __(
                 'fin-codex::fin-codex.media.delete.heading',
                 ['name' => $record->name],

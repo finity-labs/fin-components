@@ -9,8 +9,10 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
+use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\FinCodex\Editor\MediaReferences;
 use FinityLabs\FinCodex\Resources\ArticleResource\Actions\DeleteMediaAction;
+use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\Media;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -43,6 +45,27 @@ final class MediaRelationManager extends RelationManager
     public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return (string) __('fin-codex::fin-codex.media.title');
+    }
+
+    /**
+     * The tab answers to the article's update ability, and to nothing else.
+     *
+     * Filament's own canViewForRecord() authorizes viewAny on the Media model.
+     * On a panel with strictAuthorization() that is a LogicException rather
+     * than a denial, and RelationManager only catches AuthorizationException —
+     * so the edit page 500s on a bare install with a perfect ArticlePolicy.
+     * Overriding without calling parent:: means Media is never looked up at
+     * all, the same shape that already keeps the revisions manager safe.
+     *
+     * fin-codex ships no MediaPolicy on purpose. A file is only ever uploaded,
+     * shown and deleted through its article, so whoever may edit the article
+     * may manage its files, and a host has one policy to override instead of
+     * two.
+     */
+    public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
+    {
+        return $ownerRecord instanceof Article
+            && ArticleAbility::allows('update', $ownerRecord);
     }
 
     public function table(Table $table): Table
