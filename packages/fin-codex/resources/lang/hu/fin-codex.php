@@ -258,7 +258,7 @@ return [
     'warnings' => [
         'heading' => '{1} :count tartalmi figyelmeztetés|[2,*] :count tartalmi figyelmeztetés',
         'description' => 'Valami, amit egy tartalomforrás olvasás közben megkerült. Semmi nem veszett el, de érdemes ránézni a bemenetre.',
-        'path' => 'Útvonal',
+        'path' => 'Elérési út',
     ],
     'search' => [
         'category' => 'Súgó',
