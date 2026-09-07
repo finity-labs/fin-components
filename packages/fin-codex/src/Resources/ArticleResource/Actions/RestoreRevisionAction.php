@@ -39,11 +39,11 @@ use FinityLabs\LinCodex\Revisions\RevisionManager;
  * policy that never heard of it answers through `update`, which is what a
  * revision restore really is.
  *
- * The Closure form of authorize() is mandatory, never the string one. Filament
- * unshifts the action's own record as the gate subject, and here that record is
- * an ArticleRevision — a model this package registers no policy for — so
- * ->authorize('restore') would hide the button for everybody. The subject has
- * to be read off the manager's owner record.
+ * The Closure form of authorize() is mandatory, never the ability-string one.
+ * Filament unshifts the action's own record as the gate subject, and here that
+ * record is an ArticleRevision — a model this package registers no policy for —
+ * so handing authorize() a bare ability name would hide the button for
+ * everybody. The subject has to be read off the manager's owner record.
  */
 final class RestoreRevisionAction
 {
