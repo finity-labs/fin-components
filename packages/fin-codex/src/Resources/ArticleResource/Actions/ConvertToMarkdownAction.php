@@ -7,6 +7,7 @@ namespace FinityLabs\FinCodex\Resources\ArticleResource\Actions;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\EditArticle;
 use FinityLabs\LinCodex\Enums\ArticleFormat;
@@ -30,12 +31,20 @@ use FinityLabs\LinCodex\Models\Article;
  * redirect rebuilds the schema from the converted record, and the
  * notification survives it because Notification::send() goes through the
  * session.
+ *
+ * The format check and the ability check compose: Filament ANDs every reason an
+ * action can be hidden, so a Markdown article keeps no convert button however
+ * permissive the policy is, and an HTML one loses it the moment the policy says
+ * no. The Closure form of authorize() is mandatory here too — the string form
+ * would work by accident on this action, because its record IS the article, and
+ * would then be copied to one where it is not.
  */
 final class ConvertToMarkdownAction
 {
     public static function make(): Action
     {
         return Action::make('convert')
+            ->authorize(static fn (?Article $record): bool => $record !== null && ArticleAbility::allows('convert', $record))
             ->label(__('fin-codex::fin-codex.editor.convert.label'))
             ->icon(Heroicon::OutlinedArrowPathRoundedSquare)
             ->color('warning')

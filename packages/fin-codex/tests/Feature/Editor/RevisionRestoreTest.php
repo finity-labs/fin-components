@@ -417,9 +417,18 @@ it('restores the middle row of a table with several revisions', function (): voi
         ->and($translation->body)->toBe('v2 body');
 });
 
-it('attributes the snapshot to nobody when no user is signed in', function (): void {
+/*
+ * Attribution and authorization answer to different guards, and this row is
+ * where they part company. Phase 8 gates the restore on the article's `restore`
+ * ability, which the Gate reads off the application's default guard, while the
+ * snapshot's author is the PANEL's user — null here, because the portal panel
+ * runs on `web` and nobody is signed in there. A row with nobody signed in
+ * anywhere no longer restores at all, which is the point of the gate.
+ */
+it('attributes the snapshot to nobody when the panel has no user of its own', function (): void {
     enableRevisions(true);
     $this->usesPanel('portal');
+    $this->actingAs(finCodexRestoreUser('Elsewhere', 'elsewhere@example.com'), 'staff');
 
     $article = finCodexRestoreArticle('users', 'v1');
     finCodexRestoreEdit($article, 'v2', 'v2 body');

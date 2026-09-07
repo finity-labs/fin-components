@@ -7,7 +7,9 @@ namespace FinityLabs\FinCodex\Resources\ArticleResource\Actions;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\FinCodex\Resources\ArticleResource\RelationManagers\RevisionsRelationManager;
+use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleRevision;
 use FinityLabs\LinCodex\Revisions\RevisionManager;
 
@@ -31,12 +33,28 @@ use FinityLabs\LinCodex\Revisions\RevisionManager;
  * The author is the panel user, resolved by the manager — a relation manager
  * is its own Livewire component and has no handle on the page that renders
  * it, so it cannot ask EditArticle.
+ *
+ * The ability is `restore`, and here that word means putting one revision back,
+ * NOT undeleting a soft-deleted record: Article has no soft deletes. A host
+ * policy that never heard of it answers through `update`, which is what a
+ * revision restore really is.
+ *
+ * The Closure form of authorize() is mandatory, never the string one. Filament
+ * unshifts the action's own record as the gate subject, and here that record is
+ * an ArticleRevision — a model this package registers no policy for — so
+ * ->authorize('restore') would hide the button for everybody. The subject has
+ * to be read off the manager's owner record.
  */
 final class RestoreRevisionAction
 {
     public static function make(): Action
     {
         return Action::make('restore')
+            ->authorize(static function (RevisionsRelationManager $livewire): bool {
+                $owner = $livewire->getOwnerRecord();
+
+                return $owner instanceof Article && ArticleAbility::allows('restore', $owner);
+            })
             ->label(__('fin-codex::fin-codex.revisions.restore.label'))
             ->icon(Heroicon::OutlinedArrowUturnLeft)
             ->color('warning')
