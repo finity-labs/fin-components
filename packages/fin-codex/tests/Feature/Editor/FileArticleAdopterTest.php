@@ -23,6 +23,11 @@ use FinityLabs\LinCodex\Sources\FilesystemSource;
  *
  * enableRevisions() lives in tests/Harness/ModelHooksTest.php, so the
  * focused command is `vendor/bin/pest tests/Harness tests/Feature/Editor`.
+ *
+ * Since Phase 8 the adopter also enforces the `import` ability itself, so every
+ * row here signs its user in. That is the fix a real caller needs too, not a
+ * loosened gate: adoption is a write, and nobody performs it anonymously. The
+ * refusal has rows of its own in tests/Feature/Auth/ActionAuthorizationTest.php.
  */
 
 function finCodexAdopt(): FileArticleAdopter
@@ -30,9 +35,14 @@ function finCodexAdopt(): FileArticleAdopter
     return app(FileArticleAdopter::class);
 }
 
+/** A fixture user, signed in on the default guard so the import gate answers. */
 function finCodexAdoptUser(): User
 {
-    return User::create(['name' => 'Adopter', 'email' => 'adopter@example.com']);
+    $user = User::create(['name' => 'Adopter', 'email' => 'adopter@example.com']);
+
+    test()->actingAs($user);
+
+    return $user;
 }
 
 it('imports one slug with the user and leaves the other files alone', function (): void {
@@ -138,10 +148,12 @@ it('throws when no file carries the slug', function (): void {
 
 it('throws with the importer failures when the write fails', function (): void {
     useFixtureDocs();
+    finCodexAdoptUser();
 
     // codex_articles.created_by is a foreign key to users, so a user id
     // nobody owns makes the importer's per-article transaction roll back and
-    // report the failure for every locale of the slug.
+    // report the failure for every locale of the slug. The signed-in user is
+    // the one the gate asks about; 424242 is only the attribution.
     $message = null;
 
     try {

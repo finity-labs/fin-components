@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex\Editor;
 
+use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Sync\ArticleImporter;
 use FinityLabs\LinCodex\Sync\ImportOptions;
+use Illuminate\Auth\Access\AuthorizationException;
 use RuntimeException;
 
 /**
@@ -31,6 +33,14 @@ use RuntimeException;
  * are slug-derived, so nothing is broken, and the column fills in on its own
  * when the parent is imported (the core's relinkChildren()). Documented, not
  * worked around.
+ *
+ * This is also where the `import` ability is enforced, rather than only on the
+ * buttons that reach it. The two ->authorize() closures on the files tab and
+ * the coverage row hide a button nobody may press, which is the UX; the guard
+ * below is what makes the rule true — a third call site added later cannot
+ * import around it, and since adoption is the only way a file-only article
+ * becomes editable, `import` gates opening one for editing too. A user who
+ * cannot import cannot cause an import by any route.
  */
 final class FileArticleAdopter
 {
@@ -40,6 +50,9 @@ final class FileArticleAdopter
      * Import one file slug with the panel user, or find the row that already
      * exists.
      *
+     * @throws AuthorizationException when the current user may not import.
+     *                                The message is for a developer reading a log: both buttons
+     *                                are already hidden, so nobody reaches this through the panel
      * @throws RuntimeException when the importer reports a failure for the
      *                          slug (the message is one "{locale}:{slug}: {reason}" line per
      *                          failure) or when no row exists afterwards, which is what an
@@ -47,6 +60,13 @@ final class FileArticleAdopter
      */
     public function adopt(string $slug, ?int $userId): Article
     {
+        if (! ArticleAbility::allows('import')) {
+            throw new AuthorizationException(sprintf(
+                'Importing the file article "%s" requires the import ability on the article model.',
+                $slug,
+            ));
+        }
+
         $report = $this->importer->import(new ImportOptions(only: [$slug], userId: $userId));
 
         if ($report->hasFailures()) {

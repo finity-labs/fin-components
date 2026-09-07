@@ -20,6 +20,7 @@ use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\Coverage\WarningsSection;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
@@ -190,12 +191,25 @@ class HelpCoverage extends Page implements HasTable
             ])
             ->recordActions([
                 Action::make('write')
+                    // It only opens the create form, which the resource gates
+                    // with canCreate() anyway; this stops the row advertising
+                    // a page the user cannot use. Class level, like every gate
+                    // on this table: the record is an array and no article
+                    // exists yet.
+                    ->authorize(static fn (): bool => ArticleAbility::allows('create'))
                     ->label(__('fin-codex::fin-codex.coverage.actions.write'))
                     ->icon(Heroicon::OutlinedPencilSquare)
                     ->visible(fn (array $record): bool => ! $record['covered'])
                     ->url(fn (array $record): string => $this->writeUrl($record)),
 
                 Action::make('attach')
+                    // Half the check. The other half is inside attach(): this
+                    // one can only ask `create`, because the article the write
+                    // changes does not exist until the modal's Select comes
+                    // back, and Gate::allows('update', Article::class) against
+                    // a two-parameter policy method is an ArgumentCountError,
+                    // not an answer.
+                    ->authorize(static fn (): bool => ArticleAbility::allows('create'))
                     ->label(__('fin-codex::fin-codex.coverage.actions.attach'))
                     ->icon(Heroicon::OutlinedLink)
                     ->visible(fn (array $record): bool => ! $record['covered'])
@@ -213,6 +227,10 @@ class HelpCoverage extends Page implements HasTable
                     ->action(fn (array $record, array $data) => $this->attach($record, (string) $data['article'])),
 
                 Action::make('import')
+                    // The same class-level gate the files tab uses, and the
+                    // same division of labour: this hides the button,
+                    // FileArticleAdopter::adopt() is what actually refuses.
+                    ->authorize(static fn (): bool => ArticleAbility::allows('import'))
                     ->label(__('fin-codex::fin-codex.coverage.actions.import'))
                     ->icon(Heroicon::OutlinedArrowDownTray)
                     ->visible(fn (array $record): bool => $record['covered'] && $record['file_only'] && ! $record['declared'])
@@ -378,6 +396,16 @@ class HelpCoverage extends Page implements HasTable
      * The admin stays on the page. The report memoises one reading of the
      * content source per request, so the row goes green on the next render.
      *
+     * The ability is asked twice, about two different things, and both halves
+     * are needed. The button asks `create` at class level, because until this
+     * method runs there is no article to ask about. The write is an edit of an
+     * article that already exists, so it asks `update` on that article — which
+     * is the question a host policy answers when it lets somebody start new
+     * help but not rewrite what is already published. The refusal reuses the
+     * duplicate-context notification rather than a new one: from the admin's
+     * side both mean "the attach did not happen", and a gated button that
+     * explains itself tells an attacker more than it tells an editor.
+     *
      * @param  array<string, mixed>  $record
      */
     private function attach(array $record, string $slug): void
@@ -385,6 +413,19 @@ class HelpCoverage extends Page implements HasTable
         $article = Article::query()->where('slug', $slug)->first();
 
         if ($article === null) {
+            return;
+        }
+
+        if (! ArticleAbility::allows('update', $article)) {
+            Notification::make()
+                ->warning()
+                ->title(__('fin-codex::fin-codex.coverage.attach.duplicate'))
+                ->body(__('fin-codex::fin-codex.coverage.attach.duplicate_body', [
+                    'title' => $slug,
+                    'page' => $record['label'],
+                ]))
+                ->send();
+
             return;
         }
 

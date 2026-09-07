@@ -15,6 +15,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\FinCodex\Editor\FileArticleAdopter;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Panel\Concerns\ResolvesPanelUser;
@@ -82,6 +83,12 @@ final class FileArticlesTable extends Component implements HasActions, HasSchema
             ])
             ->recordActions([
                 Action::make('import')
+                    // Class level, and a Closure rather than the string form:
+                    // the record here is a plain array, there is no article
+                    // yet, and `import` falls back to `create` for exactly
+                    // that reason. Hiding the button is the UX; the
+                    // enforcement lives in FileArticleAdopter::adopt().
+                    ->authorize(static fn (): bool => ArticleAbility::allows('import'))
                     ->label(__('fin-codex::fin-codex.editor.files.import'))
                     ->icon(Heroicon::OutlinedArrowDownTray)
                     ->action(fn (array $record) => $this->import((string) $record['slug'])),
