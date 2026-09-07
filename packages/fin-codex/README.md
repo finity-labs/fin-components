@@ -243,3 +243,291 @@ $panel->middleware([
 Without `isPersistent: true`, Livewire update requests skip the middleware and the chrome falls back to the app's default locale after the first interaction.
 
 **One accepted rough edge:** on a panel with dark mode, a machine whose OS prefers dark while the stored panel theme is light can show the drawer and button in dark colours for the few dozen milliseconds before Alpine's theme binding adds the `light` class. Filament's own dark-mode loader has the mirror-image race. Panels without dark mode get a static `light` class and never flash.
+
+## The article editor
+
+**Help → Help articles** is a normal Filament resource over lin-codex's `Article` model, with filters for published state, visibility, format, source and per-language translation state.
+
+Next to the article list sits a **From files** tab. If lin-codex is reading articles off disk as well as out of the database, every file article that has no database row yet is listed there with an **Import and edit** button. Importing creates the database row through the core's importer and opens it. The import is idempotent: if a row already exists for that slug it is handed back rather than overwritten, so pressing the button twice opens what the first press created. Re-importing changed file content over an existing article is not supported yet.
+
+**A database article shadows its file completely.** Once a slug exists in the database, the file version is ignored for every language, and the edit page says so. Nothing is deleted from disk.
+
+**A slug is permanent.** It becomes the article's identity and its file path, so the editor does not let you change it after creation and never guesses one for you. The parent segment must already exist — but a file-only parent counts, and a child imported before its parent keeps a null parent until the parent arrives and the core relinks it.
+
+### Contexts
+
+The Contexts repeater in the form's sidebar is where you say which screens an article shows up on. Contexts are always **picked, never typed** — the panel, the type and the target come from selects built out of what is actually registered. `*` means "any panel" and is stored as a null panel id.
+
+Contexts that come from a `HasHelp` class are listed above the repeater as read-only rows and never enter form state. The mapping lives in code, so that's where you change it.
+
+### Languages
+
+One tab per language from the [settings](#settings). Each tab holds the title, excerpt and body for that language, plus **Copy from default language** for starting a translation from the current default text.
+
+A translation whose default-language source has changed since it was last saved gets an **Outdated** badge in the list and a filter of its own. Detection is timestamp-based, which has one edge worth knowing: changing an article's `keywords` or `format` re-indexes every translation to the same second and clears every outdated badge on that article. Content-hash detection is not in this release.
+
+### Images
+
+Drop an image into a Markdown body and it uploads to lin-codex's `media.disk` and `media.directory`. Those are core config, not plugin options — a host that wants help images somewhere else sets them in `config/lin-codex.php`.
+
+The disk needs a `url`, or the editor cannot show what was just uploaded. SVG is refused. Removing an image from a body leaves its `codex_media` row behind for the [media manager](#revisions-and-media) to clean up.
+
+### Preview, converting and deleting
+
+**Preview** renders the language tab you are on, through the core renderer, in the panel's theme. One tab at a time; per-tab buttons and a live preview are not in this release.
+
+**An HTML article is converted, not edited.** Its body stays read-only until one confirmed action rewrites every translation as Markdown in a single transaction. The original HTML survives as a revision, so the conversion is reversible by restoring it.
+
+**Deleting says what else it takes with it.** The modal names the child articles that lose this parent and where each one lands, and the media rows that lose their article. If the article is authenticated and has public children, those children would become guest-visible once the parent is gone — so the modal offers a checkbox, on by default, that sets them to authenticated instead. Untick it deliberately.
+
+## Revisions and media
+
+Both relation managers live on the article edit page. Both are **lazy**: they load when you scroll to them, not with the page. If you want one to load eagerly, extend it and set `protected static bool $isLazy = false;`. Neither carries a count badge — `getBadge()` is the hook if you want one, at one extra query per page render.
+
+### Revisions
+
+Every saved change to a language is recorded while revisions are on, with the author, the time and a reason. Reason labels come from lin-codex's own lang files and follow the panel locale, so retranslating them means overriding the *core's* file, not this package's. A revision whose author has since been deleted reads "Unknown"; revisions are never orphaned by a user delete.
+
+Preview renders a revision through the core renderer, in the revision's own format — an HTML snapshot of an article that has since been converted to Markdown still reads correctly. It is a rendered article, not a diff.
+
+Restoring loses nothing. The text about to be replaced is written to the same history first, tagged as a restore, so any restore can be undone by restoring the row it created. Restoring a pre-conversion HTML revision turns the article back into an HTML article.
+
+**Turning revisions off removes the Revisions tab.** With Media left as the only visible relation manager, Filament renders no tab strip at all and the Media table appears bare. That is expected, and the settings toggle's helper text says so.
+
+### Media
+
+The Media tab has no upload button on purpose — a file uploaded there would be one no article body points at. Uploads only ever arrive through the Markdown editor.
+
+A delete is refused while any translation body still shows the file, and the refusal names each article slug and language. **Known limitation:** the scan looks for the URL the file's disk builds *today*. A body written while the disk's `url` config was different won't match, and such a file would delete without a warning. Changing a media disk's URL root after articles exist is not supported.
+
+Deleting a file removes both the row and the file. A missing file, and a disk that has been taken out of `filesystems.disks`, both delete cleanly. A file whose disk is gone, and any non-image upload, show a "No preview" box rather than breaking the tab.
+
+Deleting an *article* leaves its `codex_media` rows with a null `article_id`. Those orphans appear on no Media tab, and cleaning them up is out of scope for 0.1.
+
+## Settings
+
+**Help → Help settings** holds the languages, the default language, the missing-translation fallback and revision retention. It writes to lin-codex's `codex` settings group, so the values apply everywhere the core reads them, not only in the panel.
+
+**Nothing is written until you press Save.** A fresh install opens on the packaged defaults — one language derived from `app.locale`, revisions off, ten kept — and the settings rows appear on the first save. The page also works before the settings migration has run: a missing row and a missing table fall back the same way.
+
+**Removing a language keeps its translations.** Dropping a code takes the language out of the editor tabs and out of the reader's fallback chain and deletes nothing. Add the code back and every text returns exactly as it was. The confirmation names each language going away with how many texts it holds, counted live from what the form says right now.
+
+**The current default language is the one removal the page refuses.** It reports twice — once on the language list and once on the default-language select — because those are the two fields that have to agree. Pick a different default first and the same edit goes through in one save.
+
+**Lowering "Revisions kept per language" prunes nothing retroactively.** It moves the ceiling from that point on. Stored revisions stay until new ones push them out, one article and one language at a time, inside the core's snapshot path. Saving settings never triggers a bulk delete.
+
+## Coverage and warnings
+
+**Help → Coverage** lists every screen in the application and whether it has a help article. The page opens on the panel you are on, with the screens that have no article at the top; clear the panel filter to see every panel at once. "Outside panels" holds the application's own routes plus Filament's export and import download routes.
+
+> **The coverage page is an editor surface.** It deliberately bypasses the article gate and lists every article regardless of the viewer's own read access, so an editor sees the whole picture. Gate the page itself if that matters to you — see [Authorization](#authorization).
+
+**Its number is not `codex:coverage`'s.** lin-codex's console command counts routes and credits only what the core's route report matched. The page counts *screens* — a resource's list, create and edit pages fold into one row — and additionally credits a resource-class context. The two numbers legitimately differ, and the navigation badge is the page's.
+
+The panel and coverage filters are deferred: they show an **Apply** button, Filament's default, kept so the page behaves like the article list. Nothing happens until you press it.
+
+**The badge costs one report per panel page render.** Navigation is built on every page and the badge is read eagerly, so a request-scoped memo holds it to one route report plus one content-source read. If you don't want to pay it, extend the page, return `null` from `getNavigationBadge()`, and name your class through `->coveragePage(...)`.
+
+### Closing a gap from a row
+
+Each uncovered row offers **Write article** or **Attach to an article**, and a covered row offers **Edit article**:
+
+- **One row prefills exactly one context.** A screen behind a Filament page prefills `class:{page or resource}`; a standalone route prefills `route:{name}`. Never both, and never a `url:` pattern.
+- **The slug is never guessed.** The create form opens with the title and context filled and the slug empty, because the slug is permanent and stays your decision.
+- **A duplicate attach is refused; a wider one is not.** Attaching a context the article already carries writes nothing and says so. A context scoped to another panel, an "any panel" version of one already there, or a `route:` context overlapping a `class:` one are all legitimate and are added without comment. No overlap heuristics — a warning that fires on legitimate input trains people to ignore warnings.
+- **A row covered by a declaration in code can't be edited from here.** It shows the slug in grey with "Declared in code" underneath and no link. Change the `HasHelp` class instead.
+- **A row covered by a file article offers "Import and edit"** rather than a link, and imports before opening.
+- **Attaching a `class:` context on a custom page covers that page on every panel.** The core's route report walks every panel id when it matches, so an article attached to the admin Dashboard row also covers Dashboard elsewhere. A resource-class context does not spread this way.
+
+### Source warnings
+
+When a content source has something to report — broken front matter, a duplicate slug, a `HasHelp` class naming an article that does not exist — a collapsed amber panel appears above the article list and above the coverage table, grouped by kind.
+
+Nothing in fin-codex names or styles a kind: the headings and the sentences come from lin-codex, translated in English, German and Hungarian. Declaration warnings and file warnings share the surface and are told apart only by their heading.
+
+The section is collapsed by default and does not remember. There is no dismiss control and no per-admin state; it re-opens collapsed on every page load, and it isn't there at all when the sources are happy.
+
+**One number per navigation item.** Help articles shows how many content warnings there are. Coverage shows how many screens have no article. Different questions, different numbers, neither standing in for the other. Both amber, both hidden at zero. The escape hatch is the same as the coverage badge's: return `null` from `getNavigationBadge()` on a subclass named through `->articleResource(...)`.
+
+## Global search
+
+Off by default. Turn it on per panel and the panel's search field gains a **Help** category:
+
+```php
+FinCodexPlugin::make()->globalSearch()
+```
+
+Results go through the same gated search the drawer uses, so nothing appears that the viewer could not already read.
+
+**`FinCodexPlugin::globalSearch()` is not `Panel::globalSearch()`.** Ours is a `bool|Closure` opt-in for the Help category. Filament's takes a provider class string or a bool and decides which provider the panel uses. They are unrelated and they compose — `->globalSearch(MyProvider::class)` on the panel plus `FinCodexPlugin::make()->globalSearch()` on the plugin gives `MyProvider`'s categories with Help appended.
+
+Four things to know:
+
+1. **The search field stays hidden on a panel with no globally searchable resource.** Filament renders the field only when some resource answers `canGloballySearch()`. Turning our option on does not force it; if you want a search field on a panel that has none, make one of your own resources searchable.
+2. **The article resource is deliberately not globally searchable.** Filament's default would query the model directly — unpublished and members-only articles included, the gate never consulted, file articles missing, and every row linking to the edit page. A subclass registered through `->articleResource()` inherits that `false`. Re-enabling it is a visibility leak, not a feature.
+3. **The panel search and the help drawer share one rate limit.** lin-codex keys it per user or IP over a 60-second window, defaulting to 120 searches for a signed-in user and 30 for a guest. Global search fires one search per debounced keystroke, so sustained typing in the panel's search field can throttle the same person's help drawer for the rest of the minute. Raise `lin-codex.search.rate_limit.user` if your admins live in the search box. Queries shorter than `lin-codex.search.min_length` cost nothing.
+4. **Help results are capped at five** in the dropdown, independent of `lin-codex.search.limit`, which is tuned for the full-height drawer. The category is always appended last, so your own `getGlobalSearchSort()` ordering is untouched, and it is left out entirely when the search is throttled or matches nothing.
+
+## Authorization
+
+fin-codex ships a policy for lin-codex's `Article` and registers it for you. Out of the box it answers yes to any authenticated panel user, which is what a panel with no policy already does — the difference is that a panel with `strictAuthorization()` renders instead of throwing.
+
+### Replacing it
+
+Write your own class at `{policyNamespace}\ArticlePolicy` — `App\Policies\ArticlePolicy` unless you say otherwise — and Codex registers yours instead of the shipped one. Extending the shipped policy is the shortest way there; it is not final and none of its methods are static.
+
+```php
+namespace App\Policies;
+
+use FinityLabs\LinCodex\Models\Article;
+use Illuminate\Contracts\Auth\Authenticatable;
+
+class ArticlePolicy extends \FinityLabs\FinCodex\Policies\ArticlePolicy
+{
+    public function update(Authenticatable $user, Article $article): bool
+    {
+        return $user->hasRole('editor');
+    }
+}
+```
+
+Don't edit the shipped file in `vendor/` — an update overwrites it.
+
+> **If your application already has an `App\Models\Article`, read this one.** The lookup matches on class basename, so your existing `App\Policies\ArticlePolicy` — written for *your* Article — would be registered against lin-codex's model too, and would start answering questions it was never written for. Point Codex somewhere else:
+>
+> ```php
+> FinCodexPlugin::make()->policyNamespace('App\\Policies\\Codex')
+> ```
+>
+> Codex then looks for `App\Policies\Codex\ArticlePolicy` and falls back to the shipped policy when it isn't there. Your own article's policy is left alone.
+
+### The abilities
+
+| Ability | Guards |
+|---|---|
+| `viewAny` | The article list and the navigation item |
+| `view` | Reading one article in the editor |
+| `create` | The create page |
+| `update` | The edit page, the media tab and media deletion |
+| `delete` | Deleting an article |
+| `restore` | Restoring a **revision** — `Article` has no soft deletes |
+| `import` | Adopting a file article into the database |
+| `convert` | Rewriting an HTML article's body as Markdown |
+
+The first five are Filament's. The last three are ours, and **a policy that only defines the first five keeps working**: `restore` and `convert` fall through to the article's `update`, and `import` falls through to `create`. You should not have to learn our vocabulary to keep the editor running.
+
+The fallback fills a missing method; it never overturns a no. Define `restore()` and return `false` and the restore button stays gone.
+
+`import` gates **every** file-to-database adoption, not just the buttons. Opening a file-only article for editing needs it too, because the adopter enforces it at the choke point rather than only in the UI. A user who cannot import cannot cause an import by any route.
+
+There is **no `MediaPolicy` and no revision policy**, by design. Revisions, translations, contexts and media are only ever edited through the article, so they answer to the owning article's abilities — the media relation manager and its delete both ask for `update` on the article. One policy to override, not four.
+
+### Reading help is not editing help
+
+The drawer, the help button, the field hints and the global-search Help category go through lin-codex's `ArticleGate` and never touch `ArticlePolicy`. A user with a deny-everything article policy still reads exactly the help the core's visibility rules allow. Editor permissions have nothing to do with reading help, and there is a test in the suite that keeps it that way.
+
+### Gating the settings and coverage pages
+
+Without Shield, both pages are open to any authenticated panel user until you define an ability named after the page class:
+
+```php
+use Illuminate\Support\Facades\Gate;
+
+Gate::define('page_HelpSettings', fn ($user) => $user->isAdmin());
+Gate::define('page_HelpCoverage', fn ($user) => $user->isAdmin());
+```
+
+Define nothing and nothing changes. The ability is named after the class **actually registered on the panel**, so if you supply your own settings page through `->settingsPage(MyHelpSettings::class)`, the ability is `page_MyHelpSettings`.
+
+## Filament Shield integration
+
+[Filament Shield](https://github.com/bezhanSalleh/filament-shield) is optional. Install it and the pages and the resource pick up Shield permissions on their own; without it, authorization works exactly as described above.
+
+`fin-codex:install` writes the article resource into `config/filament-shield.php` with all eight abilities and runs `shield:generate`. The two pages need nothing written for them — Shield 4 discovers pages from the panel and only reads `pages.exclude` from config — so the command prints the nudge instead:
+
+```bash
+php artisan shield:generate --page=HelpSettings,HelpCoverage
+```
+
+Because `policies.merge` is on by default, the resource's own methods are folded into Shield's list, which is how `restore`, `import` and `convert` end up on the generated policy. That policy lands at `App\Policies\ArticlePolicy` — the same place Codex already looks — so a Shield install takes over the article authorization with no extra wiring and no Shield branch in our code.
+
+**On `page_HelpSettings` and `page_HelpCoverage`:** those are **fin-codex's own** Gate hook for hosts without Shield. They are not Shield's naming. Shield 3 used `page_{Class}`, but Shield 4 renamed every permission — separator `:`, pascal case, a `view` prefix for pages — so on a Shield install the settings page's permission is `View:HelpSettings` by default, and something else entirely on a reconfigured one. Codex never builds that name: it asks Shield for it, which is why a customised `filament-shield.php` keeps working.
+
+`fin-codex:uninstall` removes the resource entry from the Shield config and deletes the permission rows for the resource and both pages, asking Shield for their names rather than rebuilding them. If Shield cannot answer, nothing is deleted and the command says so.
+
+## Translations
+
+English, German and Hungarian ship with the package. To adjust the wording:
+
+```bash
+php artisan vendor:publish --tag=fin-codex-translations
+```
+
+The files land in `lang/vendor/fin-codex/{locale}/fin-codex.php`. There is one file per locale and the key sets are identical across all three, enforced by a test.
+
+Enum labels — article formats, visibility, context types, revision reasons, fallback behaviours, warning kinds — come from lin-codex, not from here. Retranslating one of those overrides the *core's* lang file:
+
+```bash
+php artisan vendor:publish --tag=lin-codex-translations
+```
+
+A second test asserts that fin-codex never redefines a core enum label, so the two files cannot drift into disagreeing about the same word.
+
+Views can be published too, if you need to change the markup:
+
+```bash
+php artisan vendor:publish --tag=fin-codex-views
+```
+
+Both are opt-in during `fin-codex:install`, and both default to no, because a published copy stops receiving upstream changes.
+
+## Uninstalling
+
+Run the uninstall command **before** removing the package:
+
+```bash
+php artisan fin-codex:uninstall
+composer remove finity-labs/fin-codex
+```
+
+It removes `FinCodexPlugin::make()` from every panel provider that carries it, drops the article resource from the Shield config, deletes the Shield permission rows, and offers to delete the published views and translations.
+
+**It does not touch your content.** Articles, translations, contexts, revisions, media files and the Codex settings all belong to lin-codex and survive removing the Filament layer. If you want those gone too:
+
+```bash
+php artisan codex:uninstall
+```
+
+**It also leaves `app/Policies/ArticlePolicy.php` alone**, even though `shield:generate` may have written it. That is exactly the path where an application with its own `App\Models\Article` keeps its own policy, the command cannot tell the two apart, and deleting it is unrecoverable. Remove it yourself if it was ours.
+
+## Known limitations
+
+Nothing here is speculative — these are the things this release knows it doesn't do, or hasn't checked.
+
+**Three behaviours are proven by contract in the test suite but have never been clicked in a real browser.** This package has no browser runner, and the harness cannot render the surfaces involved:
+
+1. **Global search's "Open here".** The result action dispatches the drawer-open event, but Filament's own result anchors carry an Alpine `close()` that ours does not, so the search dropdown may stay open behind the drawer. The harness renders no search field at all on any fixture panel, which is limitation 1 in the [Global search](#global-search) section biting the tests too.
+2. **The field hint's drawer open.** The rendered handler string, the absent `wire:navigate` and the SPA exception list are all asserted; the click itself is not.
+3. **The `?codex=slug#heading` deep link.** The drawer scrolls to a heading after the article renders, which is Alpine behaviour with no server round trip and nothing to assert against.
+
+Also worth knowing:
+
+- **Changing a media disk's URL root after articles exist is not supported.** The in-use check that protects a media file from deletion looks for the URL the disk builds today.
+- **Media rows orphaned by an article delete are not cleaned up.** They keep their file and lose their `article_id`, and appear on no Media tab.
+- **Re-importing a file article over an existing database row** is not available; the import hands back the existing row instead.
+- **Filament 5's multi-configuration resource registrations are not scanned** for `HasHelp` declarations.
+- **The outdated-translation badge is timestamp-based**, so a keywords or format change clears every badge on that article.
+
+## Testing
+
+```bash
+composer test       # Pest
+composer analyse    # PHPStan (larastan), level 5
+composer format     # Pint
+```
+
+CI runs the suite across Filament 4 and 5 (Livewire 3 and 4 respectively) on Laravel 12 and 13, PHP 8.2 to 8.4. The Laravel 11 row is there but allowed to fail: Composer's security audit blocks every tagged 11.x release, so it resolves the `11.x` branch.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
