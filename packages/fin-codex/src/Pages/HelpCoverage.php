@@ -30,6 +30,7 @@ use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Panel\Concerns\ResolvesPanelUser;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
+use FinityLabs\FinCodex\Traits\HasPageShieldSupport;
 use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Data\ArticleData;
 use FinityLabs\LinCodex\Enums\ContextType;
@@ -63,9 +64,15 @@ use UnitEnum;
  *
  * Not final: a coveragePage() override extends it, exactly as HelpSettings is
  * open for settingsPage() and ArticleResource for articleResource().
+ *
+ * Access goes through HasPageShieldSupport: Shield's own permission when
+ * Shield is installed, the opt-in Gate ability page_HelpCoverage when it is
+ * not, and open to any panel user otherwise. That is the page-level gate; the
+ * row actions carry their own per-article checks (08-03).
  */
 class HelpCoverage extends Page implements HasTable
 {
+    use HasPageShieldSupport;
     use InteractsWithTable;
     use ResolvesPanelUser;
 

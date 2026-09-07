@@ -18,6 +18,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinCodex\FinCodexPlugin;
+use FinityLabs\FinCodex\Traits\HasPageShieldSupport;
 use FinityLabs\LinCodex\Enums\FallbackBehaviour;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
@@ -40,9 +41,15 @@ use UnitEnum;
  * panel's own plugin options and the sort is that panel's article-resource
  * sort plus one, so the page always files directly after Help articles and a
  * host that never set a sort keeps Filament's label ordering.
+ *
+ * Access goes through HasPageShieldSupport: Shield's own permission when
+ * Shield is installed, the opt-in Gate ability page_HelpSettings when it is
+ * not, and open to any panel user otherwise.
  */
 class HelpSettings extends SettingsPage
 {
+    use HasPageShieldSupport;
+
     protected static string $settings = CodexSettings::class;
 
     protected static ?string $slug = 'help-settings';
