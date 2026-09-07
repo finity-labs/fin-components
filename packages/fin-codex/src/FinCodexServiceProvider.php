@@ -30,7 +30,11 @@ class FinCodexServiceProvider extends PackageServiceProvider
         $package
             ->name(static::$name)
             ->hasTranslations()
-            ->hasViews();
+            ->hasViews()
+            ->hasCommands([
+                Commands\InstallCommand::class,
+                Commands\UninstallCommand::class,
+            ]);
     }
 
     /**
