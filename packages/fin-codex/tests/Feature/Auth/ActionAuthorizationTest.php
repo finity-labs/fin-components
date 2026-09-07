@@ -1,13 +1,22 @@
 <?php
 
+use FinityLabs\FinCodex\Coverage\CoverageReport;
+use FinityLabs\FinCodex\Editor\ContextPicker;
+use FinityLabs\FinCodex\Editor\FileArticleAdopter;
+use FinityLabs\FinCodex\Resources\ArticleResource\Livewire\FileArticlesTable;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\EditArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\RelationManagers\RevisionsRelationManager;
+use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpCoverage;
 use FinityLabs\FinCodex\Tests\Fixtures\Policies\DenyAllArticlePolicy;
+use FinityLabs\FinCodex\Tests\Fixtures\Resources\UserResource;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Enums\ArticleFormat;
 use FinityLabs\LinCodex\Models\Article;
+use FinityLabs\LinCodex\Models\ArticleContext;
 use FinityLabs\LinCodex\Models\ArticleRevision;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
+use FinityLabs\LinCodex\Sources\FilesystemSource;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Features\SupportTesting\Testable;
@@ -328,4 +337,242 @@ it('still hides the conversion on a Markdown article the policy allows', functio
 
     Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])
         ->assertActionHidden('convert');
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * File to database import: the two buttons, and the choke point behind them.
+ * -----------------------------------------------------------------------
+ */
+
+/**
+ * A docs tree with one file article whose front matter already claims the
+ * admin users screen, so the coverage row for that screen is covered,
+ * file-only and offers an import.
+ *
+ * The shared fixture docs cannot serve here: they cover that screen through a
+ * HasHelp declaration in code, and a declared row is exactly the row that
+ * offers no import at all.
+ */
+function finCodexGatedFileDocs(): void
+{
+    $dir = sys_get_temp_dir().'/fin-codex-gated-docs';
+
+    if (is_dir($dir)) {
+        foreach ((array) glob($dir.'/en/*.md') as $file) {
+            @unlink((string) $file);
+        }
+    }
+
+    @mkdir($dir.'/en', 0777, true);
+
+    // Single-quoted YAML, so the class name's backslashes stay backslashes.
+    $context = 'admin:class:'.UserResource::class;
+
+    file_put_contents($dir.'/en/handbook.md', <<<MD
+        ---
+        visibility: public
+        contexts:
+          - '{$context}'
+        ---
+
+        # Handbook
+
+        The handbook.
+        MD);
+
+    config()->set('lin-codex.sources.filesystem.paths', [$dir]);
+
+    app()->forgetInstance(FilesystemSource::class);
+
+    forgetHelpMemo();
+}
+
+it('offers the file import to a user the shipped policy allows', function (): void {
+    useFixtureDocs();
+    finCodexGatedUser();
+
+    Livewire::test(FileArticlesTable::class)->assertTableActionVisible('import', 'users/roles');
+});
+
+it('takes the file import away from a user the policy refuses', function (): void {
+    useFixtureDocs();
+    finCodexGatedUser();
+
+    finCodexGatedPolicy(DenyAllArticlePolicy::class);
+
+    Livewire::test(FileArticlesTable::class)->assertTableActionHidden('import', 'users/roles');
+});
+
+/*
+ * The import check is class-level — the row is an array and there is no
+ * article yet — so it falls back to `create`, never to `update`: Laravel drops
+ * a class-string subject before calling the policy method, and a normally
+ * written update($user, $article) would be an ArgumentCountError rather than
+ * an answer.
+ */
+it('keeps the file import for a host policy that only knows create', function (): void {
+    useFixtureDocs();
+    finCodexGatedUser();
+
+    finCodexGatedPolicy(FinCodexGatedStandardPolicy::class);
+
+    Livewire::test(FileArticlesTable::class)->assertTableActionVisible('import', 'users/roles');
+});
+
+/*
+ * The buttons hide for the look of the thing. This is the enforcement: a third
+ * call site added next year cannot import around them, and opening a file-only
+ * article for editing is an adoption too.
+ */
+it('refuses an adoption the policy denies, whoever is calling', function (): void {
+    useFixtureDocs();
+    $user = finCodexGatedUser();
+
+    finCodexGatedPolicy(DenyAllArticlePolicy::class);
+
+    expect(fn (): Article => app(FileArticleAdopter::class)->adopt('users/roles', $user->id))
+        ->toThrow(AuthorizationException::class);
+
+    expect(Article::query()->count())->toBe(0);
+});
+
+it('adopts exactly as before for a user the policy allows', function (): void {
+    useFixtureDocs();
+    $user = finCodexGatedUser();
+
+    $article = app(FileArticleAdopter::class)->adopt('users/roles', $user->id);
+
+    expect($article->slug)->toBe('users/roles')
+        ->and($article->created_by)->toBe($user->id)
+        ->and(Article::query()->count())->toBe(1);
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * The coverage page's gap-closing row actions.
+ * -----------------------------------------------------------------------
+ */
+
+/** The admin coverage page with every row on one page. */
+function finCodexGatedCoverage(): Testable
+{
+    return Livewire::test(AdminHelpCoverage::class)->set('tableRecordsPerPage', 'all');
+}
+
+/** The report's own key for one screen, so a fixture change cannot make a row vacuous. */
+function finCodexGatedRowKey(?string $panelId, ?string $helpClass): string
+{
+    foreach (app(CoverageReport::class)->rows() as $row) {
+        if ($row->panelId === $panelId && $row->helpClass === $helpClass) {
+            return $row->key;
+        }
+    }
+
+    throw new RuntimeException('No coverage row for '.($panelId ?? 'no panel').' / '.($helpClass ?? 'no class'));
+}
+
+/** The context rows of one article as "{panel|*}:{type}:{key}" strings, in order. */
+function finCodexGatedContexts(Article $article): array
+{
+    return ArticleContext::query()
+        ->where('article_id', $article->id)
+        ->orderBy('sort_order')
+        ->get()
+        ->map(fn (ArticleContext $context): string => ($context->panel_id ?? ContextPicker::ANY_PANEL).':'.$context->type->key().':'.$context->key)
+        ->all();
+}
+
+/** A public database article with one English translation and no context. */
+function finCodexGatedHandbook(): Article
+{
+    return Article::factory()->public()
+        ->withTranslation('en', ['title' => 'Handbook', 'body' => 'About the handbook.'])
+        ->create(['slug' => 'handbook']);
+}
+
+it('offers both gap actions to a user the shipped policy allows', function (): void {
+    finCodexGatedUser();
+    forgetHelpMemo();
+
+    $key = finCodexGatedRowKey('admin', UserResource::class);
+
+    finCodexGatedCoverage()
+        ->assertTableActionVisible('write', $key)
+        ->assertTableActionVisible('attach', $key);
+});
+
+it('takes both gap actions away from a user the policy refuses', function (): void {
+    finCodexGatedUser();
+    forgetHelpMemo();
+
+    $key = finCodexGatedRowKey('admin', UserResource::class);
+
+    finCodexGatedPolicy(DenyAllArticlePolicy::class);
+
+    finCodexGatedCoverage()
+        ->assertTableActionHidden('write', $key)
+        ->assertTableActionHidden('attach', $key);
+});
+
+it('offers the coverage import to a user the shipped policy allows', function (): void {
+    finCodexGatedUser();
+    finCodexGatedFileDocs();
+
+    $key = finCodexGatedRowKey('admin', UserResource::class);
+
+    finCodexGatedCoverage()->assertTableActionVisible('import', $key);
+});
+
+it('takes the coverage import away from a user the policy refuses', function (): void {
+    finCodexGatedUser();
+    finCodexGatedFileDocs();
+
+    $key = finCodexGatedRowKey('admin', UserResource::class);
+
+    finCodexGatedPolicy(DenyAllArticlePolicy::class);
+
+    finCodexGatedCoverage()->assertTableActionHidden('import', $key);
+});
+
+/*
+ * The attach button and the write it performs ask two different questions, and
+ * they have to. The button can only be a class-level `create` check, because
+ * the article being changed does not exist until the modal's Select comes
+ * back; the write itself changes an existing article, which is `update`. A
+ * host that lets this user start new articles but not touch old ones therefore
+ * sees the button and gets the refusal — the same warning notification a
+ * duplicate context already produces.
+ */
+it('shows the attach button on a create-only policy and refuses the write itself', function (): void {
+    finCodexGatedUser();
+    $article = finCodexGatedHandbook();
+    forgetHelpMemo();
+
+    $key = finCodexGatedRowKey('admin', UserResource::class);
+
+    finCodexGatedPolicy(FinCodexGatedNoUpdatePolicy::class);
+
+    finCodexGatedCoverage()
+        ->assertTableActionVisible('attach', $key)
+        ->callTableAction('attach', $key, ['article' => 'handbook'])
+        ->assertHasNoTableActionErrors()
+        ->assertNotified(__('fin-codex::fin-codex.coverage.attach.duplicate'));
+
+    expect(finCodexGatedContexts($article))->toBe([]);
+});
+
+it('attaches as before for a user the shipped policy allows', function (): void {
+    finCodexGatedUser();
+    $article = finCodexGatedHandbook();
+    forgetHelpMemo();
+
+    $key = finCodexGatedRowKey('admin', UserResource::class);
+
+    finCodexGatedCoverage()
+        ->callTableAction('attach', $key, ['article' => 'handbook'])
+        ->assertHasNoTableActionErrors()
+        ->assertNotified(__('fin-codex::fin-codex.coverage.attach.attached'));
+
+    expect(finCodexGatedContexts($article))->toBe(['admin:class:'.UserResource::class]);
 });
