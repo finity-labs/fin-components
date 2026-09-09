@@ -59,12 +59,14 @@ The install command:
 
 - Checks that lin-codex's articles table exists, and offers to run `codex:install` if it doesn't.
 - Registers `FinCodexPlugin::make()` in one of your panel providers (it lists the panels it found; pass `--panel=admin` to skip the prompt).
+- Asks which languages the help articles are written in, with the locales your application already translates pre-selected, and writes them to the Codex settings. Pass `--locales=en,de` to answer without the prompt. The application locale stays the default language when it is among them.
+- Offers to import five starter articles about the help system itself — getting help, writing articles, coverage, settings, and declaring help in code — in the configured languages (they exist in en, de and hu). They land as ordinary database articles, attached to the pages they describe, and are yours to edit or delete. `--skip-starter-articles` leaves them out; a slug that already exists is left alone.
 - Offers to publish the translations and the views. Both default to **no** — a published copy stops receiving upstream changes.
 - Registers the article resource in `config/filament-shield.php` if [Filament Shield](#filament-shield-integration) is installed, and runs `shield:generate`.
 
 It never publishes or migrates anything belonging to lin-codex. That is `codex:install`'s job, and running it twice is safe.
 
-Pass `--force` to overwrite already-published files, and `--no-interaction` to take every default (the first panel it finds, no publishing, Shield wiring on if the config is there).
+Pass `--force` to overwrite already-published files, and `--no-interaction` to take every default (the first panel it finds, the installed locales, the starter articles, no publishing, Shield wiring on if the config is there).
 
 ### Register the plugin by hand
 

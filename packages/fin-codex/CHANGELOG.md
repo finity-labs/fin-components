@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `fin-codex:install` configures the help languages: `--locales=en,de` answers outright, an interactive run is asked with the application's installed locales pre-selected, and a non-interactive run takes the installed locales. The application locale stays the default when it is among them.
+- `fin-codex:install` imports five starter articles about the help system — getting help, writing articles, coverage, settings, and declaring help in code — in the configured languages, as ordinary database articles attached to the pages they describe. `--skip-starter-articles` leaves them out; an existing slug is left alone.
+
+### Changed
+
+- The page-access trait, the installer's panel-provider and Shield edits, the policy registration and the panel-user resolver moved to [fin-support](https://github.com/finity-labs/fin-support) and [lin-support](https://github.com/finity-labs/lin-support); fin-codex requires fin-support ^0.1. `Traits\HasPageShieldSupport`, `Commands\Concerns\*`, `Panel\Concerns\ResolvesPanelUser` and `Auth\ArticlePolicyRegistration` are gone from this package; a host page that used the trait imports `FinityLabs\FinSupport\Pages\Concerns\HasPageShieldSupport` instead.
+
 ## [0.2.0] - 2026-09-09
 
 ### Fixed
