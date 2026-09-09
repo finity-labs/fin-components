@@ -277,7 +277,15 @@ A language is either translated or **Missing**, in the tabs and in the list's la
 
 ### Images
 
-Drop an image into a Markdown body and it uploads to lin-codex's `media.disk` and `media.directory`. Those are core config, not plugin options — a host that wants help images somewhere else sets them in `config/lin-codex.php`.
+Drop an image into a Markdown body and it uploads to lin-codex's `media.disk` and `media.directory`. Those are core config, not plugin options — a host that wants help images somewhere else sets them in `config/lin-codex.php`. The directory takes the placeholders `{Y}`, `{m}` and `{d}`, expanded at upload time to the year, month and day, and the core's default is `codex/{Y}/{m}`, so a busy site's images spread over dated folders instead of one flat directory. A stored image keeps the path it was written under.
+
+An image in a preview, in the revision preview and in the Media tab opens full size when clicked, the way it does in the drawer. The Media tab's **Download** action streams the file through the application with its original name, so it works on any disk.
+
+**Documents.** A PDF or an office file comes in through the Media tab's **Upload file** action, since the body editor's drop zone takes images only. `FinCodexPlugin::make()->documentTypes([...])` replaces the accepted MIME types (PDF, Word, Excel, PowerPoint, plain text and CSV by default; never an archive, a script or an SVG) and `->documentMaxSize(20480)` the ceiling in kilobytes. Documents land in the same dated folders as images, with the same row. Every upload is stored under its own name, slugified for the URL — `User Guide (final).pdf` becomes `user-guide-final.pdf`, and a repeat in the same month gets `-2` — so the link an article carries and the name a browser saves the file as both read like the upload; the media row keeps the original name.
+
+**Reusing a file.** An upload belongs to the article it was dropped into, but any article may use it: **Insert file** under each Markdown body opens a table of every upload of any article — thumbnail, file name, type, the article it was uploaded to, size and date — and appends the chosen one's Markdown to the body: an image as an image, a document as a link with the file name as its text. The core stamps a link to a document with a `download` attribute, so in the drawer and the previews it saves the file rather than leaving the article. Deleting a file is refused while any article's body still references it, whichever article uploaded it.
+
+**Every upload is public.** Images and documents sit on the public disk and are reachable by anyone holding the URL, which is what help material usually wants. Internal documents would need authenticated delivery — a per-file flag, a private disk and a gated download route — which is planned (EXT-09 in the package's planning notes) and not built.
 
 The disk needs a `url`, or the editor cannot show what was just uploaded. SVG is refused. Removing an image from a body leaves its `codex_media` row behind for the [media manager](#revisions-and-media) to clean up.
 

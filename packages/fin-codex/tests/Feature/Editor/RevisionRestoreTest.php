@@ -137,6 +137,8 @@ it('renders a revision through the core renderer, not through a Markdown parser'
         ->toContain('codex-root')
         ->toContain('<h2 class="codex-article__title">How users work</h2>')
         ->toContain('<div class="codex-article__body" lang="en">')
+        ->toContain('x-teleport="body"')
+        ->toContain('codex-lightbox__image')
         ->toContain('codex-callout codex-callout--warning')
         ->toContain('Before you delete')
         ->toContain('<ol class="codex-steps">')
