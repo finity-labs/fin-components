@@ -9,6 +9,7 @@ use FinityLabs\LinCodex\LinCodexServiceProvider;
 use FinityLabs\LinCodex\Rendering\ArticleRenderer;
 use FinityLabs\LinCodex\Rendering\Html\HtmlPipeline;
 use FinityLabs\LinCodex\Rendering\Markdown\MarkdownPipeline;
+use FinityLabs\LinCodex\Settings\CodexAiSettings;
 use FinityLabs\LinCodex\Sources\CompositeSource;
 use FinityLabs\LinCodex\Sources\DatabaseSource;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
@@ -131,6 +132,38 @@ class TestCase extends Orchestra
                 'foreign_key_constraints' => true,
             ],
         };
+    }
+
+    /**
+     * Turn AI translation on for a test: enabled, provider anthropic, no
+     * model (the provider's default), the stored key sk-test and the default
+     * 120 second timeout, plus whatever $overrides says.
+     *
+     * The values are saved, so a fresh app(CodexAiSettings::class) anywhere
+     * in the test reads them; the returned instance is one of those fresh
+     * reads rather than the one that was written.
+     *
+     * @param  array<string, mixed>  $overrides
+     */
+    public function enableAi(array $overrides = []): CodexAiSettings
+    {
+        $settings = app(CodexAiSettings::class);
+
+        $values = array_merge([
+            'enabled' => true,
+            'provider' => 'anthropic',
+            'model' => null,
+            'api_key' => 'sk-test',
+            'timeout' => 120,
+        ], $overrides);
+
+        foreach ($values as $key => $value) {
+            $settings->{$key} = $value;
+        }
+
+        $settings->save();
+
+        return app(CodexAiSettings::class);
     }
 
     /**
