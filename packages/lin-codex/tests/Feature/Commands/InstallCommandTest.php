@@ -84,6 +84,10 @@ function linCodexInstallPublished(string $pattern): array
     return File::glob(database_path($pattern));
 }
 
+/**
+ * The migrations table records one row per package migration file the
+ * install ran: the five tables plus the two settings seeds, so seven.
+ */
 function linCodexInstallCodexMigrationRows(): int
 {
     return DB::table('migrations')->where('migration', 'like', '%create_codex_%')->count();
@@ -128,7 +132,7 @@ it('installs on a fresh app: config, migrations, settings, reindex, summary', fu
 
         $settings = app(CodexSettings::class)->refresh();
 
-        expect(linCodexInstallCodexMigrationRows())->toBe(6)
+        expect(linCodexInstallCodexMigrationRows())->toBe(7)
             ->and($settings->revisions_keep)->toBe(10)
             ->and($settings->revisions_enabled)->toBeFalse()
             ->and(File::isDirectory(public_path('vendor/lin-codex')))->toBeFalse();
@@ -156,7 +160,7 @@ it('is idempotent', function (): void {
         }
 
         expect(linCodexInstallPublished('settings/*_create_codex_settings.php'))->toHaveCount(1)
-            ->and(linCodexInstallCodexMigrationRows())->toBe(6)
+            ->and(linCodexInstallCodexMigrationRows())->toBe(7)
             ->and(app(CodexSettings::class)->refresh()->revisions_keep)->toBe(10);
     } finally {
         linCodexInstallCleanup($before);
@@ -257,7 +261,7 @@ PROBE);
 
         expect(Schema::hasTable('lin_codex_probe'))->toBeFalse()
             ->and(DB::table('migrations')->where('migration', 'like', '%lin_codex_probe%')->count())->toBe(0)
-            ->and(linCodexInstallCodexMigrationRows())->toBe(6);
+            ->and(linCodexInstallCodexMigrationRows())->toBe(7);
     } finally {
         File::delete($probe);
         Schema::dropIfExists('lin_codex_probe');

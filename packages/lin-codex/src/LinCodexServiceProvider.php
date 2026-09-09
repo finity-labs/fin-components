@@ -46,6 +46,7 @@ class LinCodexServiceProvider extends PackageServiceProvider
                 'create_codex_article_revisions_table',
                 'create_codex_media_table',
                 '../settings/create_codex_settings',
+                '../settings/create_codex_ai_settings',
             ])
             ->hasConsoleCommands($this->commandClasses());
     }

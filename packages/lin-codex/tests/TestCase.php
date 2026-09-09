@@ -60,11 +60,21 @@ class TestCase extends Orchestra
      */
     protected function getPackageProviders($app): array
     {
-        return [
+        $providers = [
             LivewireServiceProvider::class,
             LaravelSettingsServiceProvider::class,
             LinCodexServiceProvider::class,
         ];
+
+        // Testbench never runs package discovery, so the optional laravel/ai
+        // SDK's provider is listed by hand: the AI seam's tests need the
+        // AiManager singleton and the config/ai.php it registers. A string on
+        // purpose, so nothing here names an SDK class.
+        if (class_exists('Laravel\\Ai\\AiServiceProvider')) {
+            $providers[] = 'Laravel\\Ai\\AiServiceProvider';
+        }
+
+        return $providers;
     }
 
     protected function defineEnvironment($app): void
@@ -211,7 +221,7 @@ class TestCase extends Orchestra
 
     /**
      * The host tables the package depends on come first, then the package
-     * schema in dependency order, then the settings seed.
+     * schema in dependency order, then the two settings seeds.
      */
     private function createPackageSchema(): void
     {
@@ -283,6 +293,7 @@ class TestCase extends Orchestra
     private function seedSettings(): void
     {
         (include dirname(__DIR__).'/database/settings/create_codex_settings.php')->up();
+        (include dirname(__DIR__).'/database/settings/create_codex_ai_settings.php')->up();
     }
 
     /**
