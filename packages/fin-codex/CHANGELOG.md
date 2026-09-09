@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-09
+
 ### Added
 
 - `fin-codex:install` configures the help languages: `--locales=en,de` answers outright, an interactive run is asked with the application's installed locales pre-selected, and a non-interactive run takes the installed locales. The application locale stays the default when it is among them.
