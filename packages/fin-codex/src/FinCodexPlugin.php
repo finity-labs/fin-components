@@ -12,7 +12,6 @@ use Filament\Panel;
 use Filament\Support\Concerns\EvaluatesClosures;
 use Filament\Support\View\ViewManager;
 use Filament\View\PanelsRenderHook;
-use FinityLabs\FinCodex\Auth\ArticlePolicyRegistration;
 use FinityLabs\FinCodex\Enums\NavigationGroup;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
@@ -74,9 +73,11 @@ class FinCodexPlugin implements Plugin
         return filament(app(static::class)->getId());
     }
 
+    public const ID = 'fin-codex';
+
     public function getId(): string
     {
-        return 'fin-codex';
+        return self::ID;
     }
 
     /**
@@ -161,7 +162,7 @@ class FinCodexPlugin implements Plugin
      */
     private function bootPolicy(): void
     {
-        ArticlePolicyRegistration::register($this->getPolicyNamespace());
+        FinCodexServiceProvider::registerArticlePolicy($this->getPolicyNamespace());
     }
 
     /**
