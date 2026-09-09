@@ -10,17 +10,20 @@ use GuzzleHttp\Psr7\Response as PsrResponse;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
-use Illuminate\Support\Collection;
 use Laravel\Ai\Ai;
 use Laravel\Ai\AnonymousAgent;
+use Laravel\Ai\Contracts\Gateway\StepTextGateway;
+use Laravel\Ai\Contracts\Providers\TextProvider;
 use Laravel\Ai\Exceptions\InsufficientCreditsException;
 use Laravel\Ai\Exceptions\ProviderConnectionException;
 use Laravel\Ai\Exceptions\ProviderOverloadedException;
 use Laravel\Ai\Exceptions\RateLimitedException;
+use Laravel\Ai\Gateway\StepContext;
+use Laravel\Ai\Gateway\StepResponse;
+use Laravel\Ai\Gateway\TextGenerationOptions;
 use Laravel\Ai\Prompts\AgentPrompt;
 use Laravel\Ai\Responses\Data\FinishReason;
 use Laravel\Ai\Responses\Data\Meta;
-use Laravel\Ai\Responses\Data\Step;
 use Laravel\Ai\Responses\Data\Usage;
 use Laravel\Ai\Responses\StructuredTextResponse;
 
@@ -45,6 +48,67 @@ function linCodexSeamRequest(
         timeout: $timeout,
         apiKey: $apiKey,
     );
+}
+
+/**
+ * A text gateway that answers one truncated structured step.
+ *
+ * The SDK's own fake cannot express truncation: `FakeTextGateway` rebuilds
+ * every faked answer into a step with `FinishReason::Stop`, and the response
+ * object a fake closure returns is only read for its text, usage, meta and
+ * structured payload, so assigning `$response->steps` on it has no effect.
+ * Installing a gateway on the provider instead leaves the SDK's real
+ * generation loop to build the response out of this step, which is exactly
+ * the object the seam reads the flag from. Only usable while the agent is
+ * NOT faked: a faked agent gets a clone of the provider carrying the fake
+ * gateway.
+ *
+ * @param  array<string, string>  $fields
+ */
+function linCodexTruncatingGateway(array $fields): StepTextGateway
+{
+    return new class($fields) implements StepTextGateway
+    {
+        /** @param  array<string, string>  $fields */
+        public function __construct(private array $fields) {}
+
+        public function generateTextStep(
+            TextProvider $provider,
+            string $model,
+            ?string $instructions,
+            array $messages,
+            array $tools,
+            ?array $schema,
+            ?TextGenerationOptions $options,
+            ?int $timeout,
+            StepContext $stepContext,
+        ): StepResponse {
+            return new StepResponse(
+                (string) json_encode($this->fields),
+                [],
+                FinishReason::Length,
+                new Usage(promptTokens: 10, completionTokens: 20),
+                new Meta($provider->name(), $model),
+                $this->fields,
+            );
+        }
+
+        public function generateStreamStep(
+            string $invocationId,
+            TextProvider $provider,
+            string $model,
+            ?string $instructions,
+            array $messages,
+            array $tools,
+            ?array $schema,
+            ?TextGenerationOptions $options,
+            ?int $timeout,
+            StepContext $stepContext,
+        ): Generator {
+            throw new RuntimeException('The truncating gateway does not stream.');
+            yield;
+        }
+    };
 }
 
 function linCodexSeamHttpException(int $status): RequestException
@@ -169,7 +233,7 @@ describe('with the SDK', function (): void {
             ->and(config('ai.providers.anthropic.key'))->toBe('sk-env');
     });
 
-    it('reads the usage and the truncation flag', function (): void {
+    it('reads the usage of an answer that finished', function (): void {
         TranslationAgent::fake(function (string $prompt, $attachments, $provider, string $model): StructuredTextResponse {
             $fields = ['title' => 'Titel', 'excerpt' => '', 'body' => 'Text'];
 
@@ -186,26 +250,25 @@ describe('with the SDK', function (): void {
         expect($completion->promptTokens)->toBe(120)
             ->and($completion->completionTokens)->toBe(80)
             ->and($completion->truncated)->toBeFalse();
+    });
 
-        TranslationAgent::fake(function (string $prompt, $attachments, $provider, string $model): StructuredTextResponse {
-            $fields = ['title' => 'Titel', 'excerpt' => '', 'body' => 'Halb'];
+    it('flags an answer that stopped at the output ceiling', function (): void {
+        $fields = ['title' => 'Titel', 'excerpt' => '', 'body' => 'Halb'];
 
-            $response = new StructuredTextResponse(
-                $fields,
-                (string) json_encode($fields),
-                new Usage(promptTokens: 10, completionTokens: 20),
-                new Meta($provider->name(), $model),
-            );
+        /*
+         * No TranslationAgent::fake() here on purpose: the gateway goes on the
+         * provider itself (see linCodexTruncatingGateway()), so the SDK's own
+         * generation loop builds the response and the seam reads the finish
+         * reason the loop recorded, not one this test wrote onto a response.
+         */
+        Ai::textProvider('anthropic')->useTextGateway(linCodexTruncatingGateway($fields));
 
-            $response->steps = new Collection([
-                new Step('', [], [], FinishReason::Length, new Usage, new Meta($provider->name(), $model)),
-            ]);
+        $completion = app(LaravelAiClient::class)->structured(linCodexSeamRequest(model: 'claude-haiku-4-5-20251001'));
 
-            return $response;
-        })->preventStrayPrompts();
-
-        expect(app(LaravelAiClient::class)->structured(linCodexSeamRequest(model: 'claude-haiku-4-5-20251001'))->truncated)
-            ->toBeTrue();
+        expect($completion->truncated)->toBeTrue()
+            ->and($completion->fields)->toBe($fields)
+            ->and($completion->promptTokens)->toBe(10)
+            ->and($completion->completionTokens)->toBe(20);
     });
 
     it('honours lin-codex.ai.max_tokens', function (): void {
