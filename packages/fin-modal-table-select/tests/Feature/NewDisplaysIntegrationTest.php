@@ -318,3 +318,32 @@ it('wraps the primary line and pins the remove button to the top of the row', fu
         ->toContain('self-start')
         ->not->toContain('truncate text-sm font-medium');
 });
+
+it('renders wrapped lines without blank lines from template whitespace', function () {
+    $user = User::query()->create(['name' => 'Jane', 'email' => 'jane@example.com']);
+    $post = $user->posts()->create(['title' => 'Tight title', 'body' => "line one\nline two\n"]);
+
+    $livewire = mountDisplayForm(fn (): array => [
+        ModalTableSelect::make('posts')
+            ->tableConfiguration(PostsTable::class)
+            ->relationship('posts', 'title')
+            ->multiple()
+            ->stackedList()
+            ->stackedListPrimaryWrapped()
+            ->stackedListSecondary('body')
+            ->stackedListSecondaryWrapped(),
+    ], $user);
+
+    $livewire->set('data.posts', [$post->getKey()]);
+
+    $html = $livewire->html();
+
+    // The value's own newline survives; none leak in from the template or
+    // from the value's trailing newline (both would render as blank lines
+    // under white-space: pre-line).
+    expect($html)
+        ->toContain('>Tight title</p>')
+        ->toContain(">line one\nline two</p>")
+        ->not->toMatch('/>\s+Tight title/')
+        ->not->toMatch('/>\s+line one/');
+});

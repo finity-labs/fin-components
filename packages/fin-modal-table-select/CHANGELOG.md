@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-09-09
+
+### Fixed
+- Wrapped stacked-list lines rendered a blank line above and below the content: white-space: pre-line preserved the Blade template's own formatting newlines inside the `<p>`. The wrapped tags now hug their content, and string values are trimmed so a trailing newline in the data cannot add a bottom blank line either — newlines inside the value still render as line breaks
+
 ## [1.1.1] - 2026-09-09
 
 ### Added

@@ -29,22 +29,20 @@
                 @endif
 
                 <div class="min-w-0 flex-1">
+                    {{-- Tight tags on purpose: with pre-line, template
+                         newlines inside the <p> would render as blank lines. --}}
                     <p @class([
                         'text-sm font-medium text-gray-950 dark:text-white',
                         'truncate' => ! $isPrimaryWrapped,
                         'whitespace-pre-line break-words' => $isPrimaryWrapped,
-                    ])>
-                        {{ $field->getStackedListPrimary($record) }}
-                    </p>
+                    ])>{{ trim($field->getStackedListPrimary($record)) }}</p>
 
                     @if (filled($secondary))
                         <p @class([
                             'text-sm text-gray-500 dark:text-gray-400',
                             'truncate' => ! $isSecondaryWrapped,
                             'whitespace-pre-line break-words' => $isSecondaryWrapped,
-                        ])>
-                            {{ $secondary }}
-                        </p>
+                        ])>{{ is_string($secondary) ? trim($secondary) : $secondary }}</p>
                     @endif
                 </div>
 
