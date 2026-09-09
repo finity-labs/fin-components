@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-09-09
+
+### Added
+- `standaloneRecords()`: array-backed mode — run the picker over plain arrays (named routes, page classes, API data) with no Eloquent involved. The modal table searches the searchable columns and sorts the sortable ones through Filament's records() data source; the selected keys land in the field state as strings, single or multiple()
+- The records closure is evaluated with Filament's closure dependency injection on the field, so `fn (Get $get) => ...` can scope the list by sibling form state, including inside Repeater rows
+- Stale keys degrade gracefully: a saved key the records closure no longer returns renders as its raw key instead of being dropped
+- `getRecordKey()`: the record's identity across both worlds — model key or the array key attribute
+
+### Changed
+- Every display mode and both fills accept array records alongside models: display and fill closures receive `Model|array`, and `getSelectedRecords()` now returns a base `Collection` (still Eloquent collections for the model modes)
+
 ## [1.0.0] - 2026-08-12
 
 ### Added

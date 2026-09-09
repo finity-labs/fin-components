@@ -83,18 +83,18 @@ trait HasStackedListDisplay
         return (bool) $this->evaluate($this->isStackedListRemovable);
     }
 
-    public function getStackedListPrimary(Model $record): string
+    public function getStackedListPrimary(Model|array $record): string
     {
         return $this->resolveRecordDisplayValue($record, $this->stackedListPrimary)
             ?? $this->getRecordDisplayLabel($record);
     }
 
-    public function getStackedListSecondary(Model $record): ?string
+    public function getStackedListSecondary(Model|array $record): ?string
     {
         return $this->resolveRecordDisplayValue($record, $this->stackedListSecondary);
     }
 
-    public function getStackedListImage(Model $record): ?string
+    public function getStackedListImage(Model|array $record): ?string
     {
         return $this->resolveRecordDisplayValue($record, $this->stackedListImage);
     }

@@ -65,12 +65,27 @@ trait HasInfolistDisplay
     }
 
     /**
-     * The selected record, resolved through the parent component's pipeline
-     * (so getSelectedRecordUsing() and the record cache are respected), with
-     * any configured relationships loaded for display.
+     * The selected record for display: models through the parent component's
+     * pipeline (so getSelectedRecordUsing() and the record cache are
+     * respected) with any configured relationships loaded; array records by
+     * key from the standaloneRecords() list, a stale key becoming its raw-key
+     * stand-in.
+     *
+     * @return Model|array<string, mixed>|null
      */
-    public function getSelectedDisplayRecord(): ?Model
+    public function getSelectedDisplayRecord(): Model|array|null
     {
+        if ($this->hasStandaloneRecords()) {
+            $state = $this->getState();
+            $key = is_array($state) ? ($state[0] ?? null) : $state;
+
+            if (blank($key)) {
+                return null;
+            }
+
+            return $this->findStandaloneRecord($key) ?? $this->makeStaleStandaloneRecord((string) $key);
+        }
+
         $record = $this->getSelectedRecord();
 
         if (! $record) {
@@ -87,22 +102,26 @@ trait HasInfolistDisplay
     }
 
     /**
-     * Build the schema that renders the selected record as an infolist. The
-     * schema is bound to the record itself, so entries resolve dot-notation
-     * relationships, casts, and enums natively.
+     * Build the schema that renders the selected record as an infolist. A
+     * model binds as the schema's record, so entries resolve dot-notation
+     * relationships, casts, and enums natively; an array record binds as
+     * constant state, which data_get resolves the same way.
      */
     public function makeSelectedInfolistSchema(): ?Schema
     {
         $record = $this->getSelectedDisplayRecord();
         $components = $this->getInfolistSchema();
 
-        if ((! $record) || blank($components)) {
+        if (blank($record) || blank($components)) {
             return null;
         }
 
-        return Schema::make($this->getLivewire())
+        $schema = Schema::make($this->getLivewire())
             ->components($components)
-            ->record($record)
             ->columns($this->getInfolistColumns());
+
+        return $record instanceof Model
+            ? $schema->record($record)
+            : $schema->constantState($record);
     }
 }

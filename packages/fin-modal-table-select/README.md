@@ -17,7 +17,7 @@ The stock component renders the selection as badges or comma-separated text. Thi
 - **Nine display modes** — a table with columns inherited from your modal's `tableConfiguration()`, a stacked list with per-item remove, a card grid, a thumbnail strip, per-record badge colors/icons, text lists, an infolist card, your own Blade view per item, or nothing at all (selection-only). The mode resolves automatically from what you configure.
 - **`fillsFields()`** — pick a company, get its name and tax number filled in, let the user overwrite the phone.
 - **`fillsRepeater()` + `SelectedItemsRepeater`** — pick products, get one editable row each (quantity, price). Re-picking never wipes what the user edited, and deleting a row deselects its record.
-- **`standalone()`** — use the picker without an Eloquent relationship; selected IDs land in a JSON column.
+- **`standalone()` + `standaloneRecords()`** — use the picker without an Eloquent relationship: records from a model query, or from a plain array (named routes, page classes, API data) with modal search and sort intact.
 
 Everything user-facing stays stock Filament — the modal, the row entries, the repeater. This package only wires them together. All display modes support dark mode out of the box, and 58 locales ship with the package.
 
@@ -73,6 +73,51 @@ ModalTableSelect::make('product_picker')
         'quantity'   => 1,
     ], keyAttribute: 'product_id')
 ```
+
+## Array-backed records
+
+The picker can run over plain arrays — no Eloquent at all. The modal table still searches the searchable columns and sorts the sortable ones, the selected keys land in the field state, and every display mode works unchanged. The records closure gets Filament's dependency injection, so it can scope the list by sibling form state:
+
+```php
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
+use Illuminate\Support\Facades\Route;
+
+class RoutesTable
+{
+    public static function configure(Table $table): Table
+    {
+        return $table->columns([          // columns and filters only — no query;
+            TextColumn::make('label')     // the component supplies the records itself
+                ->searchable()
+                ->sortable(),
+            TextColumn::make('route')->searchable(),
+            TextColumn::make('uri'),
+            TextColumn::make('panel')->badge(),
+        ]);
+    }
+}
+
+ModalTableSelect::make('route_names')
+    ->tableConfiguration(RoutesTable::class)
+    ->standaloneRecords(fn (Get $get): array => collect(Route::getRoutes()->getRoutesByName())
+        ->filter(fn ($route, string $name): bool => blank($get('panel')) || str_starts_with($name, "filament.{$get('panel')}."))
+        ->map(fn ($route, string $name): array => [
+            'key' => $name,
+            'label' => (string) str($name)->afterLast('.')->headline(),
+            'route' => $name,
+            'uri' => '/'.$route->uri(),
+            'panel' => (string) str($name)->after('filament.')->before('.'),
+        ])
+        ->values()
+        ->all(), titleAttribute: 'label')
+    ->multiple()
+    ->displayAsTable()
+```
+
+The state stores the record keys (here: route names) as strings — cast the column to `array` for `multiple()`. A saved key the closure no longer returns still renders as its raw key instead of disappearing. `fillsFields()`, `fillsRepeater()`, and all display modes accept the array records; closures receive them as `fn (array $record) => ...`.
 
 ## Installation
 

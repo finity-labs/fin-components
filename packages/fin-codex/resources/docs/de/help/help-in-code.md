@@ -3,6 +3,8 @@ title: Hilfe im Code deklarieren
 excerpt: Für Entwicklerinnen und Entwickler — Artikel ohne Editor an Ressourcen, Seiten und Felder hängen.
 order: 5
 visibility: authenticated
+contexts:
+  - class:FinityLabs\FinCodex\Resources\ArticleResource
 ---
 
 Artikel lassen sich nicht nur im Editor, sondern auch im Code an Bildschirme hängen — dann bleibt die Zuordnung bei der Klasse, die sie beschreibt.

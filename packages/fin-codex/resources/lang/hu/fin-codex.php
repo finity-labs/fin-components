@@ -47,6 +47,7 @@ return [
             'visibility' => 'Láthatóság',
             'format' => 'Formátum',
             'languages' => 'Nyelvek',
+            'panels' => 'Panelek',
         ],
         'source' => [
             'database' => 'Adatbázis',
@@ -63,6 +64,7 @@ return [
             'visibility' => 'Láthatóság',
             'format' => 'Formátum',
             'source' => 'Forrás',
+            'panel' => 'Panel',
             'missing' => 'Hiányzó nyelv',
             'outdated' => 'Elavult nyelv',
         ],

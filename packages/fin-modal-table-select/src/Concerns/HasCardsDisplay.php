@@ -90,18 +90,18 @@ trait HasCardsDisplay
         return (bool) $this->evaluate($this->isCardsRemovable);
     }
 
-    public function getCardTitle(Model $record): string
+    public function getCardTitle(Model|array $record): string
     {
         return $this->resolveRecordDisplayValue($record, $this->cardTitle)
             ?? $this->getRecordDisplayLabel($record);
     }
 
-    public function getCardDescription(Model $record): ?string
+    public function getCardDescription(Model|array $record): ?string
     {
         return $this->resolveRecordDisplayValue($record, $this->cardDescription);
     }
 
-    public function getCardImage(Model $record): ?string
+    public function getCardImage(Model|array $record): ?string
     {
         return $this->resolveRecordDisplayValue($record, $this->cardImage);
     }

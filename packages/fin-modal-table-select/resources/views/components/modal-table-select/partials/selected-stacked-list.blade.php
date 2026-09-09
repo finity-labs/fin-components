@@ -40,7 +40,7 @@
 
                 @if ($isRemovable && $removeAction)
                     <div class="shrink-0">
-                        {{ $removeAction(['recordKey' => $record->getKey()]) }}
+                        {{ $removeAction(['recordKey' => $field->getRecordKey($record)]) }}
                     </div>
                 @endif
             </div>

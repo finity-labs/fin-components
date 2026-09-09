@@ -8,8 +8,8 @@ use Closure;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 trait CanFillRepeater
@@ -120,16 +120,16 @@ trait CanFillRepeater
      * from evaluating the item closure, so it is unit-testable in isolation.
      *
      * @param  array<array-key, array<string, mixed>>  $existing
-     * @param  EloquentCollection<int, Model>  $records
+     * @param  Collection<int, Model|array<string, mixed>>  $records
      *
      * @return array<array-key, array<string, mixed>>
      */
-    public function mergeRepeaterItems(array $existing, EloquentCollection $records): array
+    public function mergeRepeaterItems(array $existing, Collection $records): array
     {
         $keyAttribute = $this->evaluate($this->fillsRepeaterKeyAttribute);
 
         $selectedKeys = $records
-            ->map(fn (Model $record): string => (string) $record->getKey())
+            ->map(fn (Model|array $record): string => $this->getRecordKey($record))
             ->all();
 
         $merged = [];
@@ -145,19 +145,15 @@ trait CanFillRepeater
         }
 
         foreach ($records as $record) {
-            $recordKey = (string) $record->getKey();
+            $recordKey = $this->getRecordKey($record);
 
             if (in_array($recordKey, $presentKeys, strict: true)) {
                 continue;
             }
 
-            $row = $this->evaluate($this->fillsRepeaterItemUsing, [
-                'record' => $record,
-            ], [
-                Model::class => $record,
-            ]) ?? [];
+            $row = $this->evaluateWithRecord($this->fillsRepeaterItemUsing, $record) ?? [];
 
-            $row[$keyAttribute] ??= $record->getKey();
+            $row[$keyAttribute] ??= ($record instanceof Model) ? $record->getKey() : $recordKey;
 
             $merged[(string) Str::uuid()] = $row;
         }

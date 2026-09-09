@@ -49,7 +49,7 @@
 
                 @if ($isRemovable && $removeAction)
                     <div class="absolute -end-2 -top-2">
-                        {{ $removeAction(['recordKey' => $record->getKey()]) }}
+                        {{ $removeAction(['recordKey' => $field->getRecordKey($record)]) }}
                     </div>
                 @endif
             </div>

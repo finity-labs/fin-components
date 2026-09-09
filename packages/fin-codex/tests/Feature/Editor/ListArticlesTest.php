@@ -1,8 +1,10 @@
 <?php
 
+use FinityLabs\FinCodex\Editor\ContextPicker;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\ListArticles;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Enums\ArticleFormat;
+use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Enums\Visibility;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
@@ -304,4 +306,35 @@ it('reads under the panel locale', function (): void {
 
     expect(__('fin-codex::fin-codex.editor.source.both'))->not->toBe($both)
         ->and(__('fin-codex::fin-codex.editor.state.outdated'))->not->toBe($outdated);
+});
+
+it('shows the panels an article\'s pages target, and filters by panel', function (): void {
+    $user = finCodexListUser();
+    $articles = finCodexListSeed();
+    $articles['billing']->contexts()->create(['panel_id' => 'admin', 'type' => ContextType::PageClass, 'key' => 'App\\Billing', 'sort_order' => 0]);
+    $articles['billing']->contexts()->create(['panel_id' => null, 'type' => ContextType::Url, 'key' => '/billing/*', 'sort_order' => 1]);
+    $articles['users']->contexts()->create(['panel_id' => 'staff', 'type' => ContextType::Route, 'key' => 'filament.staff.pages.dashboard', 'sort_order' => 0]);
+    $this->usesPanel('admin', $user);
+
+    $html = Livewire::test(ListArticles::class)->html();
+
+    expect(finCodexListRow($html, 'billing'))->toContain(__('fin-codex::fin-codex.editor.contexts.any_panel'))
+        ->toContain('admin')
+        ->and(finCodexListRow($html, 'users'))->toContain('staff')
+        ->and(finCodexListRow($html, 'zebra'))->not->toContain(__('fin-codex::fin-codex.editor.contexts.any_panel'));
+
+    Livewire::test(ListArticles::class)
+        ->filterTable('panel', 'admin')
+        ->assertCanSeeTableRecords([$articles['billing']])
+        ->assertCanNotSeeTableRecords([$articles['users'], $articles['zebra'], $articles['users/roles']]);
+
+    Livewire::test(ListArticles::class)
+        ->filterTable('panel', ContextPicker::ANY_PANEL)
+        ->assertCanSeeTableRecords([$articles['billing']])
+        ->assertCanNotSeeTableRecords([$articles['users'], $articles['zebra']]);
+
+    Livewire::test(ListArticles::class)
+        ->filterTable('panel', 'staff')
+        ->assertCanSeeTableRecords([$articles['users']])
+        ->assertCanNotSeeTableRecords([$articles['billing'], $articles['zebra']]);
 });

@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Collection;
 use Throwable;
 
 trait HasTableDisplay
@@ -48,7 +49,7 @@ trait HasTableDisplay
 
     protected bool|Closure $isTableCollapsed = false;
 
-    protected ?EloquentCollection $cachedSelectedRecords = null;
+    protected ?Collection $cachedSelectedRecords = null;
 
     protected ?string $cachedSelectedRecordsKey = null;
 
@@ -275,14 +276,16 @@ trait HasTableDisplay
     }
 
     /**
-     * Retrieve the full Eloquent models for the currently selected IDs, in
-     * selection order. Uses the same relationship query strategy as the parent
-     * component and memoizes per state, so repeated calls within a render are
-     * free.
+     * Retrieve the full records for the currently selected IDs, in selection
+     * order: Eloquent models for the relationship and standalone(Model) modes
+     * (same relationship query strategy as the parent component), plain arrays
+     * for standaloneRecords() — with a raw-key stand-in for any key the
+     * records closure no longer returns. Memoized per state, so repeated
+     * calls within a render are free.
      *
-     * @return EloquentCollection<int, Model>
+     * @return Collection<int, Model|array<string, mixed>>
      */
-    public function getSelectedRecords(): EloquentCollection
+    public function getSelectedRecords(): Collection
     {
         $state = $this->getState();
         $ids = array_values(array_filter(
@@ -299,6 +302,19 @@ trait HasTableDisplay
 
         if (($this->cachedSelectedRecordsKey === $cacheKey) && ($this->cachedSelectedRecords !== null)) {
             return $this->cachedSelectedRecords;
+        }
+
+        if ($this->hasStandaloneRecords()) {
+            $index = $this->getStandaloneRecordsIndex();
+
+            $this->cachedSelectedRecordsKey = $cacheKey;
+
+            /** @var Collection<int, Model|array<string, mixed>> $records */
+            $records = collect($ids)
+                ->map(fn (string $id): array => $index[$id] ?? $this->makeStaleStandaloneRecord($id))
+                ->values();
+
+            return $this->cachedSelectedRecords = $records;
         }
 
         if ($this->getIsStandalone()) {
@@ -344,22 +360,26 @@ trait HasTableDisplay
 
     /**
      * Re-resolve the selected records, bypassing the memoized result. Used
-     * after the state has just changed (e.g. inside afterStateUpdated).
+     * after the state has just changed (e.g. inside afterStateUpdated) —
+     * which is also when sibling state a standaloneRecords() closure depends
+     * on may have changed, so that memo is dropped too.
      *
-     * @return EloquentCollection<int, Model>
+     * @return Collection<int, Model|array<string, mixed>>
      */
-    public function getFreshSelectedRecords(): EloquentCollection
+    public function getFreshSelectedRecords(): Collection
     {
         $this->cachedSelectedRecords = null;
         $this->cachedSelectedRecordsKey = null;
+        $this->clearStandaloneRecordsCache();
 
         return $this->getSelectedRecords();
     }
 
     /**
      * Build the schema that renders the selected records as a table. Each row
-     * is a RepeatableEntry item bound to the record model itself, so entries
-     * resolve dot-notation relationships, casts, and enums natively.
+     * is a RepeatableEntry item bound to the record itself — models via
+     * record(), arrays via constant state — so entries resolve dot-notation
+     * paths, casts, and enums natively.
      */
     public function makeSelectedTableSchema(): ?Schema
     {

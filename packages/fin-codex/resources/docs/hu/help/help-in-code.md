@@ -3,6 +3,8 @@ title: Súgó deklarálása kódban
 excerpt: Fejlesztőknek — cikkek hozzárendelése erőforrásokhoz, oldalakhoz és mezőkhöz a szerkesztő nélkül.
 order: 5
 visibility: authenticated
+contexts:
+  - class:FinityLabs\FinCodex\Resources\ArticleResource
 ---
 
 A cikkek nemcsak a szerkesztőből, hanem kódból is hozzárendelhetők képernyőkhöz, így a hozzárendelés annál az osztálynál marad, amelyet leír.

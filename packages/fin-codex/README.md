@@ -60,7 +60,7 @@ The install command:
 - Checks that lin-codex's articles table exists, and offers to run `codex:install` if it doesn't.
 - Registers `FinCodexPlugin::make()` in one of your panel providers (it lists the panels it found; pass `--panel=admin` to skip the prompt).
 - Asks which languages the help articles are written in, with the locales your application already translates pre-selected, and writes them to the Codex settings. Pass `--locales=en,de` to answer without the prompt. The application locale stays the default language when it is among them.
-- Offers to import five starter articles about the help system itself — getting help, writing articles, coverage, settings, and declaring help in code — in the configured languages (they exist in en, de and hu). They land as ordinary database articles, attached to the pages they describe, and are yours to edit or delete. `--skip-starter-articles` leaves them out; a slug that already exists is left alone.
+- Offers to import ten starter articles in the configured languages (they exist in en, de and hu): five about the help system itself — getting help, writing articles, coverage, settings, and declaring help in code — and five public ones for Filament's own screens — signing in, creating an account, a forgotten password, email verification and the profile page. They land as ordinary database articles, attached to the pages they describe and to the panel the plugin was installed on, and are yours to edit or delete. `--skip-starter-articles` leaves them out; a slug that already exists is left alone.
 - Offers to publish the translations and the views. Both default to **no** — a published copy stops receiving upstream changes.
 - Registers the article resource in `config/filament-shield.php` if [Filament Shield](#filament-shield-integration) is installed, and runs `shield:generate`.
 
@@ -250,7 +250,7 @@ Without `isPersistent: true`, Livewire update requests skip the middleware and t
 
 ## The article editor
 
-**Help → Help articles** is a normal Filament resource over lin-codex's `Article` model, with filters for published state, visibility, format, source and per-language translation state.
+**Help → Help articles** is a normal Filament resource over lin-codex's `Article` model. A **Panels** column shows which panels an article's pages target ("any panel" for a context without one), and the filters cover published state, visibility, format, source, panel and per-language translation state.
 
 Next to the article list sits a **From files** tab. If lin-codex is reading articles off disk as well as out of the database, every file article that has no database row yet is listed there with an **Import and edit** button. Importing creates the database row through the core's importer and opens it. The import is idempotent: if a row already exists for that slug it is handed back rather than overwritten, so pressing the button twice opens what the first press created. Re-importing changed file content over an existing article is not supported yet.
 
@@ -330,7 +330,7 @@ Deleting an *article* leaves its `codex_media` rows with a null `article_id`. Th
 
 **Its number is not `codex:coverage`'s.** lin-codex's console command counts routes and credits only what the core's route report matched. The page counts *screens* — a resource's list, create and edit pages fold into one row — and additionally credits a resource-class context. The two numbers legitimately differ, and the navigation badge is the page's.
 
-The panel and coverage filters are deferred: they show an **Apply** button, Filament's default, kept so the page behaves like the article list. Nothing happens until you press it.
+The panel and coverage filters sit behind the table's filter button and are deferred, Filament's default: nothing happens until you press **Apply**.
 
 **The badges cost one report per panel page render.** Navigation is built on every page and both badges are read eagerly. The content source is read once per request and shared by the drawer, the coverage report and the warnings (the core rebuilds its set once more for warnings, so two reads in all), and the route report is built once. On a large knowledge base that is still a full hydration of every article on every page; if you don't want to pay it, extend the page, return `null` from `getNavigationBadge()`, and name your class through `->coveragePage(...)` — and the same for the warnings count on `->articleResource(...)`.
 

@@ -60,9 +60,11 @@ trait CanFillFields
      * Resolve the target => value map for the given record. Null record
      * (deselection) resolves every target to null.
      *
+     * @param  Model|array<string, mixed>|null  $record
+     *
      * @return array<string, mixed>
      */
-    public function resolveFieldFills(?Model $record): array
+    public function resolveFieldFills(Model|array|null $record): array
     {
         $map = $this->evaluate($this->fillsFieldsMap);
 
@@ -79,30 +81,43 @@ trait CanFillFields
         return $values;
     }
 
-    protected function resolveFillValue(?Model $record, string|Closure $source): mixed
+    /** @param  Model|array<string, mixed>|null  $record */
+    protected function resolveFillValue(Model|array|null $record, string|Closure $source): mixed
     {
         if ($record === null) {
             return null;
         }
 
         if ($source instanceof Closure) {
-            return $this->evaluate($source, [
-                'record' => $record,
-            ], [
-                Model::class => $record,
-            ]);
+            return $this->evaluateWithRecord($source, $record);
         }
 
         return data_get($record, $source);
     }
 
     /**
-     * Re-resolve the selected record, bypassing the parent's memoized record.
-     * Needed inside afterStateUpdated, where the cache may predate the state
-     * change that just happened.
+     * Re-resolve the selected record, bypassing the memoized copies. Needed
+     * inside afterStateUpdated, where the caches may predate the state change
+     * that just happened. standaloneRecords() mode resolves an array record
+     * by key — a stale key resolves to its raw-key stand-in, never to null.
+     *
+     * @return Model|array<string, mixed>|null
      */
-    public function getFreshSelectedRecord(): ?Model
+    public function getFreshSelectedRecord(): Model|array|null
     {
+        if ($this->hasStandaloneRecords()) {
+            $this->clearStandaloneRecordsCache();
+
+            $state = $this->getState();
+            $key = is_array($state) ? ($state[0] ?? null) : $state;
+
+            if (blank($key)) {
+                return null;
+            }
+
+            return $this->findStandaloneRecord($key) ?? $this->makeStaleStandaloneRecord((string) $key);
+        }
+
         $this->cachedSelectedRecord = null;
 
         return $this->getSelectedRecord();

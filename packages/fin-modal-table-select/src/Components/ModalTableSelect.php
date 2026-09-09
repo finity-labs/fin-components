@@ -7,6 +7,7 @@ namespace FinityLabs\FinModalTableSelect\Components;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\ModalTableSelect as FilamentModalTableSelect;
+use Filament\Forms\Components\TableSelect;
 use FinityLabs\FinModalTableSelect\Concerns\CanFillFields;
 use FinityLabs\FinModalTableSelect\Concerns\CanFillRepeater;
 use FinityLabs\FinModalTableSelect\Concerns\HasBadgeAndListDisplay;
@@ -16,9 +17,11 @@ use FinityLabs\FinModalTableSelect\Concerns\HasItemViewDisplay;
 use FinityLabs\FinModalTableSelect\Concerns\HasSelectionOnlyMode;
 use FinityLabs\FinModalTableSelect\Concerns\HasStackedListDisplay;
 use FinityLabs\FinModalTableSelect\Concerns\HasStandaloneMode;
+use FinityLabs\FinModalTableSelect\Concerns\HasStandaloneRecords;
 use FinityLabs\FinModalTableSelect\Concerns\HasTableDisplay;
 use FinityLabs\FinModalTableSelect\Concerns\HasThumbnailsDisplay;
 use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
+use FinityLabs\FinModalTableSelect\Livewire\StandaloneRecordsTableSelectComponent;
 use Illuminate\Database\Eloquent\Model;
 
 class ModalTableSelect extends FilamentModalTableSelect
@@ -32,6 +35,7 @@ class ModalTableSelect extends FilamentModalTableSelect
     use HasSelectionOnlyMode;
     use HasStackedListDisplay;
     use HasStandaloneMode;
+    use HasStandaloneRecords;
     use HasTableDisplay;
     use HasThumbnailsDisplay;
 
@@ -212,23 +216,48 @@ class ModalTableSelect extends FilamentModalTableSelect
      * receiving the record. Shared by the stacked list, cards, thumbnails,
      * and per-record badge displays.
      */
-    public function resolveRecordDisplayValue(Model $record, string|Closure|null $source): ?string
+    public function resolveRecordDisplayValue(Model|array $record, string|Closure|null $source): ?string
     {
         if ($source === null) {
             return null;
         }
 
-        if ($source instanceof Closure) {
-            $value = $this->evaluate($source, [
-                'record' => $record,
-            ], [
-                Model::class => $record,
-            ]);
-        } else {
-            $value = data_get($record, $source);
-        }
+        $value = $source instanceof Closure
+            ? $this->evaluateWithRecord($source, $record)
+            : data_get($record, $source);
 
         return filled($value) ? (string) $value : null;
+    }
+
+    /**
+     * Evaluate a per-record closure with the record injected by the `record`
+     * name; Model records also inject by type, so existing Model-typed
+     * closures keep resolving exactly as before.
+     *
+     * @param  Model|array<string, mixed>  $record
+     */
+    public function evaluateWithRecord(Closure $closure, Model|array $record): mixed
+    {
+        return $this->evaluate($closure, [
+            'record' => $record,
+        ], $record instanceof Model ? [
+            Model::class => $record,
+        ] : []);
+    }
+
+    /**
+     * The identity of a record across both worlds: the model key, or the
+     * standaloneRecords() key attribute for array records.
+     *
+     * @param  Model|array<string, mixed>  $record
+     */
+    public function getRecordKey(Model|array $record): string
+    {
+        if ($record instanceof Model) {
+            return (string) $record->getKey();
+        }
+
+        return (string) (data_get($record, $this->getStandaloneRecordsKeyAttribute()) ?? '');
     }
 
     /**
@@ -290,23 +319,88 @@ class ModalTableSelect extends FilamentModalTableSelect
 
     /**
      * The best available human label for a record: the option-label callback
-     * if configured, then the relationship or standalone title attribute,
-     * then the record key.
+     * if configured (models only — the callback is Model-typed upstream),
+     * then the mode's title attribute, then the record key.
+     *
+     * @param  Model|array<string, mixed>  $record
      */
-    public function getRecordDisplayLabel(Model $record): string
+    public function getRecordDisplayLabel(Model|array $record): string
     {
-        if ($this->hasOptionLabelFromRecordUsingCallback()) {
+        if (($record instanceof Model) && $this->hasOptionLabelFromRecordUsingCallback()) {
             return (string) $this->getOptionLabelFromRecord($record);
         }
 
-        $attribute = $this->getIsStandalone()
-            ? $this->getStandaloneTitleAttribute()
-            : $this->getRelationshipTitleAttribute();
+        $attribute = match (true) {
+            $this->hasStandaloneRecords() => $this->getStandaloneRecordsTitleAttribute(),
+            $this->getIsStandalone() => $this->getStandaloneTitleAttribute(),
+            default => $this->getRelationshipTitleAttribute(),
+        };
 
         if (filled($attribute)) {
-            return (string) data_get($record, str_replace('->', '.', $attribute));
+            $value = data_get($record, str_replace('->', '.', $attribute));
+
+            if (($record instanceof Model) || filled($value)) {
+                return (string) $value;
+            }
         }
 
-        return (string) $record->getKey();
+        return $this->getRecordKey($record);
+    }
+
+    /**
+     * In standaloneRecords() mode the modal table needs the array payload and
+     * a Livewire component that knows how to serve it; the records closure is
+     * evaluated HERE, on the field inside the form container, so it gets
+     * Filament's closure dependency injection ($get and friends) — the modal
+     * child component itself has no access to the form's state.
+     *
+     * @return array<mixed>
+     */
+    public function getTableArguments(): array
+    {
+        $arguments = parent::getTableArguments();
+
+        if ($this->hasStandaloneRecords()) {
+            $arguments[StandaloneRecordsTableSelectComponent::RECORDS_ARGUMENT] = array_values($this->getStandaloneRecordsIndex());
+            $arguments[StandaloneRecordsTableSelectComponent::KEY_ATTRIBUTE_ARGUMENT] = $this->getStandaloneRecordsKeyAttribute();
+        }
+
+        return $arguments;
+    }
+
+    /**
+     * Mirror of the parent's builder, swapping in the TableSelect subclass
+     * that mounts our records-aware Livewire component. Model modes take the
+     * parent's path untouched.
+     */
+    public function getTableSelect(): TableSelect
+    {
+        if (! $this->hasStandaloneRecords()) {
+            return parent::getTableSelect();
+        }
+
+        $select = StandaloneRecordsTableSelect::make('selection')
+            ->label($this->getLabel())
+            ->hiddenLabel()
+            ->tableConfiguration($this->getTableConfiguration())
+            ->relationshipName($this->getRelationshipName())
+            ->multiple($this->isMultiple())
+            ->maxItems($this->getMaxItems())
+            ->tableArguments($this->getTableArguments());
+
+        if ($this->modifyTableSelectUsing) {
+            $select = $this->evaluate(
+                $this->modifyTableSelectUsing,
+                namedInjections: [
+                    'select' => $select,
+                    'tableSelect' => $select,
+                ],
+                typedInjections: [
+                    TableSelect::class => $select,
+                ],
+            ) ?? $select;
+        }
+
+        return $select;
     }
 }

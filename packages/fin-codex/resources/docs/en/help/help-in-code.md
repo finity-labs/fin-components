@@ -3,6 +3,8 @@ title: Declaring help in code
 excerpt: For developers — attaching articles to resources, pages and fields without the editor.
 order: 5
 visibility: authenticated
+contexts:
+  - class:FinityLabs\FinCodex\Resources\ArticleResource
 ---
 
 Articles can be attached to screens from code as well as from the editor, which keeps the attachment with the class it describes.

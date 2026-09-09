@@ -10,6 +10,7 @@ use FinityLabs\FinSupport\Console\Concerns\DiscoversPanelProviders;
 use FinityLabs\FinSupport\Console\Concerns\EditsPanelProviders;
 use FinityLabs\FinSupport\Console\Concerns\EditsShieldConfig;
 use FinityLabs\LinCodex\Models\Article;
+use FinityLabs\LinCodex\Models\ArticleContext;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
@@ -154,6 +155,7 @@ class InstallCommand extends Command
 
     protected function registerInPanel(): void
     {
+        $this->panelId = null;
         $panelProviders = $this->discoverPanelProviders();
 
         if ($panelProviders === []) {
@@ -228,12 +230,15 @@ class InstallCommand extends Command
     }
 
     /**
-     * The articles about the help system itself, shipped with this package in
-     * en, de and hu, imported as ordinary database articles the admin can edit
-     * or delete: how to open the drawer, how to write articles, what the
-     * coverage and settings pages do, and how a developer declares help in
-     * code. Each carries the context of the page it describes, so the help
-     * pages have help from the first day.
+     * The articles shipped with this package in en, de and hu, imported as
+     * ordinary database articles the admin can edit or delete: about the help
+     * system itself (opening the drawer, writing articles, the coverage and
+     * settings pages, declaring help in code) and about Filament's own
+     * screens (signing in, registering, a forgotten password, email
+     * verification, the profile). Each carries the context of the page it
+     * describes and the panel it was installed on, so those pages have help
+     * from the first day — the guest pages included, where the drawer shows
+     * public articles to visitors.
      *
      * Only the configured languages are kept, and only when at least one of
      * them is a language the articles exist in — an install in French alone
@@ -286,6 +291,15 @@ class InstallCommand extends Command
         if ($imported->isNotEmpty()) {
             ArticleTranslation::query()->whereIn('article_id', $imported)->whereNotIn('locale', $locales)->delete();
             Article::query()->whereIn('id', $imported)->update(['source_path' => null]);
+
+            // The articles describe this panel's screens, so they belong to
+            // this panel: a second panel carrying the plugin — a customer
+            // portal, say — must not offer its users the editor's manual.
+            // Without a registered panel they stay "any panel"; an admin
+            // widens or narrows a context in the editor either way.
+            if ($this->panelId !== null) {
+                ArticleContext::query()->whereIn('article_id', $imported)->whereNull('panel_id')->update(['panel_id' => $this->panelId]);
+            }
         }
 
         if ($report->hasFailures()) {

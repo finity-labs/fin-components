@@ -47,6 +47,7 @@ return [
             'visibility' => 'Visibility',
             'format' => 'Format',
             'languages' => 'Languages',
+            'panels' => 'Panels',
         ],
         'source' => [
             'database' => 'Database',
@@ -63,6 +64,7 @@ return [
             'visibility' => 'Visibility',
             'format' => 'Format',
             'source' => 'Source',
+            'panel' => 'Panel',
             'missing' => 'Missing language',
             'outdated' => 'Outdated language',
         ],

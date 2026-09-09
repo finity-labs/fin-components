@@ -21,6 +21,8 @@ use FinityLabs\LinCodex\Sources\FilesystemSource;
  * first install.
  */
 
+const FIN_CODEX_PUBLIC_STARTERS = ['help/signing-in', 'help/creating-an-account', 'help/forgotten-password', 'help/verifying-your-email'];
+
 function finCodexStarterSet(): array
 {
     config()->set('lin-codex.sources.filesystem.paths', [InstallCommand::starterDocsPath()]);
@@ -31,7 +33,7 @@ function finCodexStarterSet(): array
     return [$set->articles, $set->warnings()];
 }
 
-it('ships five starter articles in en, de and hu that the core reads without a warning', function (): void {
+it('ships ten starter articles in en, de and hu that the core reads without a warning', function (): void {
     [$articles, $warnings] = finCodexStarterSet();
 
     // Every language file carries the shared keys, so the set reads the same
@@ -41,12 +43,13 @@ it('ships five starter articles in en, de and hu that the core reads without a w
 
     expect($unexpected)->toBe([])
         ->and(array_keys($articles))->toBe(InstallCommand::starterSlugs())
-        ->toBe(['help', 'help/coverage', 'help/help-in-code', 'help/settings', 'help/writing-articles']);
+        ->toBe(['help', 'help/coverage', 'help/creating-an-account', 'help/forgotten-password', 'help/help-in-code', 'help/settings', 'help/signing-in', 'help/verifying-your-email', 'help/writing-articles', 'help/your-profile']);
 
     foreach ($articles as $slug => $article) {
         expect($article)->toBeInstanceOf(ArticleData::class)
             ->and($article->locales())->toEqualCanonicalizing(InstallCommand::STARTER_LOCALES, "{$slug} is missing a language")
-            ->and($article->visibility)->toBe(Visibility::Authenticated, "{$slug} must not be public");
+            // The guest pages' articles are public, everything else authenticated.
+            ->and($article->visibility)->toBe(in_array($slug, FIN_CODEX_PUBLIC_STARTERS, true) ? Visibility::Public : Visibility::Authenticated);
 
         foreach (InstallCommand::STARTER_LOCALES as $locale) {
             $translation = $article->translation($locale);
@@ -66,7 +69,12 @@ it('attaches each starter article to the page it describes', function (): void {
         ->and($contexts('help/writing-articles'))->toBe(['class:'.ArticleResource::class])
         ->and($contexts('help/coverage'))->toBe(['class:'.HelpCoverage::class])
         ->and($contexts('help/settings'))->toBe(['class:'.HelpSettings::class])
-        ->and($contexts('help/help-in-code'))->toBe([]);
+        ->and($contexts('help/help-in-code'))->toBe(['class:'.ArticleResource::class])
+        ->and($contexts('help/signing-in'))->toBe(['class:Filament\Auth\Pages\Login'])
+        ->and($contexts('help/creating-an-account'))->toBe(['class:Filament\Auth\Pages\Register'])
+        ->and($contexts('help/forgotten-password'))->toBe(['class:Filament\Auth\Pages\PasswordReset\RequestPasswordReset', 'class:Filament\Auth\Pages\PasswordReset\ResetPassword'])
+        ->and($contexts('help/verifying-your-email'))->toBe(['class:Filament\Auth\Pages\EmailVerification\EmailVerificationPrompt'])
+        ->and($contexts('help/your-profile'))->toBe(['class:Filament\Auth\Pages\EditProfile']);
 });
 
 it('reads the same pages from the files whichever language is the default', function (): void {

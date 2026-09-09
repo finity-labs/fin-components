@@ -63,30 +63,24 @@ trait HasBadgeAndListDisplay
         return ($this->badgeColorFromRecord !== null) || ($this->badgeIconFromRecord !== null);
     }
 
-    public function getBadgeColorForRecord(Model $record): mixed
+    /** @param  Model|array<string, mixed>  $record */
+    public function getBadgeColorForRecord(Model|array $record): mixed
     {
         if ($this->badgeColorFromRecord === null) {
             return $this->getBadgeColor();
         }
 
-        return $this->evaluate($this->badgeColorFromRecord, [
-            'record' => $record,
-        ], [
-            Model::class => $record,
-        ]) ?? $this->getBadgeColor();
+        return $this->evaluateWithRecord($this->badgeColorFromRecord, $record) ?? $this->getBadgeColor();
     }
 
-    public function getBadgeIconForRecord(Model $record): ?string
+    /** @param  Model|array<string, mixed>  $record */
+    public function getBadgeIconForRecord(Model|array $record): ?string
     {
         if ($this->badgeIconFromRecord === null) {
             return null;
         }
 
-        $icon = $this->evaluate($this->badgeIconFromRecord, [
-            'record' => $record,
-        ], [
-            Model::class => $record,
-        ]);
+        $icon = $this->evaluateWithRecord($this->badgeIconFromRecord, $record);
 
         return filled($icon) ? (string) $icon : null;
     }

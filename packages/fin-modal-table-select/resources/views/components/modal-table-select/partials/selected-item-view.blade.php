@@ -11,7 +11,7 @@
             @include($itemView, array_merge($itemViewData, [
                 'record' => $record,
                 'field' => $field,
-                'removeAction' => $removeAction ? $removeAction(['recordKey' => $record->getKey()]) : null,
+                'removeAction' => $removeAction ? $removeAction(['recordKey' => $field->getRecordKey($record)]) : null,
             ]))
         @endforeach
     </div>

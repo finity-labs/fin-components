@@ -62,7 +62,7 @@ trait HasThumbnailsDisplay
         return (bool) $this->evaluate($this->isThumbnailsRemovable);
     }
 
-    public function getThumbnailImage(Model $record): ?string
+    public function getThumbnailImage(Model|array $record): ?string
     {
         return $this->resolveRecordDisplayValue($record, $this->thumbnailsImage);
     }

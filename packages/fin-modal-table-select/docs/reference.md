@@ -46,6 +46,7 @@ Everything the parent supports (`relationship()`, `tableConfiguration()`, `multi
 |--------|-----------|-------------|
 | `standalone()` | `class-string\|Closure $model, string\|Closure\|null $titleAttribute = null` | Relationship-free mode |
 | `standaloneModifyQueryUsing()` | `?Closure $callback` | Scope the standalone query |
+| `standaloneRecords()` | `array\|Closure $records, string\|Closure $keyAttribute = 'key', string\|Closure\|null $titleAttribute = null` | Array-backed mode: plain rows, keys in field state |
 | `fillsFields()` | `array\|Closure $map` | Fill sibling fields from the selected record |
 | `fillsRepeater()` | `string\|Closure $repeaterName, Closure $itemUsing, string\|Closure $keyAttribute = 'id'` | Sync selection into a sibling Repeater |
 | `hydrateSelectionFromRepeater()` | `string\|Closure\|null $repeaterName = null, string\|Closure\|null $keyAttribute = null` | On edit pages, rebuild the picker selection from saved rows (defaults from `fillsRepeater()`) |
@@ -69,9 +70,11 @@ Handy inside closures, custom views, and tests:
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `getDisplayMode()` | `DisplayMode` | The resolved display mode |
-| `getSelectedRecords()` | `EloquentCollection` | Selected models, selection order, memoized per state |
+| `getSelectedRecords()` | `Collection` | Selected models or array rows, selection order, memoized per state |
 | `getSelectedRecord()` | `?Model` | Single selected model (parent pipeline, cached) |
-| `getRecordDisplayLabel($record)` | `string` | Best available label for a record |
+| `getSelectedDisplayRecord()` | `Model\|array\|null` | Single selected record for display, any mode |
+| `getRecordDisplayLabel($record)` | `string` | Best available label for a record (model or array) |
+| `getRecordKey($record)` | `string` | Model key or the standaloneRecords() key attribute |
 | `removeSelectedItem($key)` | `void` | Drop one record from the selection and rerun fills |
 
 ## Translations
