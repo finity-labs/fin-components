@@ -1,0 +1,12 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - src
+    level: 5
+    ignoreErrors:
+        # The trait is for host install commands; nothing under src/ uses it.
+        -
+            identifier: trait.unused
+            path: src/Console/Concerns/PromptsForLocales.php

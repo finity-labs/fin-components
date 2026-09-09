@@ -1,0 +1,61 @@
+{
+    "name": "finity-labs/lin-support",
+    "description": "Shared support code for Finity Labs Laravel packages: the locale map and the install-time locale prompt.",
+    "keywords": [
+        "laravel",
+        "locale",
+        "console"
+    ],
+    "homepage": "https://github.com/finity-labs/lin-support",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Finity Labs",
+            "email": "filament.infinity@gmail.com",
+            "role": "Developer"
+        }
+    ],
+    "type": "library",
+    "require": {
+        "php": "^8.2",
+        "illuminate/console": "^11.0|^12.0|^13.0",
+        "illuminate/contracts": "^11.0|^12.0|^13.0",
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "laravel/prompts": "^0.1.24|^0.2|^0.3"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^3.0|^4.0",
+        "pestphp/pest-plugin-laravel": "^3.0|^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "FinityLabs\\LinSupport\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "FinityLabs\\LinSupport\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest",
+        "analyse": "vendor/bin/phpstan analyse",
+        "format": "vendor/bin/pint"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.1.x-dev"
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
