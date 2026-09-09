@@ -73,6 +73,15 @@ ModalTableSelect::make('assignees')
 
 Primary, secondary, and image accept an attribute path or a closure receiving the record. Primary falls back to the option label (relationship title attribute, standalone title attribute, or record key).
 
+Both text lines truncate on narrow widths by default. `stackedListPrimaryWrapped()` and `stackedListSecondaryWrapped()` let them wrap instead — and render newlines as line breaks, so a closure can return `"street\ncity"` with no HTML. The remove button stays pinned to the top of the row when wrapped lines make it grow. For actual markup in the secondary line, return an `HtmlString`; Htmlable values render unescaped (that's the opt-in), plain strings stay escaped:
+
+```php
+->stackedListSecondary(fn (Company $record): HtmlString => new HtmlString(
+    e($record->street).'<br>'.e($record->city),
+))
+->stackedListSecondaryWrapped()
+```
+
 ## Card grid
 
 For visual records — image on top, title, optional description, remove button in the corner:

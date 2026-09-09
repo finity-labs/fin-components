@@ -17,7 +17,9 @@ Everything the parent supports (`relationship()`, `tableConfiguration()`, `multi
 | `tableCollapsed()` | `bool\|Closure $condition = true` | Start collapsed (needs `tableCollapsible()`) |
 | `stackedList()` | `bool\|Closure $condition = true` | Stacked-list display with per-item remove |
 | `stackedListPrimary()` | `string\|Closure\|null $source` | Primary line (attribute path or closure) |
-| `stackedListSecondary()` | `string\|Closure\|null $source` | Secondary line |
+| `stackedListPrimaryWrapped()` | `bool\|Closure $condition = true` | Wrap the primary line instead of truncating; newlines become line breaks |
+| `stackedListSecondary()` | `string\|Closure\|null $source` | Secondary line; Htmlable returns render as HTML |
+| `stackedListSecondaryWrapped()` | `bool\|Closure $condition = true` | Wrap the secondary line instead of truncating; newlines become line breaks |
 | `stackedListImage()` | `string\|Closure\|null $source` | Thumbnail image URL |
 | `stackedListRemovable()` | `bool\|Closure $condition = true` | Toggle the remove buttons |
 | `cardGrid()` | `bool\|Closure $condition = true` | Card grid display |

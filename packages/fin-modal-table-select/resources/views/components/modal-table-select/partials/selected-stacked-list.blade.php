@@ -4,6 +4,8 @@
     $count = $records->count();
     $hasOverflow = ($limit !== null) && ($count > $limit);
     $isRemovable = $field->getIsStackedListRemovable() && ! $field->isDisabled();
+    $isPrimaryWrapped = $field->getIsStackedListPrimaryWrapped();
+    $isSecondaryWrapped = $field->getIsStackedListSecondaryWrapped();
     $removeAction = $field->getAction('removeSelectedItem');
 @endphp
 
@@ -27,19 +29,29 @@
                 @endif
 
                 <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-medium text-gray-950 dark:text-white">
+                    <p @class([
+                        'text-sm font-medium text-gray-950 dark:text-white',
+                        'truncate' => ! $isPrimaryWrapped,
+                        'whitespace-pre-line break-words' => $isPrimaryWrapped,
+                    ])>
                         {{ $field->getStackedListPrimary($record) }}
                     </p>
 
                     @if (filled($secondary))
-                        <p class="truncate text-sm text-gray-500 dark:text-gray-400">
+                        <p @class([
+                            'text-sm text-gray-500 dark:text-gray-400',
+                            'truncate' => ! $isSecondaryWrapped,
+                            'whitespace-pre-line break-words' => $isSecondaryWrapped,
+                        ])>
                             {{ $secondary }}
                         </p>
                     @endif
                 </div>
 
                 @if ($isRemovable && $removeAction)
-                    <div class="shrink-0">
+                    {{-- self-start keeps the remove button pinned to the row's
+                         top edge when wrapped lines make the row grow. --}}
+                    <div class="shrink-0 self-start">
                         {{ $removeAction(['recordKey' => $field->getRecordKey($record)]) }}
                     </div>
                 @endif

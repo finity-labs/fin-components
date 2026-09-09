@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
@@ -299,4 +300,41 @@ it('syncs array records into a repeater with merge semantics', function () {
     $field->callAfterStateUpdated();
 
     expect(array_column($livewire->get('data.items'), 'route'))->toBe(['users.index']);
+});
+
+it('renders inside a Repeater row, where Filament clones the field, and scopes each row by its own state', function () {
+    $livewire = mountRecordsForm(fn (): array => [
+        Repeater::make('items')
+            ->schema([
+                TextInput::make('panel_filter'),
+                ModalTableSelect::make('routes')
+                    ->tableConfiguration(RoutesTable::class)
+                    ->standaloneRecords(
+                        fn (Get $get): array => array_values(array_filter(
+                            routeRecords(),
+                            fn (array $record): bool => blank($get('panel_filter')) || $record['panel'] === $get('panel_filter'),
+                        )),
+                        titleAttribute: 'label',
+                    ),
+            ]),
+    ]);
+
+    $livewire
+        ->fillForm(['items' => [
+            ['panel_filter' => 'app', 'routes' => 'reports.index'],
+            ['panel_filter' => 'admin', 'routes' => 'users.index'],
+        ]])
+        ->assertOk()
+        ->assertSee('Reports')
+        ->assertSee('Users');
+
+    /** @var Repeater $repeater */
+    $repeater = $livewire->instance()->getSchema('form')->getFlatFields()['items'];
+    $items = array_keys($livewire->get('data.items'));
+
+    $pickerOf = fn (int|string $item): ModalTableSelect => $repeater->getChildSchema($item)->getFlatFields()['routes'];
+
+    expect(array_keys($pickerOf($items[0])->getStandaloneRecordsIndex()))->toBe(['reports.index'])
+        ->and(array_keys($pickerOf($items[1])->getStandaloneRecordsIndex()))->toBe(['dashboard', 'users.index'])
+        ->and($pickerOf($items[1])->getAction('select'))->not->toBeNull();
 });

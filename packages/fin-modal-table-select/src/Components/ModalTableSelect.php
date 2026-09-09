@@ -22,6 +22,7 @@ use FinityLabs\FinModalTableSelect\Concerns\HasTableDisplay;
 use FinityLabs\FinModalTableSelect\Concerns\HasThumbnailsDisplay;
 use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
 use FinityLabs\FinModalTableSelect\Livewire\StandaloneRecordsTableSelectComponent;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Model;
 
 class ModalTableSelect extends FilamentModalTableSelect
@@ -54,22 +55,27 @@ class ModalTableSelect extends FilamentModalTableSelect
             return $action->iconButton();
         });
 
+        // Through the injected component, never $this: Filament clones a
+        // field into every Repeater row and into an action's modal schema,
+        // and a closure bound to the prototype would build the actions on a
+        // component that belongs to no schema — its state, label and Get
+        // all need the container.
         $this->registerActions([
-            fn (): Action => $this->getCollapseToggleAction(),
-            fn (): Action => $this->getRemoveSelectedItemAction(),
-            fn (): Action => $this->getSelectAction(),
+            fn (ModalTableSelect $component): Action => $component->getCollapseToggleAction(),
+            fn (ModalTableSelect $component): Action => $component->getRemoveSelectedItemAction(),
+            fn (ModalTableSelect $component): Action => $component->getSelectAction(),
         ]);
 
         // Share an Alpine `open` flag across the whole field (label hint actions
         // and content) so the chevron hint action can show/hide the collapsible
         // table without a Livewire round-trip.
-        $this->extraFieldWrapperAttributes(function (): array {
-            if (! $this->getIsTableCollapsible() || $this->getDisplayMode() !== DisplayMode::Table) {
+        $this->extraFieldWrapperAttributes(function (ModalTableSelect $component): array {
+            if (! $component->getIsTableCollapsible() || $component->getDisplayMode() !== DisplayMode::Table) {
                 return [];
             }
 
             return [
-                'x-data' => '{ open: '.($this->getIsTableCollapsed() ? 'false' : 'true').' }',
+                'x-data' => '{ open: '.($component->getIsTableCollapsed() ? 'false' : 'true').' }',
             ];
         });
     }
@@ -225,6 +231,30 @@ class ModalTableSelect extends FilamentModalTableSelect
         $value = $source instanceof Closure
             ? $this->evaluateWithRecord($source, $record)
             : data_get($record, $source);
+
+        return filled($value) ? (string) $value : null;
+    }
+
+    /**
+     * Like resolveRecordDisplayValue(), but an Htmlable result passes through
+     * untouched instead of being cast, so it renders as HTML. For plain text
+     * the two behave identically.
+     *
+     * @param  Model|array<string, mixed>  $record
+     */
+    public function resolveRecordDisplayHtml(Model|array $record, string|Closure|null $source): string|Htmlable|null
+    {
+        if ($source === null) {
+            return null;
+        }
+
+        $value = $source instanceof Closure
+            ? $this->evaluateWithRecord($source, $record)
+            : data_get($record, $source);
+
+        if ($value instanceof Htmlable) {
+            return $value;
+        }
 
         return filled($value) ? (string) $value : null;
     }

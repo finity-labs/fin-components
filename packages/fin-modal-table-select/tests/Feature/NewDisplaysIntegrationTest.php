@@ -9,6 +9,7 @@ use FinityLabs\FinModalTableSelect\Tests\Fixtures\Livewire\TestForm;
 use FinityLabs\FinModalTableSelect\Tests\Fixtures\Models\Post;
 use FinityLabs\FinModalTableSelect\Tests\Fixtures\Models\User;
 use FinityLabs\FinModalTableSelect\Tests\Fixtures\Tables\PostsTable;
+use Illuminate\Support\HtmlString;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
@@ -249,4 +250,71 @@ it('hydrates the picker selection from saved repeater rows', function () {
     $field->callAfterStateHydrated();
 
     expect($field->getState())->toBe([$first->getKey(), $second->getKey()]);
+});
+
+it('wraps the secondary line and renders newlines when stackedListSecondaryWrapped', function () {
+    $user = User::query()->create(['name' => 'Jane', 'email' => 'jane@example.com']);
+    $post = $user->posts()->create(['title' => 'First post', 'body' => "line one\nline two"]);
+
+    $livewire = mountDisplayForm(fn (): array => [
+        ModalTableSelect::make('posts')
+            ->tableConfiguration(PostsTable::class)
+            ->relationship('posts', 'title')
+            ->multiple()
+            ->stackedList()
+            ->stackedListSecondary('body')
+            ->stackedListSecondaryWrapped(),
+    ], $user);
+
+    $livewire->set('data.posts', [$post->getKey()]);
+
+    $html = $livewire->html();
+
+    expect($html)
+        ->toContain('whitespace-pre-line')
+        ->toContain('line one')
+        ->not->toContain('truncate text-sm text-gray-500');
+});
+
+it('renders an Htmlable secondary as HTML while escaping plain strings', function () {
+    $user = User::query()->create(['name' => 'Jane', 'email' => 'jane@example.com']);
+    $post = $user->posts()->create(['title' => 'First post', 'body' => 'ignored']);
+
+    $livewire = mountDisplayForm(fn (): array => [
+        ModalTableSelect::make('posts')
+            ->tableConfiguration(PostsTable::class)
+            ->relationship('posts', 'title')
+            ->multiple()
+            ->stackedList()
+            ->stackedListSecondary(fn (Post $record): HtmlString => new HtmlString('<em class="secondary-html">emphasised</em>')),
+    ], $user);
+
+    $livewire->set('data.posts', [$post->getKey()]);
+
+    expect($livewire->html())->toContain('<em class="secondary-html">emphasised</em>');
+});
+
+it('wraps the primary line and pins the remove button to the top of the row', function () {
+    $user = User::query()->create(['name' => 'Jane', 'email' => 'jane@example.com']);
+    $post = $user->posts()->create(['title' => "A very long title\nwith a second line", 'body' => 'Body']);
+
+    $livewire = mountDisplayForm(fn (): array => [
+        ModalTableSelect::make('posts')
+            ->tableConfiguration(PostsTable::class)
+            ->relationship('posts', 'title')
+            ->multiple()
+            ->stackedList()
+            ->stackedListPrimary('title')
+            ->stackedListPrimaryWrapped(),
+    ], $user);
+
+    $livewire->set('data.posts', [$post->getKey()]);
+
+    $html = $livewire->html();
+
+    expect($html)
+        ->toContain('whitespace-pre-line')
+        ->toContain('A very long title')
+        ->toContain('self-start')
+        ->not->toContain('truncate text-sm font-medium');
 });

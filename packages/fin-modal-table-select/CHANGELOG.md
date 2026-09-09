@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-09-09
+
+### Added
+- `stackedListPrimaryWrapped()` / `stackedListSecondaryWrapped()`: let the stacked list's text lines wrap instead of truncating on narrow widths; newlines in the value render as line breaks (white-space: pre-line), and the per-item remove button stays pinned to the top of a grown row
+- `stackedListSecondary()` closures may return an `HtmlString` to render markup — Htmlable values pass through unescaped, plain strings stay escaped
+
+### Fixed
+- The picker threw "Typed property Component::$container must not be accessed before initialization" when placed inside a Repeater row or an action's modal schema. Filament clones a field into every Repeater item and into a modal schema, and the select, remove and collapse actions were registered through closures bound to the original field rather than the clone; they now receive the component Filament injects, so a picker in a Repeater row builds its actions — and evaluates `fn (Get $get)` records closures — on the row's own field
+
 ## [1.1.0] - 2026-09-09
 
 ### Added

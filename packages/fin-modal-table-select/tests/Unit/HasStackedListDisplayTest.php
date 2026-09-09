@@ -5,6 +5,7 @@ declare(strict_types=1);
 use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 use FinityLabs\FinModalTableSelect\Enums\DisplayMode;
 use FinityLabs\FinModalTableSelect\Tests\Fixtures\Models\Post;
+use Illuminate\Support\HtmlString;
 
 it('is disabled by default', function () {
     expect(ModalTableSelect::make('posts')->hasStackedListDisplay())->toBeFalse();
@@ -69,4 +70,27 @@ it('has no display limit by default', function () {
 
 it('evaluates the display limit', function () {
     expect(ModalTableSelect::make('posts')->displayLimit(fn (): int => 3)->getDisplayLimit())->toBe(3);
+});
+
+it('does not wrap the secondary line by default and toggles via stackedListSecondaryWrapped', function () {
+    expect(ModalTableSelect::make('posts')->getIsStackedListSecondaryWrapped())->toBeFalse()
+        ->and(ModalTableSelect::make('posts')->stackedListSecondaryWrapped()->getIsStackedListSecondaryWrapped())->toBeTrue()
+        ->and(ModalTableSelect::make('posts')->stackedListSecondaryWrapped(fn (): bool => false)->getIsStackedListSecondaryWrapped())->toBeFalse();
+});
+
+it('passes an Htmlable secondary through untouched and casts plain values', function () {
+    $record = (new Post)->forceFill(['id' => 1, 'body' => 'plain text']);
+
+    $htmlField = ModalTableSelect::make('posts')
+        ->stackedListSecondary(fn (): HtmlString => new HtmlString('<em>styled</em>'));
+
+    expect($htmlField->getStackedListSecondary($record))->toBeInstanceOf(HtmlString::class)
+        ->and((string) $htmlField->getStackedListSecondary($record))->toBe('<em>styled</em>')
+        ->and(ModalTableSelect::make('posts')->stackedListSecondary('body')->getStackedListSecondary($record))->toBe('plain text');
+});
+
+it('does not wrap the primary line by default and toggles via stackedListPrimaryWrapped', function () {
+    expect(ModalTableSelect::make('posts')->getIsStackedListPrimaryWrapped())->toBeFalse()
+        ->and(ModalTableSelect::make('posts')->stackedListPrimaryWrapped()->getIsStackedListPrimaryWrapped())->toBeTrue()
+        ->and(ModalTableSelect::make('posts')->stackedListPrimaryWrapped(fn (): bool => false)->getIsStackedListPrimaryWrapped())->toBeFalse();
 });
