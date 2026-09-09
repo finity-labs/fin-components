@@ -21,7 +21,7 @@ Rows that say **declared in code** were attached by a developer and cannot be ch
 
 ## Languages
 
-One tab per language. The default language is required; every other language is optional and shows a **Missing** badge until it has a title and a body. **Copy from default language** starts a translation from the default text. A translation whose default text has changed since is marked **Outdated**.
+One tab per language. The default language is required; every other language is optional and shows a **Missing** badge until it has a title and a body. **Copy from default language** starts a translation from the default text.
 
 ## Images
 

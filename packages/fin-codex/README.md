@@ -273,7 +273,7 @@ Contexts that come from a `HasHelp` class are listed above the repeater as read-
 
 One tab per language from the [settings](#settings). Each tab holds the title, excerpt and body for that language, plus **Copy from default language** for starting a translation from the current default text. A non-default tab is optional as a whole: it is saved when title and body are both filled, refused with a validation message when only one of them is, and deleted when both are emptied — after a snapshot while revisions are on, so the text it held is one restore away.
 
-A translation whose default-language source has changed since it was last saved gets an **Outdated** badge in the list and a filter of its own. Detection is timestamp-based, which has one edge worth knowing: changing an article's `keywords` or `format` re-indexes every translation to the same second and clears every outdated badge on that article. Content-hash detection is not in this release.
+A language is either translated or **Missing**, in the tabs and in the list's languages column, with a *Missing language* filter. There is no "outdated" marking: the editor cannot tell a corrected typo in the default text from a rewrite, and a badge that fires on both is soon ignored. `Editor\OutdatedTranslations` still computes which translations were saved before the default language, and the scope behind it, for a host that wants to surface that itself.
 
 ### Images
 
@@ -529,7 +529,6 @@ Also worth knowing:
 - **Media rows orphaned by an article delete are not cleaned up.** They keep their file and lose their `article_id`, and appear on no Media tab.
 - **Re-importing a file article over an existing database row** is not available; the import hands back the existing row instead.
 - **Filament 5's multi-configuration resource registrations are not scanned** for `HasHelp` declarations.
-- **The outdated-translation badge is timestamp-based**, so a keywords or format change clears every badge on that article.
 
 ## Testing
 

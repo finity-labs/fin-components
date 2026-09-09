@@ -57,7 +57,6 @@ return [
         'state' => [
             'present' => 'Lefordítva',
             'missing' => 'Hiányzik',
-            'outdated' => 'Elavult',
         ],
         'filters' => [
             'published' => 'Közzétéve',
@@ -66,7 +65,6 @@ return [
             'source' => 'Forrás',
             'panel' => 'Panel',
             'missing' => 'Hiányzó nyelv',
-            'outdated' => 'Elavult nyelv',
         ],
         'tabs' => [
             'articles' => 'Cikkek',

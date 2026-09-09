@@ -21,7 +21,7 @@ Zeilen mit dem Vermerk **im Code deklariert** wurden von einer Entwicklerin oder
 
 ## Sprachen
 
-Ein Reiter je Sprache. Die Standardsprache ist Pflicht; jede weitere ist optional und trägt das Abzeichen **Fehlt**, bis sie Titel und Text hat. **Aus der Standardsprache übernehmen** beginnt eine Übersetzung mit dem Standardtext. Eine Übersetzung, deren Standardtext sich seither geändert hat, ist als **Veraltet** markiert.
+Ein Reiter je Sprache. Die Standardsprache ist Pflicht; jede weitere ist optional und trägt das Abzeichen **Fehlt**, bis sie Titel und Text hat. **Aus der Standardsprache übernehmen** beginnt eine Übersetzung mit dem Standardtext.
 
 ## Bilder
 

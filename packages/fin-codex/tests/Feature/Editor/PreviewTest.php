@@ -74,9 +74,12 @@ it('renders the unsaved body of the active tab through the core renderer on the 
 
     $html = finCodexPreviewHtml($component);
 
+    // The body sits in .codex-article__body with its language, as in the
+    // drawer: that is the class the core stylesheet's article rules hang on.
     expect($html)
         ->toContain('data-fin-codex-preview')
         ->toContain('codex-root')
+        ->toContain('<div class="codex-article__body" lang="en">')
         ->toContain('codex-callout codex-callout--warning')
         ->toContain('Before you delete')
         ->toContain('<ol class="codex-steps">')

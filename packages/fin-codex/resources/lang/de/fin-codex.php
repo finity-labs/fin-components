@@ -57,7 +57,6 @@ return [
         'state' => [
             'present' => 'Übersetzt',
             'missing' => 'Fehlt',
-            'outdated' => 'Veraltet',
         ],
         'filters' => [
             'published' => 'Veröffentlicht',
@@ -66,7 +65,6 @@ return [
             'source' => 'Quelle',
             'panel' => 'Panel',
             'missing' => 'Fehlende Sprache',
-            'outdated' => 'Veraltete Sprache',
         ],
         'tabs' => [
             'articles' => 'Artikel',

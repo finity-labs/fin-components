@@ -163,13 +163,6 @@ final class ArticlesTable
                     ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
                         ? $verdicts->scopeMissing($query, (string) $data['value'])
                         : $query),
-                SelectFilter::make('outdated')
-                    ->native(false)->preload()->searchable(false)
-                    ->label(__('fin-codex::fin-codex.editor.filters.outdated'))
-                    ->options($localeOptions)
-                    ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null)
-                        ? $verdicts->scopeOutdated($query, (string) $data['value'])
-                        : $query),
             ])
             ->recordActions([
                 EditAction::make(),
@@ -195,6 +188,12 @@ final class ArticlesTable
     /**
      * One prepared flag per configured language, so the view stays a loop.
      *
+     * Present or missing only. OutdatedTranslations also knows when the
+     * default language was saved after a translation, but the list does not
+     * paint it: a corrected typo in the default text is not a reason to
+     * alarm every other language, and a badge that fires on a typo is soon
+     * ignored.
+     *
      * @param  list<array{code: string, display: string, 'flag-icon': string}>  $languages
      *
      * @return list<array{code: string, flag: string, state: string, tooltip: string}>
@@ -205,6 +204,10 @@ final class ArticlesTable
 
         return array_map(static function (array $language) use ($states): array {
             $state = $states[$language['code']] ?? OutdatedTranslations::MISSING;
+
+            if ($state === OutdatedTranslations::OUTDATED) {
+                $state = OutdatedTranslations::PRESENT;
+            }
 
             return [
                 'code' => $language['code'],

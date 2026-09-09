@@ -21,7 +21,7 @@ A **kódban deklarált** jelölésű sorokat fejlesztő rendelte hozzá, itt nem
 
 ## Nyelvek
 
-Nyelvenként egy fül. Az alapértelmezett nyelv kötelező; minden más nyelv opcionális, és **Hiányzik** jelvényt visel, amíg nincs címe és szövege. Az **Átvétel az alapértelmezett nyelvből** az alapértelmezett szövegből indítja a fordítást. Az a fordítás, amelynek alapszövege azóta változott, **Elavult** jelölést kap.
+Nyelvenként egy fül. Az alapértelmezett nyelv kötelező; minden más nyelv opcionális, és **Hiányzik** jelvényt visel, amíg nincs címe és szövege. Az **Átvétel az alapértelmezett nyelvből** az alapértelmezett szövegből indítja a fordítást.
 
 ## Képek
 

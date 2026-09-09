@@ -16,7 +16,6 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinCodex\Editor\MediaRecorder;
-use FinityLabs\FinCodex\Editor\OutdatedTranslations;
 use FinityLabs\FinCodex\Editor\SlugRules;
 use FinityLabs\LinCodex\Enums\ArticleFormat;
 use FinityLabs\LinCodex\Models\Article;
@@ -45,14 +44,13 @@ use Spatie\LaravelSettings\Exceptions\MissingSettings;
  * it), a locale key survives a round trip, and the tab the admin was on is
  * still the open one after the copy action's confirmation modal.
  *
- * A tab carries at most one badge, and the two badges have different
- * sources. **Missing** is read from live form state, so it disappears the
- * moment the title and the body are both filled, without a save.
- * **Outdated** is read from the stored timestamps through
- * OutdatedTranslations, which knows nothing about the form: it is therefore
- * fixed for the whole page render and only clears on the next mount after a
- * save. That is the honest answer — until the tab is saved, the stored
- * translation really is older than the stored default one.
+ * A tab carries one badge at most: **Missing**, read from live form state,
+ * so it disappears the moment the title and the body are both filled,
+ * without a save. There is no "outdated" badge. OutdatedTranslations can
+ * still say that the default language was saved after a translation, but
+ * the editor does not show it: a corrected typo in the default text is
+ * not a reason to alarm every other language, and a badge that fires on
+ * a typo is soon ignored.
  */
 final class TranslationTabs
 {
@@ -60,7 +58,6 @@ final class TranslationTabs
     {
         $languages = self::languages();
         $default = $languages['default'];
-        $verdict = self::verdicts($record);
 
         $tabs = [];
 
@@ -71,50 +68,20 @@ final class TranslationTabs
 
             $tabs[$code] = Tab::make($label)
                 ->extraAttributes(['data-fin-codex-locale' => $code])
-                ->badge(static function (Get $get) use ($code, $isDefault, $verdict): ?string {
+                ->badge(static function (Get $get) use ($code, $isDefault): ?string {
                     if (blank($get("translations.{$code}.title")) || blank($get("translations.{$code}.body"))) {
                         return $isDefault ? null : __('fin-codex::fin-codex.editor.state.missing');
                     }
 
-                    if (! $isDefault && $verdict($code) === OutdatedTranslations::OUTDATED) {
-                        return __('fin-codex::fin-codex.editor.state.outdated');
-                    }
-
                     return null;
                 })
-                ->badgeColor(static fn (?string $badge): string => $badge === __('fin-codex::fin-codex.editor.state.outdated') ? 'warning' : 'gray')
+                ->badgeColor('gray')
                 ->schema(self::fields($code, $default, $record));
         }
 
         return Tabs::make('translations')
             ->livewireProperty('activeLocale')
             ->tabs($tabs);
-    }
-
-    /**
-     * One verdict lookup for the whole tab set, resolved on first use.
-     *
-     * Asking OutdatedTranslations per tab would cost one settings query and
-     * one translations query per language (CodexSettings is not a shared
-     * binding in a package install), and the create page must not query at
-     * all — it has no record to compare anything against.
-     *
-     * @return callable(string): ?string locale => PRESENT|MISSING|OUTDATED, null without a record
-     */
-    private static function verdicts(?Article $record): callable
-    {
-        /** @var array<string, string>|null $verdicts */
-        $verdicts = null;
-
-        return static function (string $code) use ($record, &$verdicts): ?string {
-            if ($record === null) {
-                return null;
-            }
-
-            $verdicts ??= app(OutdatedTranslations::class)->verdicts($record);
-
-            return $verdicts[$code] ?? null;
-        };
     }
 
     /**

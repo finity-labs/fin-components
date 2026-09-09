@@ -22,8 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Every remaining select in the editor — format, visibility, icon, the language selects on the settings page, the panel and type of a context row, and every table filter — is Filament's styled select rather than the browser's own; the short ones preload their options and drop the search box.
 - Requires fin-modal-table-select ^1.1.1.
 
+### Fixed
+
+- The article preview and the revision preview rendered the body straight inside `.codex-root`, so none of the core stylesheet's article rules — headings, paragraphs, lists, code, quotes, images — applied and the text looked nothing like the drawer. Both now wrap the body in `.codex-article__body` with its language, as the drawer and the core partial do, and the revision title takes the article title style.
+
 ### Removed
 
+- The **Outdated** badge on the language tabs, the amber ring in the list's languages column and the *Outdated language* filter. The verdict was a timestamp comparison, so correcting a typo in the default language marked every other language outdated, and restoring a revision did the same. A badge that fires on a typo is soon ignored. `Editor\OutdatedTranslations` still computes the verdict and the scope for a host that wants them; the editor shows translated or missing only.
 - The *Shown on* column of the contexts repeater. The picked page now carries its own label, key and path, so the column only repeated them.
 - The page-access trait, the installer's panel-provider and Shield edits, the policy registration and the panel-user resolver moved to [fin-support](https://github.com/finity-labs/fin-support) and [lin-support](https://github.com/finity-labs/lin-support); fin-codex requires fin-support ^0.1. `Traits\HasPageShieldSupport`, `Commands\Concerns\*`, `Panel\Concerns\ResolvesPanelUser` and `Auth\ArticlePolicyRegistration` are gone from this package; a host page that used the trait imports `FinityLabs\FinSupport\Pages\Concerns\HasPageShieldSupport` instead.
 
