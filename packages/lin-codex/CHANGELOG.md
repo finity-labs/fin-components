@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-09-09
+
 ### Added
 
 - Links to files download instead of navigating: a link whose path ends in one of `render.download_extensions` (PDF, the office formats, text, CSV and RTF by default) is stamped with a `download` attribute carrying the file name, in Markdown and HTML articles alike, and the sanitizer allows the attribute on `a`. The drawer leaves such a link to the browser rather than closing. Cached renders refresh through the markup version.
