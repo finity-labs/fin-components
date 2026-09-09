@@ -1,0 +1,11 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    paths:
+        - src
+    level: 5
+    ignoreErrors:
+        # Every trait here is for a host page or command; nothing under src/ uses them.
+        -
+            identifier: trait.unused
