@@ -35,3 +35,12 @@ it('pins the locked dev constraint for :dataset', function (string $package, str
 it('keeps dev-main aliased to 0.2.x-dev so fin-codex can require ^0.2 through a path repository', function () {
     expect(linCodexComposerJson()['extra']['branch-alias']['dev-main'] ?? null)->toBe('0.2.x-dev');
 });
+
+it('suggests laravel/ai and never requires it', function () {
+    $composer = linCodexComposerJson();
+
+    expect($composer['suggest']['laravel/ai'] ?? null)->toBeString()
+        ->and($composer['require']['laravel/ai'] ?? null)->toBeNull()
+        ->and($composer['require-dev']['laravel/ai'] ?? null)->toBeNull()
+        ->and($composer['suggest']['finity-labs/lin-ai'] ?? null)->toBeNull();
+});
