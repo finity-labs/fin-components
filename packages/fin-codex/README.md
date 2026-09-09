@@ -88,7 +88,12 @@ Register it on as many panels as you like. Each panel gets its own options, its 
 
 ### Styles
 
-There is nothing to do. The help button, the guest link and the drawer's chrome — its header buttons, search field, tabs and footer link — are Filament's own components, so they follow your panel's colours, radii and font as any other control does. Article content inside the drawer is rendered by lin-codex's partials and styled by its stylesheet, which arrives through the core's hashed route, injected into `<head>` on every panel page; fin-codex remaps that stylesheet's tokens onto the panel's grey and primary scales for light and dark mode. You do not need a custom Filament theme, and you do not need a `@source` line if you have one.
+There is nothing to do. The help button, the guest link and the drawer's chrome — its header buttons, search field, tabs and footer link — are Filament's own components, so they follow your panel's colours, radii and font as any other control does. Article content inside the drawer is rendered by lin-codex's partials and styled by its stylesheet, which arrives through the core's hashed route, injected into `<head>` on every panel page; fin-codex remaps that stylesheet's tokens onto the panel's grey and primary scales for light and dark mode. You do not need a custom Filament theme for any of that. The editor's modal pickers (related articles, the context key, the coverage page's attach dialog) are [fin-modal-table-select](https://github.com/finity-labs/fin-modal-table-select) components with views of their own, so if you *do* run a custom theme, add them to its `@source` list:
+
+```css
+/* resources/css/filament/admin/theme.css */
+@source '../../../../vendor/finity-labs/fin-modal-table-select/resources/**/*.blade.php';
+```
 
 The core drawer view stays what a page outside Filament gets. Inside a panel, fin-codex renders its own `Livewire\HelpDrawer`, a subclass of the core component that only names a different view, so every property, action and the Alpine glue are the core's.
 
@@ -250,7 +255,7 @@ Without `isPersistent: true`, Livewire update requests skip the middleware and t
 
 ## The article editor
 
-**Help → Help articles** is a normal Filament resource over lin-codex's `Article` model. A **Panels** column shows which panels an article's pages target ("any panel" for a context without one), and the filters cover published state, visibility, format, source, panel and per-language translation state.
+**Help → Help articles** is a normal Filament resource over lin-codex's `Article` model. Titles are shown in the panel's language, falling back to the default language. A **Panels** column shows which panels an article's pages target ("any panel" for a context without one), and the filters cover published state, visibility, format, source, panel and per-language translation state.
 
 Next to the article list sits a **From files** tab. If lin-codex is reading articles off disk as well as out of the database, every file article that has no database row yet is listed there with an **Import and edit** button. Importing creates the database row through the core's importer and opens it. The import is idempotent: if a row already exists for that slug it is handed back rather than overwritten, so pressing the button twice opens what the first press created. Re-importing changed file content over an existing article is not supported yet.
 
@@ -260,7 +265,7 @@ Next to the article list sits a **From files** tab. If lin-codex is reading arti
 
 ### Contexts
 
-The Contexts repeater in the form's sidebar is where you say which screens an article shows up on. Contexts are always **picked, never typed** — the panel, the type and the target come from selects built out of what is actually registered. `*` means "any panel" and is stored as a null panel id.
+The Contexts repeater in the form's sidebar is where you say which screens an article shows up on. Contexts are always **picked, never typed** — the panel and the type are selects, and the target opens a modal table of what the chosen panel actually registers for that type: for `class:` every resource and custom page with its navigation label, class, kind, path and panels; for `route:` every named GET route with the page it leads to, its name, path and panel. The picked page shows its label with the class, or the route name and path, underneath. `*` means "any panel", widens the table to every panel, and is stored as a null panel id. The modal is [fin-modal-table-select](https://github.com/finity-labs/fin-modal-table-select), which the related-articles field and the coverage page's attach dialog use too.
 
 Contexts that come from a `HasHelp` class are listed above the repeater as read-only rows and never enter form state. The mapping lives in code, so that's where you change it.
 

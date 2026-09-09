@@ -185,12 +185,14 @@ class HelpSettings extends SettingsPage
                 ->schema([
                     Select::make('default_locale')
                         ->label(__('fin-codex::fin-codex.settings.reading.default_locale'))
+                        ->native(false)->preload()->searchable(false)
                         ->helperText(__('fin-codex::fin-codex.settings.reading.default_locale_help'))
                         ->options(fn (Get $get): array => self::languageOptions($get))
                         ->live()
                         ->required(),
                     Select::make('fallback')
                         ->label(__('fin-codex::fin-codex.settings.reading.fallback'))
+                        ->native(false)->preload()->searchable(false)
                         // The core enum's own labels; fin-codex never redeclares them.
                         ->options(collect(FallbackBehaviour::cases())
                             ->mapWithKeys(fn (FallbackBehaviour $case): array => [$case->value => $case->label()])

@@ -120,6 +120,7 @@ final class RevisionsRelationManager extends RelationManager
             ])
             ->filters([
                 SelectFilter::make('locale')
+                    ->native(false)->preload()->searchable(false)
                     ->label(__('fin-codex::fin-codex.revisions.columns.locale'))
                     ->options($localeOptions),
             ])

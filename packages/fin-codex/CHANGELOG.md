@@ -13,10 +13,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `fin-codex:install` imports eleven starter articles in the configured languages, as ordinary database articles attached to the pages they describe and to the panel the plugin was installed on: an authenticated Help section about the help system — getting help, writing articles, coverage, settings, and declaring help in code (the last attached to the article editor) — and a public Your account section for Filament's own screens — signing in, creating an account, a forgotten password, email verification and the profile page. `--skip-starter-articles` leaves them out; an existing slug is left alone.
 
 - A **Panels** column on the article list, one badge per panel the article's pages target, and a matching panel filter.
+- The three pickers that used to be long selects are modal tables, through [fin-modal-table-select](https://github.com/finity-labs/fin-modal-table-select): the related articles on the form and the coverage page's attach dialog pick from a table of title, slug, languages, source and published state; the key of a context row picks from a table of the pages the row's panel and type actually register — the page as the panel names it, the class or route name, whether it is a resource or a custom page, its path and its panels. Search and sort work on the columns. The picked rows show as stacked lists: the related articles with the slug under each title, the context key with the class, or the route name and its path, under the page's label; both lists wrap their lines rather than truncate, since a class or route name is long and the sidebar is not.
 
 ### Changed
 
+- The editor names articles in the panel's language — the article list, the related-articles options and the coverage page's attach dialog — falling back to the default language when that translation is missing, and to the slug when there is no title at all.
 - The article list's filters sit behind Filament's filter button in the table header, Filament's default, instead of being spread above the table.
+- Every remaining select in the editor — format, visibility, icon, the language selects on the settings page, the panel and type of a context row, and every table filter — is Filament's styled select rather than the browser's own; the short ones preload their options and drop the search box.
+- Requires fin-modal-table-select ^1.1.1.
+
+### Removed
+
+- The *Shown on* column of the contexts repeater. The picked page now carries its own label, key and path, so the column only repeated them.
 - The page-access trait, the installer's panel-provider and Shield edits, the policy registration and the panel-user resolver moved to [fin-support](https://github.com/finity-labs/fin-support) and [lin-support](https://github.com/finity-labs/lin-support); fin-codex requires fin-support ^0.1. `Traits\HasPageShieldSupport`, `Commands\Concerns\*`, `Panel\Concerns\ResolvesPanelUser` and `Auth\ArticlePolicyRegistration` are gone from this package; a host page that used the trait imports `FinityLabs\FinSupport\Pages\Concerns\HasPageShieldSupport` instead.
 
 ## [0.2.0] - 2026-09-09

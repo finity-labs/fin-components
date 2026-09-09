@@ -338,3 +338,26 @@ it('shows the panels an article\'s pages target, and filters by panel', function
         ->assertCanSeeTableRecords([$articles['users']])
         ->assertCanNotSeeTableRecords([$articles['billing'], $articles['zebra']]);
 });
+
+it('shows titles in the panel language, falling back to the default language', function (): void {
+    $user = finCodexListUser();
+    finCodexListSeed();
+    $this->usesPanel('admin', $user);
+
+    app()->setLocale('de');
+
+    $html = Livewire::test(ListArticles::class)->html();
+
+    // billing and users have German titles; users/roles and zebra are English only.
+    expect(finCodexListRow($html, 'billing'))->toContain('>Abrechnung<')
+        ->and(finCodexListRow($html, 'users'))->toContain('>Benutzer<')
+        ->and(finCodexListRow($html, 'users/roles'))->toContain('>Roles<')
+        ->and(finCodexListRow($html, 'zebra'))->toContain('>Zebra<');
+
+    app()->setLocale('en');
+
+    $html = Livewire::test(ListArticles::class)->html();
+
+    expect(finCodexListRow($html, 'billing'))->toContain('>Billing<')
+        ->and(finCodexListRow($html, 'users'))->toContain('>Users<');
+});
