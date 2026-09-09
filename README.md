@@ -10,6 +10,8 @@ Monorepo for Finity Labs' Laravel and Filament packages. Each package can be ins
 | [Mail](packages/fin-mail) | `composer require finity-labs/fin-mail` |
 | [ModalTableSelect](packages/fin-modal-table-select) | `composer require finity-labs/fin-modal-table-select` |
 | [Sentinel](packages/fin-sentinel) | `composer require finity-labs/fin-sentinel` |
+| [Support for Filament](packages/fin-support) | `composer require finity-labs/fin-support` |
+| [Support for Laravel](packages/lin-support) | `composer require finity-labs/lin-support` |
 
 See each package's README for documentation.
 
