@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The resource and the two pages are mounted at `codex-articles`, `codex-settings` and `codex-coverage` instead of `help-articles`, `help-settings` and `help-coverage`: "help" is a word a host's own pages may want, "codex" is this package's. Route names follow (`filament.{panel}.resources.codex-articles.*`, `filament.{panel}.pages.codex-settings`, `filament.{panel}.pages.codex-coverage`); a stored `route:` context or a bookmark naming the old slugs needs updating, a `class:` context does not.
+- The Help group lists articles, coverage and settings in that order, settings last, with or without a `navigationSort()` on the plugin: without one they take sorts 1, 2 and 3 rather than the order the translated labels happen to sort in.
 - Uploads are stored under their own slugified name rather than a hash — `User Guide (final).pdf` becomes `user-guide-final.pdf`, a repeat in the same directory `-2` — so the URL an article links and the name a browser saves a document as both read like the upload. Files already stored keep their names.
 - Uploads spread over dated folders: `MediaRecorder::directory()` expands the `{Y}`, `{m}` and `{d}` placeholders lin-codex's `media.directory` may carry, and the core's default is now `codex/{Y}/{m}`. A stored image keeps the path it was written under. The default itself lives in lin-codex 0.2.2.
 - The editor names articles in the panel's language — the article list, the related-articles options and the coverage page's attach dialog — falling back to the default language when that translation is missing, and to the slug when there is no title at all.

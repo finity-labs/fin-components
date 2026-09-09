@@ -75,7 +75,7 @@ class HelpCoverage extends Page implements HasTable
     use InteractsWithTable;
     use ResolvesPanelUser;
 
-    protected static ?string $slug = 'help-coverage';
+    protected static ?string $slug = 'codex-coverage';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
@@ -85,15 +85,14 @@ class HelpCoverage extends Page implements HasTable
     }
 
     /**
-     * Two slots after the article resource: the settings page takes the slot
-     * between them, and both read the panel's single navigationSort() option.
-     * Null stays null, in which case Filament sorts by label.
+     * One slot after the article resource; the settings page takes the slot
+     * after this one. All three read the panel's single navigationSort()
+     * option, and with none set they still sit in that order — 1, 2, 3 —
+     * rather than in whatever order the translated labels happen to sort.
      */
     public static function getNavigationSort(): ?int
     {
-        $sort = FinCodexPlugin::get()->getNavigationSort();
-
-        return $sort === null ? null : $sort + 2;
+        return (FinCodexPlugin::get()->getNavigationSort() ?? 1) + 1;
     }
 
     public static function getNavigationLabel(): string
