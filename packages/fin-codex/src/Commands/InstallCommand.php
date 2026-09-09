@@ -233,12 +233,14 @@ class InstallCommand extends Command
      * The articles shipped with this package in en, de and hu, imported as
      * ordinary database articles the admin can edit or delete: about the help
      * system itself (opening the drawer, writing articles, the coverage and
-     * settings pages, declaring help in code) and about Filament's own
-     * screens (signing in, registering, a forgotten password, email
-     * verification, the profile). Each carries the context of the page it
-     * describes and the panel it was installed on, so those pages have help
-     * from the first day — the guest pages included, where the drawer shows
-     * public articles to visitors.
+     * settings pages, declaring help in code) under an authenticated "help"
+     * section, and about Filament's own screens (signing in, registering, a
+     * forgotten password, email verification, the profile) under a public
+     * "account" section — public because the core hides an article whose
+     * ancestor the viewer may not read, so a guest on the sign-in page only
+     * sees an article whose whole path is public. Each carries the context
+     * of the page it describes and the panel it was installed on, so those
+     * pages have help from the first day.
      *
      * Only the configured languages are kept, and only when at least one of
      * them is a language the articles exist in — an install in French alone
@@ -314,8 +316,10 @@ class InstallCommand extends Command
             $this->line('  Starter articles already present, left as they are: '.implode(', ', $skipped));
         }
 
-        if ($imported->isNotEmpty()) {
-            $this->info('  Starter articles imported in '.implode(', ', $locales).': '.implode(', ', $slugs));
+        $created = array_values(array_diff($slugs, $skipped));
+
+        if ($imported->isNotEmpty() && $created !== []) {
+            $this->info('  Starter articles imported in '.implode(', ', $locales).': '.implode(', ', $created));
         }
     }
 
@@ -425,18 +429,27 @@ class InstallCommand extends Command
     }
 
     /**
-     * The starter article slugs, from the English files.
+     * The starter article slugs, from the English files: every Markdown file
+     * under the English docs folder, `index.md` standing for its folder.
      *
      * @return list<string>
      */
     public static function starterSlugs(): array
     {
-        $files = glob(self::starterDocsPath().'/en/help/*.md') ?: [];
+        $root = self::starterDocsPath().'/'.self::STARTER_LOCALES[0];
         $slugs = [];
 
-        foreach ($files as $file) {
-            $name = basename($file, '.md');
-            $slugs[] = $name === 'index' ? 'help' : 'help/'.$name;
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS)) as $file) {
+            if ($file->getExtension() !== 'md') {
+                continue;
+            }
+
+            $relative = substr($file->getPathname(), strlen($root) + 1, -3);
+            $slug = str_ends_with($relative, '/index') ? substr($relative, 0, -6) : ($relative === 'index' ? '' : $relative);
+
+            if ($slug !== '') {
+                $slugs[] = $slug;
+            }
         }
 
         sort($slugs);

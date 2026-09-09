@@ -228,7 +228,7 @@ it('imports the starter articles in the configured languages only, as database a
         ->and($articles->pluck('slug')->all())->toBe(InstallCommand::starterSlugs())
         ->and($articles->pluck('source_path')->unique()->all())->toBe([null])
         ->and(ArticleTranslation::query()->distinct()->pluck('locale')->sort()->values()->all())->toBe(['de', 'en'])
-        ->and(ArticleTranslation::query()->count())->toBe(20)
+        ->and(ArticleTranslation::query()->count())->toBe(22)
         ->and($articles->firstWhere('slug', 'help/settings')?->contexts()->value('key'))->toBe(HelpSettings::class)
         // The package's docs folder is not left behind as a content source.
         ->and(config('lin-codex.sources.filesystem.paths'))->not->toContain(InstallCommand::starterDocsPath());
@@ -244,7 +244,7 @@ it('leaves existing starter articles alone on a repeated install', function () {
 
     expect($exitCode)->toBe(0)
         ->and($output)->toContain('already present')
-        ->and(Article::query()->count())->toBe(10)
+        ->and(Article::query()->count())->toBe(11)
         ->and(ArticleTranslation::query()->where('locale', 'en')->where('title', 'Edited by the admin')->count())->toBe(1);
 });
 
@@ -291,10 +291,10 @@ it('stamps the installed panel onto the starter articles\' pages, and leaves the
 
     $panels = ArticleContext::query()->pluck('panel_id')->unique()->all();
 
-    expect(Article::query()->count())->toBe(10)
+    expect(Article::query()->count())->toBe(11)
         ->and($panels)->toBe(['staff'])
         // The guest pages' articles are public, so a visitor to the staff login sees them.
-        ->and(Article::query()->where('slug', 'help/signing-in')->sole()->visibility)->toBe(Visibility::Public);
+        ->and(Article::query()->where('slug', 'account/signing-in')->sole()->visibility)->toBe(Visibility::Public);
 
     // Through the models, so the core's hooks cascade the contexts with the rows.
     Article::query()->get()->each->delete();
@@ -304,6 +304,20 @@ it('stamps the installed panel onto the starter articles\' pages, and leaves the
 
     expect($exitCode)->toBe(0)
         ->and($output)->toContain('No panel providers found')
-        ->and(Article::query()->count())->toBe(10)
+        ->and(Article::query()->count())->toBe(11)
         ->and(ArticleContext::query()->whereNotNull('panel_id')->count())->toBe(0);
+});
+
+it('gives a visitor on the sign-in page the sign-in article, and nothing from the authenticated section', function () {
+    TempAppTree::writePanelProvider('admin');
+
+    finCodexRunCommand('fin-codex:install', ['--panel' => 'admin', '--locales' => 'en']);
+
+    // The harness's own admin panel, signed out: the drawer under the login
+    // form lists exactly the public article attached to Filament's login page.
+    $html = $this->get('/admin/login')->assertOk()->getContent();
+
+    expect($html)->toContain('data-codex-page-count="1"')
+        ->toContain('data-codex-page-article="account/signing-in"')
+        ->not->toContain('data-codex-page-article="help');
 });
