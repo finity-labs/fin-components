@@ -14,7 +14,6 @@ use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\LinCodex\Ai\AiReason;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Translation\ArticleTranslator;
-use RuntimeException;
 
 /**
  * Copy from default's twin, with a translation in the middle.
@@ -60,11 +59,10 @@ use RuntimeException;
  * A failure is a value, never an exception - lin-codex reduces everything to
  * an AiReason key before this class sees it - so the tab keeps the text it
  * had and the reason is shown as the notification body, with a pointer to Help
- * settings for the two states the admin can fix there. Only `unknown` is
- * reported, and it has to be reported synthetically: the original throwable is
- * gone by now, so the host's error tooling gets one stack that at least names
- * the action and the target language. Once lin-codex reports the throwable
- * itself, that line goes.
+ * settings for the two states the admin can fix there. Nothing is reported
+ * from here: since lin-codex 0.3.1 the throwable behind an `unknown` verdict is
+ * handed to the host's error tooling once, at the seam that could not name it,
+ * so this class only shows the label.
  */
 final class TranslateWithAiAction
 {
@@ -114,16 +112,6 @@ final class TranslateWithAiAction
 
                     if (in_array($result->reason, [AiReason::AUTHENTICATION_FAILED, AiReason::UNAVAILABLE], true)) {
                         $body .= ' '.__('fin-codex::fin-codex.editor.translate.check_settings');
-                    }
-
-                    if ($result->reason === AiReason::UNKNOWN) {
-                        $provider = $settings['provider'] ?? null;
-
-                        report(new RuntimeException(sprintf(
-                            'AI translation into %s failed with reason [unknown] via provider %s.',
-                            $code,
-                            is_string($provider) ? $provider : '',
-                        )));
                     }
 
                     Notification::make()

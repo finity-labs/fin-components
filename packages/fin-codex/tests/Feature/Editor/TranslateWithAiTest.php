@@ -337,7 +337,7 @@ it('leaves the tab untouched and names the reason when the call fails', function
     'timeout is the bare label' => [AiReason::TIMEOUT, false],
 ]);
 
-it('reports an unknown reason to the host error tooling', function (): void {
+it('leaves reporting an unknown reason to lin-codex', function (): void {
     Exceptions::fake();
 
     finCodexFakeAi((new FakeAiClient)->push(new RuntimeException('boom')));
@@ -355,9 +355,13 @@ it('reports an unknown reason to the host error tooling', function (): void {
                 ->body(AiReason::label(AiReason::UNKNOWN)),
         );
 
-    Exceptions::assertReported(
-        fn (RuntimeException $e): bool => str_contains($e->getMessage(), '[unknown]') && str_contains($e->getMessage(), 'de'),
-    );
+    // lin-codex 0.3.1 hands the original throwable to report() where the
+    // reason becomes unknown, so the host's error tooling gets the real
+    // stack...
+    Exceptions::assertReported(fn (RuntimeException $e): bool => $e->getMessage() === 'boom');
+
+    // ...and this package no longer adds a synthetic one beside it.
+    Exceptions::assertNotReported(fn (RuntimeException $e): bool => str_contains($e->getMessage(), '[unknown]'));
 });
 
 it('never reports a reason it can name', function (): void {
