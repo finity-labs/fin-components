@@ -36,12 +36,13 @@ jobs:
         run: vendor/bin/pest
 
   laravel:
-    name: ${{ matrix.package }} | PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}${{ matrix.database && format(' / {0}', matrix.database) || '' }}
+    name: ${{ matrix.package }} | PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}${{ matrix.database && format(' / {0}', matrix.database) || '' }}${{ matrix.sdk && ' / +sdk' || '' }}
     runs-on: ubuntu-latest
     continue-on-error: ${{ matrix.experimental == true }}
     strategy:
       fail-fast: false
       # One include block per lin-* package; duplicate the five rows when the next lin-* package arrives.
+      # The two `sdk: true` rows are lin-codex only: they install laravel/ai so its AI tests run instead of skipping.
       matrix:
         include:
           - { package: lin-codex, php: '8.3', laravel: '^13.0', testbench: '^11.0' }
@@ -52,6 +53,8 @@ jobs:
           - { package: lin-codex, php: '8.3', laravel: '^13.0', testbench: '^11.0', database: mysql }
           - { package: lin-codex, php: '8.3', laravel: '^13.0', testbench: '^11.0', database: pgsql }
           - { package: lin-codex, php: '8.3', laravel: '^12.0', testbench: '^10.0', livewire: '^3.0' }
+          - { package: lin-codex, php: '8.3', laravel: '^12.0', testbench: '^10.0', sdk: true }
+          - { package: lin-codex, php: '8.4', laravel: '^13.0', testbench: '^11.0', sdk: true }
           - { package: lin-support, php: '8.3', laravel: '^13.0', testbench: '^11.0' }
           - { package: lin-support, php: '8.4', laravel: '^13.0', testbench: '^11.0' }
           - { package: lin-support, php: '8.2', laravel: '^12.0', testbench: '^10.0' }
@@ -91,6 +94,17 @@ jobs:
             --with "illuminate/contracts:${{ matrix.laravel }}" \
             --with "livewire/livewire:${{ matrix.livewire || '^4.0' }}" \
             --with "orchestra/testbench:${{ matrix.testbench }}"
+
+      # The SDK stays a suggest dependency, so the +sdk rows install it after the
+      # normal install and then put the manifest back: composer require writes a
+      # require line that lin-codex's ComposerConstraintsTest exists to catch.
+      # Restoring composer.json leaves vendor/ (and so class_exists) untouched.
+      - name: Install laravel/ai
+        if: matrix.sdk
+        working-directory: packages/${{ matrix.package }}
+        run: |
+          composer require "laravel/ai:^0.11" --no-interaction --no-progress
+          git checkout -- composer.json
 
       - name: Run tests
         working-directory: packages/${{ matrix.package }}
