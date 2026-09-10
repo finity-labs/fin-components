@@ -3,6 +3,7 @@
 use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use FinityLabs\FinCodex\Ai\NotificationLocale;
+use FinityLabs\FinCodex\Ai\NotificationPanel;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\ListArticles;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
@@ -367,6 +368,27 @@ it('records the language the panel is being read in once for the press, not once
     Queue::assertPushed(TranslateArticle::class, 2);
 
     Context::shouldHaveReceived('add', [NotificationLocale::KEY, 'de'])->once();
+});
+
+it('records the panel the press was made on once for the press', function (): void {
+    Queue::fake();
+
+    $gapDe = finCodexBulkArticle('users', ['en' => 'Users', 'hu' => 'Felhasználók']);
+    $gapBoth = finCodexBulkArticle('zebra', ['en' => 'Zebra']);
+
+    expect(Context::get(NotificationPanel::KEY))->toBeNull();
+
+    Context::spy();
+
+    Livewire::test(ListArticles::class)
+        ->callTableBulkAction('translate_missing', [$gapDe, $gapBoth], data: ['locales' => ['de', 'hu']])
+        ->assertHasNoTableBulkActionErrors();
+
+    Queue::assertPushed(TranslateArticle::class, 2);
+
+    // Two articles are two jobs, but one panel and one request: the listener
+    // reads it back on a worker that has no panel of its own.
+    Context::shouldHaveReceived('add', [NotificationPanel::KEY, 'admin'])->once();
 });
 
 it('fills every gap when the pick is left as it is', function (): void {

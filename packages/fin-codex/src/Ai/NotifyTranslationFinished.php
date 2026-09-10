@@ -8,6 +8,7 @@ use BadMethodCallException;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
+use Filament\Panel;
 use FinityLabs\FinCodex\Editor\ArticleTitle;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\LinCodex\Ai\AiReason;
@@ -37,6 +38,15 @@ use Throwable;
  * event carries ids and no models, so a user deleted between dispatch and
  * work simply means nobody is told.
  *
+ * WHICH panel is the press's, not the worker's. A queued job has no current
+ * panel, so both the guard above and the edit URL below would otherwise fall
+ * back to the default panel: on a host whose default panel is not the one the
+ * admin pressed in, that reads the captured id through the wrong provider and
+ * builds a route the default panel never registered. NotificationPanel carries
+ * the press's panel id over in the same context the locale travels in, and it
+ * is resolved here once, by id. With nothing recorded, or a panel since
+ * removed, the current-or-default panel answers as it always did.
+ *
  * Delivery is inline, through the notifiable itself, rather than through the
  * builder's own database send: that one enqueues Filament's queued database
  * notification, so on any driver but sync it returns before the row exists
@@ -44,12 +54,12 @@ use Throwable;
  * below. Inline delivery writes the same row - format filament, persistent -
  * inside this call on every driver, which is what makes the catch true.
  *
- * Nothing here looks for the notifications table and nothing walks the
- * panels (locked). Filament and Laravel already cope with a host that never
- * ran the notifications migration; all this listener adds is a log line with
- * enough context to say which article, which admin and which languages the
- * lost notification was about. A host without the table keeps its finished
- * translations either way.
+ * Nothing here looks for the notifications table and nothing reads a list of
+ * panels to guess with (locked). Filament and Laravel already cope with a
+ * host that never ran the notifications migration; all this listener adds is
+ * a log line with enough context to say which article, which admin and which
+ * languages the lost notification was about. A host without the table keeps
+ * its finished translations either way.
  *
  * A report with failures also writes a warning line, whether or not the
  * notification could be stored: a failed language is something the host's log
@@ -90,7 +100,9 @@ final class NotifyTranslationFinished
             return;
         }
 
-        $user = $this->user($event->userId);
+        $panel = NotificationPanel::current();
+
+        $user = $this->user($event->userId, $panel);
 
         if ($user === null) {
             return;
@@ -98,9 +110,17 @@ final class NotifyTranslationFinished
 
         $article = Article::query()->with('translations')->find($event->articleId);
 
-        $notification = $this->build($event, $article);
-
+        /*
+         * Composing is inside the catch, not above it. Building the button's
+         * URL is the one step here that can throw on a host shape this
+         * listener cannot see - a panel with tenancy has no tenant to name on
+         * a worker - and a throwable escaping here fails a job whose
+         * translations are already written. A lost notification is a logged
+         * error; a lost run would not be.
+         */
         try {
+            $notification = $this->build($event, $article, $panel);
+
             if (! method_exists($user, 'notifyNow')) {
                 throw new BadMethodCallException(sprintf('%s cannot be notified: it does not use the Notifiable trait.', $user::class));
             }
@@ -118,13 +138,14 @@ final class NotifyTranslationFinished
     }
 
     /**
-     * The admin who queued the run, read through the current-or-default
-     * panel's guard provider; null when the id belongs to nobody or the guard
+     * The admin who queued the run, read through the guard provider of the
+     * panel the press was made on - the current-or-default panel's when the
+     * press recorded none; null when the id belongs to nobody or the guard
      * names no provider at all.
      */
-    private function user(int $id): ?Authenticatable
+    private function user(int $id, ?Panel $panel): ?Authenticatable
     {
-        $guard = Filament::getAuthGuard();
+        $guard = $panel?->getAuthGuard() ?? Filament::getAuthGuard();
 
         $provider = Auth::createUserProvider((string) config("auth.guards.{$guard}.provider"));
 
@@ -137,12 +158,12 @@ final class NotifyTranslationFinished
      * one locale covers the lot; the trait restores the previous one on the
      * way out, whether or not composing threw.
      */
-    private function build(ArticleTranslated $event, ?Article $article): Notification
+    private function build(ArticleTranslated $event, ?Article $article, ?Panel $panel): Notification
     {
         /** @var Notification $notification */
         $notification = $this->withLocale(
             NotificationLocale::current(),
-            fn (): Notification => $this->compose($event, $article),
+            fn (): Notification => $this->compose($event, $article, $panel),
         );
 
         return $notification;
@@ -150,10 +171,12 @@ final class NotifyTranslationFinished
 
     /**
      * Title, body, status and - for an article that still exists - the one
-     * button back to its edit page. With no current panel the URL resolves
-     * through the default panel and the plugin's resource override.
+     * button back to its edit page, on the panel the press was made on: its
+     * own resource override, and its own route. With no panel recorded the URL
+     * resolves through the current-or-default panel, which on a worker is the
+     * default one.
      */
-    private function compose(ArticleTranslated $event, ?Article $article): Notification
+    private function compose(ArticleTranslated $event, ?Article $article, ?Panel $panel): Notification
     {
         $notification = Notification::make()
             ->title($this->title($event->report))
@@ -166,10 +189,16 @@ final class NotifyTranslationFinished
         }
 
         if ($article !== null) {
+            $panelId = $panel?->getId();
+
             $notification->actions([
                 Action::make('open')
                     ->label(__('fin-codex::fin-codex.notification.open'))
-                    ->url(FinCodexPlugin::articleResourceClass()::getUrl('edit', ['record' => $event->articleId]))
+                    ->url(FinCodexPlugin::articleResourceClass($panelId)::getUrl(
+                        'edit',
+                        ['record' => $event->articleId],
+                        panel: $panelId,
+                    ))
                     ->button(),
             ]);
         }

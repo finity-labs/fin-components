@@ -2,6 +2,7 @@
 
 use Filament\Notifications\DatabaseNotification;
 use FinityLabs\FinCodex\Ai\NotificationLocale;
+use FinityLabs\FinCodex\Ai\NotificationPanel;
 use FinityLabs\FinCodex\Ai\NotifyTranslationFinished;
 use FinityLabs\FinCodex\Editor\ArticleTitle;
 use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 /*
  * AIBULK-03: the admin who queued a translation run is told how it went.
@@ -415,6 +417,96 @@ it('logs an error with context and lets the job finish when the notification can
             && $context['exception'] instanceof QueryException);
 
     Log::shouldHaveReceived('warning')->once();
+});
+
+it('resolves the recipient and the button through the panel the press was made on, not the default one', function (): void {
+    $user = finCodexNotifyUser();
+    $article = finCodexNotifyArticle();
+
+    /*
+     * A host shaped like the ones this listener used to lose: the panel the
+     * admin pressed in is NOT the default one, and the default panel's guard
+     * cannot answer for the admin at all - its provider does not exist, the
+     * stand-in here for a second panel on a second table. A worker has no
+     * current panel, so a listener that guessed would ask exactly this guard.
+     */
+    config(['auth.guards.web.provider' => 'nobody-at-all']);
+
+    finCodexNotifyFire($article, $user->id, finCodexNotifyReport(['de']));
+
+    expect(finCodexNotificationsFor($user))->toHaveCount(0);
+
+    // The press recorded its panel beside its locale, and the payload carried
+    // both to the worker.
+    Context::add(NotificationPanel::KEY, 'staff');
+
+    finCodexNotifyFire($article, $user->id, finCodexNotifyReport(['de']));
+
+    $stored = finCodexNotificationsFor($user);
+
+    expect($stored)->toHaveCount(1);
+
+    // And the button opens the article on that panel - through its own
+    // resource override, at its own route - rather than on the default one.
+    expect($stored->first()->data['actions'][0]['url'])
+        ->toContain('/staff/')
+        ->toEndWith('/codex-articles/'.$article->id.'/edit')
+        ->not->toContain('/admin/');
+});
+
+it('falls back to the current-or-default panel when the press recorded none', function (): void {
+    $user = finCodexNotifyUser();
+    $article = finCodexNotifyArticle();
+
+    // An older payload, or a job queued by something other than the two
+    // actions: nothing in the context to read, and the behaviour is the one
+    // this listener always had.
+    expect(Context::get(NotificationPanel::KEY))->toBeNull();
+
+    finCodexNotifyFire($article, $user->id, finCodexNotifyReport(['de']));
+
+    expect(finCodexNotificationsFor($user)->first()->data['actions'][0]['url'])
+        ->toContain('/admin/')
+        ->toEndWith('/codex-articles/'.$article->id.'/edit');
+
+    // A panel that has since been taken out of the host reads the same way:
+    // the id resolves to nothing and nothing is guessed from it.
+    Context::add(NotificationPanel::KEY, 'panel-that-was-removed');
+
+    finCodexNotifyFire($article, $user->id, finCodexNotifyReport(['hu']));
+
+    expect(finCodexNotificationsFor($user))->toHaveCount(2)
+        ->and(finCodexNotificationsFor($user)->last()->data['actions'][0]['url'])->toContain('/admin/');
+});
+
+it('logs the failure and lets the job finish when the notification cannot even be built', function (): void {
+    $user = finCodexNotifyUser();
+    $article = finCodexNotifyArticle();
+
+    finCodexFakeAi(FakeAiClient::translating(['title' => 'Benutzer', 'excerpt' => null, 'body' => 'Text']));
+    finCodexEnableAi();
+
+    /*
+     * The panel recorded carries no article resource, so the edit URL names a
+     * route it never registered and composing throws - the step that used to
+     * sit one line above the catch, where a throwable failed a job whose
+     * translations were already written.
+     */
+    Context::add(NotificationPanel::KEY, 'plain');
+
+    Log::spy();
+
+    dispatch_sync(new TranslateArticle($article->id, ['de'], $user->id));
+
+    expect(ArticleTranslation::query()->where('article_id', $article->id)->where('locale', 'de')->exists())->toBeTrue()
+        ->and(finCodexNotificationsFor($user))->toHaveCount(0);
+
+    Log::shouldHaveReceived('error')
+        ->once()
+        ->withArgs(fn (string $message, array $context): bool => $message === 'fin-codex: could not store the translation notification'
+            && $context['article_id'] === $article->id
+            && $context['user_id'] === $user->id
+            && $context['exception'] instanceof RouteNotFoundException);
 });
 
 it('keeps the queued job green when the store fails inside it', function (): void {

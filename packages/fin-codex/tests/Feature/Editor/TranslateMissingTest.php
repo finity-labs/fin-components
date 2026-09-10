@@ -1,6 +1,7 @@
 <?php
 
 use FinityLabs\FinCodex\Ai\NotificationLocale;
+use FinityLabs\FinCodex\Ai\NotificationPanel;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\ListArticles;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
@@ -312,6 +313,24 @@ it('records the language the panel is being read in with the press', function ()
     // Laravel serialises the context into the payload it just wrote and
     // restores it on the worker, which is how the listener gets to read it.
     expect(Context::get(NotificationLocale::KEY))->toBe('de');
+});
+
+it('records the panel the press was made on with the press', function (): void {
+    Queue::fake();
+
+    // The worker that runs the job has no current panel, so a press on a
+    // panel that is not the host's default one is the only place the panel
+    // can be picked up: the listener needs it for the guard it reads the
+    // admin through and for the edit page it links.
+    expect(Context::get(NotificationPanel::KEY))->toBeNull();
+
+    Livewire::test(ListArticles::class)
+        ->callTableAction('translate_missing', $this->gap, data: ['locales' => ['hu']])
+        ->assertHasNoTableActionErrors();
+
+    Queue::assertPushed(TranslateArticle::class, 1);
+
+    expect(Context::get(NotificationPanel::KEY))->toBe('admin');
 });
 
 it('queues every pre-checked language when the pick is left as it is', function (): void {
