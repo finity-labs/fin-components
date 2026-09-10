@@ -29,7 +29,9 @@ use FinityLabs\FinSupport\Pages\Concerns\HasPageShieldSupport;
 use FinityLabs\LinCodex\Ai\AiAvailability;
 use FinityLabs\LinCodex\Ai\AiAvailabilityCheck;
 use FinityLabs\LinCodex\Ai\AiCallFailed;
+use FinityLabs\LinCodex\Ai\AiReason;
 use FinityLabs\LinCodex\Ai\Contracts\AiClient;
+use FinityLabs\LinCodex\Ai\ProviderCatalog;
 use FinityLabs\LinCodex\Enums\FallbackBehaviour;
 use FinityLabs\LinCodex\Models\ArticleRevision;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
@@ -345,6 +347,22 @@ class HelpSettings extends SettingsPage
                 ->placeholder(fn (): string => AiSettings::storedApiKey() !== null
                     ? (string) __('fin-codex::fin-codex.settings.ai.key_stored')
                     : (string) __('fin-codex::fin-codex.settings.ai.key_missing'))
+                ->helperText(fn (Get $get): ?string => ProviderCatalog::isKeyless((string) $get('ai.provider'))
+                    ? (string) __('fin-codex::fin-codex.settings.ai.ollama_help')
+                    : null)
+                // Asked for only when there is nothing else to reach the
+                // provider with: no key of its own in storage, and none in the
+                // SDK's own config for it.
+                ->required(function (Get $get): bool {
+                    $provider = (string) ($get('ai.provider') ?? '');
+
+                    return (bool) $get('ai.enabled')
+                        && $provider !== ''
+                        && ! ProviderCatalog::isKeyless($provider)
+                        && AiSettings::storedApiKey() === null
+                        && ! ProviderCatalog::envConfigured($provider);
+                })
+                ->suffixActions([$this->testConnectionAction(), $this->removeKeyAction()])
                 ->columnSpanFull(),
 
             TextInput::make('ai.timeout')
@@ -395,6 +413,99 @@ class HelpSettings extends SettingsPage
             ->modalHeading(__('fin-codex::fin-codex.settings.ai.reset_instructions_heading'))
             ->modalDescription(__('fin-codex::fin-codex.settings.ai.reset_instructions_description'))
             ->action(fn (Set $set) => $set('ai.translation_instructions', DefaultInstructions::TEXT));
+    }
+
+    /**
+     * One round trip to the provider with what the form holds right now.
+     *
+     * Independent of the toggle: the point of the button is to find out
+     * whether the settings work before switching AI on. It changes nothing on
+     * the form and nothing in storage — the key it sends is the typed one,
+     * else the stored one, else null, which is the seam's way of saying "use
+     * the SDK's own credential".
+     *
+     * The seam answers null or a reason key and never echoes a model, so the
+     * model named in the notice is the one that was sent: the form's id, else
+     * the provider's Default tier, else the plain "provider default" phrase
+     * for a seam that cannot list tiers.
+     */
+    private function testConnectionAction(): Action
+    {
+        return Action::make('test_connection')
+            ->label(__('fin-codex::fin-codex.settings.ai.test_connection'))
+            ->icon(Heroicon::OutlinedSignal)
+            ->action(function (Get $get): void {
+                $provider = (string) ($get('ai.provider') ?? '');
+
+                if ($provider === '') {
+                    Notification::make()
+                        ->warning()
+                        ->title(__('fin-codex::fin-codex.settings.ai.test_connection_no_provider'))
+                        ->send();
+
+                    return;
+                }
+
+                // Deferred wire:model values reach the server with the action
+                // call, so the key typed a moment ago is already here.
+                $typed = (string) ($get('ai.api_key') ?? '');
+                $model = trim((string) ($get('ai.model') ?? ''));
+
+                $reason = app(AiClient::class)->testConnection(
+                    $provider,
+                    $model !== '' ? $model : null,
+                    $typed !== '' ? $typed : AiSettings::storedApiKey(),
+                );
+
+                if ($reason !== null) {
+                    Notification::make()
+                        ->danger()
+                        ->title(__('fin-codex::fin-codex.settings.ai.test_connection_failed'))
+                        ->body(AiReason::label($reason))
+                        ->send();
+
+                    return;
+                }
+
+                Notification::make()
+                    ->success()
+                    ->title(__('fin-codex::fin-codex.settings.ai.test_connection_ok', [
+                        'provider' => app(AiClient::class)->providers()[$provider] ?? $provider,
+                        'model' => $model !== ''
+                            ? $model
+                            : ($this->tierModels($provider)['default'] ?? (string) __('fin-codex::fin-codex.settings.ai.provider_default')),
+                    ]))
+                    ->send();
+            });
+    }
+
+    /**
+     * Forget the stored key now, without saving the rest of the page.
+     *
+     * The placeholder beside it and this button's own visible() both read
+     * storage on every render, so the field flips to "no key stored" on the
+     * re-render that follows with no extra state to keep. write() seeds an
+     * unseeded group, so the action cannot fail on a host that never ran the
+     * AI settings migration — where it is hidden anyway, nothing being stored.
+     */
+    private function removeKeyAction(): Action
+    {
+        return Action::make('remove_key')
+            ->label(__('fin-codex::fin-codex.settings.ai.remove_key'))
+            ->icon(Heroicon::OutlinedTrash)
+            ->color('danger')
+            ->visible(fn (): bool => AiSettings::storedApiKey() !== null)
+            ->requiresConfirmation()
+            ->modalHeading(__('fin-codex::fin-codex.settings.ai.remove_key_heading'))
+            ->modalDescription(__('fin-codex::fin-codex.settings.ai.remove_key_description'))
+            ->action(function (): void {
+                AiSettings::write(['api_key' => null]);
+
+                Notification::make()
+                    ->success()
+                    ->title(__('fin-codex::fin-codex.settings.ai.remove_key_done'))
+                    ->send();
+            });
     }
 
     /**
