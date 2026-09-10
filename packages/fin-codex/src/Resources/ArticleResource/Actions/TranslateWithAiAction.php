@@ -9,9 +9,12 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinCodex\Ai\AiSettings;
 use FinityLabs\FinCodex\Auth\ArticleAbility;
+use FinityLabs\LinCodex\Ai\AiReason;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Translation\ArticleTranslator;
+use RuntimeException;
 
 /**
  * Copy from default's twin, with a translation in the middle.
@@ -47,6 +50,21 @@ use FinityLabs\LinCodex\Translation\ArticleTranslator;
  * An HTML article gets no button at all: its body is a read-only textarea
  * until the convert action turns it into Markdown, so there would be nothing
  * to write the translation into.
+ *
+ * The confirmation is conditional, which is what modal() is for: a tab that
+ * already holds a title, an excerpt or a body asks first, naming the language
+ * pair, and an empty one runs straight through on the button's loading state.
+ * requiresConfirmation() alone would open the modal on every press, because a
+ * custom heading counts as a modal of its own.
+ *
+ * A failure is a value, never an exception - lin-codex reduces everything to
+ * an AiReason key before this class sees it - so the tab keeps the text it
+ * had and the reason is shown as the notification body, with a pointer to Help
+ * settings for the two states the admin can fix there. Only `unknown` is
+ * reported, and it has to be reported synthetically: the original throwable is
+ * gone by now, so the host's error tooling gets one stack that at least names
+ * the action and the target language. Once lin-codex reports the throwable
+ * itself, that line goes.
  */
 final class TranslateWithAiAction
 {
@@ -65,7 +83,22 @@ final class TranslateWithAiAction
             ->tooltip(static fn (Get $get): ?string => self::sourceBlank($get, $default)
                 ? (string) __('fin-codex::fin-codex.editor.translate.empty_source', ['language' => $defaultDisplay])
                 : null)
+            ->requiresConfirmation()
+            ->modal(static fn (Get $get): bool => filled($get("translations.{$code}.title"))
+                || filled($get("translations.{$code}.excerpt"))
+                || filled($get("translations.{$code}.body")))
+            ->modalHeading(__('fin-codex::fin-codex.editor.translate.heading', ['language' => $display]))
+            ->modalDescription(__('fin-codex::fin-codex.editor.translate.description', [
+                'language' => $display,
+                'default' => $defaultDisplay,
+            ]))
+            ->modalSubmitActionLabel(__('fin-codex::fin-codex.editor.translate.submit'))
             ->action(static function (Get $get, Set $set) use ($code, $default, $display): void {
+                $settings = AiSettings::values();
+                $timeout = $settings['timeout'] ?? 120;
+
+                self::extendTimeLimit(is_numeric($timeout) ? (int) $timeout : 120);
+
                 $excerpt = $get("translations.{$default}.excerpt");
 
                 $result = app(ArticleTranslator::class)->translateText(
@@ -77,6 +110,28 @@ final class TranslateWithAiAction
                 );
 
                 if (! $result->ok) {
+                    $body = $result->reasonLabel();
+
+                    if (in_array($result->reason, [AiReason::AUTHENTICATION_FAILED, AiReason::UNAVAILABLE], true)) {
+                        $body .= ' '.__('fin-codex::fin-codex.editor.translate.check_settings');
+                    }
+
+                    if ($result->reason === AiReason::UNKNOWN) {
+                        $provider = $settings['provider'] ?? null;
+
+                        report(new RuntimeException(sprintf(
+                            'AI translation into %s failed with reason [unknown] via provider %s.',
+                            $code,
+                            is_string($provider) ? $provider : '',
+                        )));
+                    }
+
+                    Notification::make()
+                        ->danger()
+                        ->title(__('fin-codex::fin-codex.editor.translate.failed'))
+                        ->body($body)
+                        ->send();
+
                     return;
                 }
 
@@ -95,6 +150,26 @@ final class TranslateWithAiAction
                     ->title(__('fin-codex::fin-codex.editor.translate.done', ['language' => $display]))
                     ->send();
             });
+    }
+
+    /**
+     * Give the call room to finish, and never take any away.
+     *
+     * On Linux PHP's max_execution_time counts script CPU time, so a request
+     * waiting on an HTTP response does not spend it and this changes nothing;
+     * on a Windows host the limit is wall clock, and a 30-second default would
+     * kill a 120-second translation halfway. An unlimited 0 is left alone and a
+     * limit already longer than the call is never shortened. The real ceiling
+     * on every platform is the web server's own read timeout, which the README
+     * covers.
+     */
+    public static function extendTimeLimit(int $timeout): void
+    {
+        $limit = (int) ini_get('max_execution_time');
+
+        if ($limit > 0 && $limit < $timeout + 30) {
+            set_time_limit($timeout + 30);
+        }
     }
 
     /**

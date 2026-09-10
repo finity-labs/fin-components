@@ -1,15 +1,20 @@
 <?php
 
 use Filament\Actions\Testing\TestAction;
+use Filament\Notifications\Notification;
+use FinityLabs\FinCodex\Resources\ArticleResource\Actions\TranslateWithAiAction;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\CreateArticle;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\EditArticle;
 use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
 use FinityLabs\FinCodex\Tests\Fixtures\Policies\DenyAllArticlePolicy;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
+use FinityLabs\LinCodex\Ai\AiCallFailed;
+use FinityLabs\LinCodex\Ai\AiReason;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleRevision;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
+use Illuminate\Support\Facades\Exceptions;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Livewire;
 
@@ -242,4 +247,156 @@ it('clears the excerpt when the translation has none', function (): void {
             'translations.de.excerpt' => null,
             'translations.de.body' => 'Text',
         ]);
+});
+
+it('asks before replacing a tab that already has text', function (array $existing): void {
+    $fake = finCodexTranslateFake();
+    finCodexEnableAi();
+
+    $article = finCodexTranslateArticle();
+
+    $component = Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])
+        ->fillForm(['translations' => ['de' => $existing]])
+        ->mountAction(finCodexTranslateHandle('de'));
+
+    $action = $component->instance()->getMountedAction();
+
+    expect($action?->shouldOpenModal())->toBeTrue()
+        ->and($action?->getModalHeading())->toBe(__('fin-codex::fin-codex.editor.translate.heading', ['language' => 'Deutsch']))
+        ->and($action?->getModalDescription())->toBe(__('fin-codex::fin-codex.editor.translate.description', [
+            'language' => 'Deutsch',
+            'default' => 'English',
+        ]))
+        ->and($action?->getModalSubmitAction()?->getLabel())->toBe(__('fin-codex::fin-codex.editor.translate.submit'))
+        ->and($fake->requests)->toBeEmpty();
+
+    $component
+        ->assertFormSet(['translations.de.title' => $existing['title'] ?? null])
+        ->unmountAction()
+        ->callAction(finCodexTranslateHandle('de'))
+        ->assertFormSet([
+            'translations.de.title' => 'Benutzer',
+            'translations.de.excerpt' => 'Kurz',
+            'translations.de.body' => 'Text',
+        ]);
+})->with([
+    'a title' => [['title' => 'Alt']],
+    'an excerpt alone' => [['excerpt' => 'x']],
+]);
+
+it('runs without a modal on an empty tab', function (): void {
+    finCodexTranslateFake();
+    finCodexEnableAi();
+
+    $article = finCodexTranslateArticle();
+
+    $component = Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])
+        ->mountAction(finCodexTranslateHandle('de'));
+
+    expect($component->instance()->getMountedAction())->toBeNull();
+
+    $component->assertFormSet(['translations.de.title' => 'Benutzer']);
+});
+
+/*
+ * unavailable arrives through the seam rather than by switching AI off between
+ * the mount and the press: the schema is rebuilt on every Livewire request and
+ * asks the same availability rule the translator does, so switching it off
+ * takes the button off the page before the press lands - which is the point of
+ * the gate, and leaves the seam as the only way to exercise the branch.
+ */
+it('leaves the tab untouched and names the reason when the call fails', function (string $reason, bool $hint): void {
+    finCodexFakeAi((new FakeAiClient)->push(new AiCallFailed($reason)));
+    finCodexEnableAi();
+
+    $article = finCodexTranslateArticle();
+
+    $body = AiReason::label($reason);
+
+    if ($hint) {
+        $body .= ' '.__('fin-codex::fin-codex.editor.translate.check_settings');
+    }
+
+    Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])
+        ->fillForm(['translations' => ['de' => ['title' => 'Alt']]])
+        ->callAction(finCodexTranslateHandle('de'))
+        ->assertFormSet([
+            'translations.de.title' => 'Alt',
+            'translations.de.excerpt' => null,
+            'translations.de.body' => null,
+        ])
+        ->assertNotified(
+            Notification::make()
+                ->danger()
+                ->title(__('fin-codex::fin-codex.editor.translate.failed'))
+                ->body($body),
+        );
+})->with([
+    'authentication_failed points at the settings page' => [AiReason::AUTHENTICATION_FAILED, true],
+    'unavailable points at the settings page' => [AiReason::UNAVAILABLE, true],
+    'timeout is the bare label' => [AiReason::TIMEOUT, false],
+]);
+
+it('reports an unknown reason to the host error tooling', function (): void {
+    Exceptions::fake();
+
+    finCodexFakeAi((new FakeAiClient)->push(new RuntimeException('boom')));
+    finCodexEnableAi();
+
+    $article = finCodexTranslateArticle();
+
+    Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])
+        ->callAction(finCodexTranslateHandle('de'))
+        ->assertFormSet(['translations.de.title' => null])
+        ->assertNotified(
+            Notification::make()
+                ->danger()
+                ->title(__('fin-codex::fin-codex.editor.translate.failed'))
+                ->body(AiReason::label(AiReason::UNKNOWN)),
+        );
+
+    Exceptions::assertReported(
+        fn (RuntimeException $e): bool => str_contains($e->getMessage(), '[unknown]') && str_contains($e->getMessage(), 'de'),
+    );
+});
+
+it('never reports a reason it can name', function (): void {
+    Exceptions::fake();
+
+    finCodexFakeAi((new FakeAiClient)->push(new AiCallFailed(AiReason::RATE_LIMITED)));
+    finCodexEnableAi();
+
+    $article = finCodexTranslateArticle();
+
+    Livewire::test(EditArticle::class, ['record' => $article->getRouteKey()])
+        ->callAction(finCodexTranslateHandle('de'))
+        ->assertNotified(
+            Notification::make()
+                ->danger()
+                ->title(__('fin-codex::fin-codex.editor.translate.failed'))
+                ->body(AiReason::label(AiReason::RATE_LIMITED)),
+        );
+
+    Exceptions::assertNothingReported();
+});
+
+it('raises a short execution limit for the call and never lowers an unlimited one', function (): void {
+    $original = ini_get('max_execution_time');
+
+    try {
+        ini_set('max_execution_time', '30');
+        TranslateWithAiAction::extendTimeLimit(120);
+        expect((int) ini_get('max_execution_time'))->toBe(150);
+
+        ini_set('max_execution_time', '0');
+        TranslateWithAiAction::extendTimeLimit(120);
+        expect((int) ini_get('max_execution_time'))->toBe(0);
+
+        ini_set('max_execution_time', '600');
+        TranslateWithAiAction::extendTimeLimit(120);
+        expect((int) ini_get('max_execution_time'))->toBe(600);
+    } finally {
+        // Back to the CLI default, or the rest of the suite runs on a clock.
+        set_time_limit(is_string($original) ? (int) $original : 0);
+    }
 });
