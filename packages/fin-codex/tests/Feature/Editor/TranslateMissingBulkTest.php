@@ -2,6 +2,7 @@
 
 use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
+use FinityLabs\FinCodex\Ai\NotificationLocale;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\ListArticles;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
@@ -11,6 +12,7 @@ use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Queue;
@@ -330,6 +332,41 @@ it('queues one job per article for the ticked languages it lacks and reports the
         && $job->userId === $user->id);
 
     Queue::assertNotPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $full->id);
+});
+
+it('records the language the panel is being read in once for the press, not once per article', function (): void {
+    Queue::fake();
+
+    // The panel is read in German while the application is configured in
+    // English; the worker that runs the jobs has neither session nor request.
+    app()->setLocale('de');
+
+    $full = finCodexBulkArticle('billing', ['en' => 'Billing', 'de' => 'Abrechnung', 'hu' => 'Számlázás']);
+    $gapDe = finCodexBulkArticle('users', ['en' => 'Users', 'hu' => 'Felhasználók']);
+    $gapBoth = finCodexBulkArticle('zebra', ['en' => 'Zebra']);
+
+    // A press that queues nothing at all still records it: the language is a
+    // fact about the request, written before the loop, and not something a
+    // dispatch carries in.
+    Livewire::test(ListArticles::class)
+        ->callTableBulkAction('translate_missing', [$full], data: ['locales' => ['de', 'hu']])
+        ->assertHasNoTableBulkActionErrors();
+
+    Queue::assertNothingPushed();
+
+    expect(Context::get(NotificationLocale::KEY))->toBe('de');
+
+    // And a press that queues two jobs writes it once, not twice: two
+    // articles are two jobs, but one language and one request.
+    Context::spy();
+
+    Livewire::test(ListArticles::class)
+        ->callTableBulkAction('translate_missing', [$gapDe, $gapBoth], data: ['locales' => ['de', 'hu']])
+        ->assertHasNoTableBulkActionErrors();
+
+    Queue::assertPushed(TranslateArticle::class, 2);
+
+    Context::shouldHaveReceived('add', [NotificationLocale::KEY, 'de'])->once();
 });
 
 it('fills every gap when the pick is left as it is', function (): void {

@@ -9,6 +9,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinCodex\Ai\NotificationLocale;
 use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\FinCodex\Editor\ArticleTitle;
 use FinityLabs\LinCodex\Jobs\TranslateArticle;
@@ -86,6 +87,11 @@ use FinityLabs\LinCodex\Translation\MissingTranslations;
  * Whether the admin also gets a notification when it does is the listener's
  * business, and the job's own queue and timeout are the job's - nothing here
  * names either.
+ *
+ * The press does leave the listener one thing: the language this panel is
+ * being read in, recorded through NotificationLocale so the notification comes
+ * back in it rather than in the application's own. A worker has no panel to
+ * ask.
  */
 final class TranslateMissingAction
 {
@@ -147,6 +153,10 @@ final class TranslateMissingAction
                 // a host on a non-numeric key has no author to attribute.
                 $id = Filament::auth()->id();
                 $userId = is_int($id) ? $id : (is_numeric($id) ? (int) $id : null);
+
+                // The language the admin is reading the panel in, so the
+                // notification the finished job sends comes back in it.
+                NotificationLocale::remember();
 
                 TranslateArticle::dispatch($record->id, $locales, $userId);
 

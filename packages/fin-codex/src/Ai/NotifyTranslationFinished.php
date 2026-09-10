@@ -18,6 +18,7 @@ use FinityLabs\LinCodex\Translation\TranslationReport;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Traits\Localizable;
 use Throwable;
 
 /**
@@ -60,13 +61,21 @@ use Throwable;
  * account; the article belongs in the first sentence of the body, where the
  * surrounding words say what is being reported about it.
  *
- * The notification renders under the application locale, because a worker has
- * no panel and therefore no panel language. A deleted article is named by its
- * id inside that first sentence and gets no button, since there is no page
- * left to open.
+ * The notification renders under the locale of the request that queued the
+ * work, not the worker's own. NotificationLocale explains why the two differ
+ * and how the locale travels; here the point is that the WHOLE build runs
+ * under it - the fixed title, the body, the article's own title, the language
+ * names and each failure's reason label - and that the previous locale is put
+ * back afterwards, since the worker goes on to other jobs. The two log lines
+ * are outside it: they are not translated.
+ *
+ * A deleted article is named by its id inside that first sentence and gets no
+ * button, since there is no page left to open.
  */
 final class NotifyTranslationFinished
 {
+    use Localizable;
+
     public function handle(ArticleTranslated $event): void
     {
         if ($event->report->hasFailures()) {
@@ -123,11 +132,28 @@ final class NotifyTranslationFinished
     }
 
     /**
+     * The notification, rendered under the locale of the request that queued
+     * the run. Everything the admin reads is composed inside the closure, so
+     * one locale covers the lot; the trait restores the previous one on the
+     * way out, whether or not composing threw.
+     */
+    private function build(ArticleTranslated $event, ?Article $article): Notification
+    {
+        /** @var Notification $notification */
+        $notification = $this->withLocale(
+            NotificationLocale::current(),
+            fn (): Notification => $this->compose($event, $article),
+        );
+
+        return $notification;
+    }
+
+    /**
      * Title, body, status and - for an article that still exists - the one
      * button back to its edit page. With no current panel the URL resolves
      * through the default panel and the plugin's resource override.
      */
-    private function build(ArticleTranslated $event, ?Article $article): Notification
+    private function compose(ArticleTranslated $event, ?Article $article): Notification
     {
         $notification = Notification::make()
             ->title($this->title($event->report))

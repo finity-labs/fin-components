@@ -9,6 +9,7 @@ use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinCodex\Ai\NotificationLocale;
 use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\LinCodex\Jobs\TranslateArticle;
 use FinityLabs\LinCodex\Models\Article;
@@ -80,6 +81,12 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
  * per locale anyway - it runs on a freshly fetched article - so this is the
  * cheaper half of the same promise, not the only one.
  *
+ * The language this panel is being read in is recorded once for the press,
+ * before the loop, rather than once per article: it is a fact about the
+ * request, not about any one job, and every job pushed after it carries it.
+ * The listener renders the finished run's notification in it, so a panel read
+ * in one language is not answered in another.
+ *
  * The row action's blank-source rule has no counterpart here. That one has a
  * single article in front of it and can say which language to fill in first;
  * a selection may hold twenty, so this action does not judge any article's
@@ -126,6 +133,8 @@ final class TranslateMissingBulkAction
                     $picked = self::picked($data);
                     $id = Filament::auth()->id();
                     $userId = is_numeric($id) ? (int) $id : null;
+
+                    NotificationLocale::remember();
 
                     $queued = 0;
                     $nothing = 0;

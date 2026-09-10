@@ -1,6 +1,7 @@
 <?php
 
 use Filament\Notifications\DatabaseNotification;
+use FinityLabs\FinCodex\Ai\NotificationLocale;
 use FinityLabs\FinCodex\Ai\NotifyTranslationFinished;
 use FinityLabs\FinCodex\Editor\ArticleTitle;
 use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
@@ -14,6 +15,7 @@ use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use FinityLabs\LinCodex\Translation\TranslationReport;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -209,6 +211,75 @@ it('says nothing was needed when every language was skipped', function (): void 
             'title' => ArticleTitle::ofModel($article->load('translations')),
         ]))
         ->and($row->data['body'])->toContain('Users');
+});
+
+it('renders the whole notification in the language the press was made in, not the worker\'s', function (): void {
+    $user = finCodexNotifyUser();
+    $article = finCodexNotifyArticle();
+
+    // A German title as well, so the article's own name is something the
+    // locale can get wrong: under en the body would read "Users".
+    ArticleTranslation::factory()->create([
+        'article_id' => $article->id,
+        'locale' => 'de',
+        'title' => 'Benutzer',
+        'excerpt' => 'Benutzer verwalten.',
+        'body' => 'So funktionieren Benutzer.',
+    ]);
+
+    // The worker's own locale, which is where the wrong language came from:
+    // the panel was being read in German, the application is configured in
+    // English, and a queued job has neither session nor request.
+    app()->setLocale('en');
+    Context::add(NotificationLocale::KEY, 'de');
+
+    finCodexNotifyFire($article, $user->id, finCodexNotifyReport(['hu'], ['ro' => AiReason::RATE_LIMITED]));
+
+    $row = finCodexNotificationsFor($user)->first();
+
+    $german = (string) __('fin-codex::fin-codex.notification.body.translated', [
+        'title' => 'Benutzer',
+        'languages' => finCodexNotifyName('hu'),
+    ], 'de').' '.(string) __('fin-codex::fin-codex.notification.body.also_failed', [
+        'languages' => finCodexNotifyName('ro').' ('.(string) __('lin-codex::lin-codex.ai.reasons.rate_limited', [], 'de').')',
+    ], 'de');
+
+    expect($row->data['title'])->toBe((string) __('fin-codex::fin-codex.notification.title.translated', [], 'de'))
+        ->and($row->data['title'])->not->toBe((string) __('fin-codex::fin-codex.notification.title.translated', [], 'en'))
+        // The article's own title, the fixed labels and the reason label all
+        // came out of the same closure, so all three followed the locale.
+        ->and($row->data['body'])->toBe($german)
+        ->and($row->data['body'])->toContain('Benutzer')
+        ->and($row->data['body'])->not->toContain('Users')
+        ->and($row->data['actions'][0]['label'])->toBe((string) __('fin-codex::fin-codex.notification.open', [], 'de'));
+
+    // And the worker is handed back the locale it was running under: the next
+    // job on the same process is not answered in this one's language.
+    expect(app()->getLocale())->toBe('en');
+});
+
+it('falls back to the locale it is running under when the press left none behind', function (): void {
+    $user = finCodexNotifyUser();
+    $article = finCodexNotifyArticle();
+
+    // A job queued by something other than the two actions, or a payload
+    // written before the key existed: nothing in the context to read.
+    expect(Context::get(NotificationLocale::KEY))->toBeNull();
+
+    app()->setLocale('de');
+
+    finCodexNotifyFire($article, $user->id, finCodexNotifyReport(['hu']));
+
+    $row = finCodexNotificationsFor($user)->first();
+
+    expect($row->data['title'])->toBe((string) __('fin-codex::fin-codex.notification.title.translated', [], 'de'))
+        ->and($row->data['body'])->toBe((string) __('fin-codex::fin-codex.notification.body.translated', [
+            // Only an English translation exists, so the default language
+            // names the article; the wording around it is still German.
+            'title' => 'Users',
+            'languages' => finCodexNotifyName('hu'),
+        ], 'de'))
+        ->and(app()->getLocale())->toBe('de');
 });
 
 it('is registered by the service provider', function (): void {

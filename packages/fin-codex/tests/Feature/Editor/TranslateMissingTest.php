@@ -1,5 +1,6 @@
 <?php
 
+use FinityLabs\FinCodex\Ai\NotificationLocale;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\ListArticles;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
@@ -10,6 +11,7 @@ use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Queue;
@@ -288,6 +290,28 @@ it('queues one job for the ticked languages and the signed-in admin', function (
     Queue::assertPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $this->gap->id
         && $job->locales === ['hu']
         && $job->userId === $this->admin->id);
+});
+
+it('records the language the panel is being read in with the press', function (): void {
+    Queue::fake();
+
+    // The panel is read in German while the application is configured in
+    // English. A language switcher keeps that choice in the session, and the
+    // worker that runs the job has neither session nor request, so the press
+    // is the only place the language can be picked up.
+    app()->setLocale('de');
+
+    expect(Context::get(NotificationLocale::KEY))->toBeNull();
+
+    Livewire::test(ListArticles::class)
+        ->callTableAction('translate_missing', $this->gap, data: ['locales' => ['hu']])
+        ->assertHasNoTableActionErrors();
+
+    Queue::assertPushed(TranslateArticle::class, 1);
+
+    // Laravel serialises the context into the payload it just wrote and
+    // restores it on the worker, which is how the listener gets to read it.
+    expect(Context::get(NotificationLocale::KEY))->toBe('de');
 });
 
 it('queues every pre-checked language when the pick is left as it is', function (): void {
