@@ -110,7 +110,7 @@ beforeEach(function (): void {
     finCodexNotifyUseLanguages();
 });
 
-it('stores one success notification naming the translated languages with a button to the edit page', function (): void {
+it('heads a success row with a fixed title and names the article and its new languages in the body', function (): void {
     $user = finCodexNotifyUser();
     $article = finCodexNotifyArticle();
 
@@ -127,11 +127,16 @@ it('stores one success notification naming the translated languages with a butto
     expect($row->type)->toBe(DatabaseNotification::class)
         ->and($row->data['format'])->toBe('filament')
         ->and($row->data['status'])->toBe('success')
-        ->and($row->data['title'])->toBe(ArticleTitle::ofModel($article->load('translations')))
-        ->and($row->data['title'])->toBe('Users')
-        ->and($row->data['body'])->toBe(__('fin-codex::fin-codex.notification.translated', [
+        ->and($row->data['title'])->toBe(__('fin-codex::fin-codex.notification.title.translated'))
+        // The title says what happened, never what the article is called: out
+        // of context "Users" reads as news about users.
+        ->and($row->data['title'])->not->toBe(ArticleTitle::ofModel($article->load('translations')))
+        ->and($row->data['title'])->not->toContain('Users')
+        ->and($row->data['body'])->toBe(__('fin-codex::fin-codex.notification.body.translated', [
+            'title' => ArticleTitle::ofModel($article->load('translations')),
             'languages' => finCodexNotifyName('de').', '.finCodexNotifyName('hu'),
         ]))
+        ->and($row->data['body'])->toContain('Users')
         ->and($row->data['duration'])->toBe('persistent')
         ->and($row->data['actions'])->toHaveCount(1)
         ->and($row->data['actions'][0]['label'])->toBe(__('fin-codex::fin-codex.notification.open'))
@@ -151,13 +156,42 @@ it('turns warning and names the failed languages with their reason labels, never
 
     $row = finCodexNotificationsFor($user)->first();
 
-    $translated = __('fin-codex::fin-codex.notification.translated', ['languages' => finCodexNotifyName('de')]);
-    $failed = __('fin-codex::fin-codex.notification.failed', [
+    $translated = __('fin-codex::fin-codex.notification.body.translated', [
+        'title' => ArticleTitle::ofModel($article->load('translations')),
+        'languages' => finCodexNotifyName('de'),
+    ]);
+    $failed = __('fin-codex::fin-codex.notification.body.also_failed', [
         'languages' => finCodexNotifyName('hu').' ('.AiReason::label(AiReason::RATE_LIMITED).')',
     ]);
 
     expect($row->data['status'])->toBe('warning')
+        // Something did arrive, so the title is still the translated one; the
+        // amber and the second sentence carry the failure.
+        ->and($row->data['title'])->toBe(__('fin-codex::fin-codex.notification.title.translated'))
         ->and($row->data['body'])->toBe($translated.' '.$failed)
+        ->and($row->data['body'])->toContain('Users')
+        ->and($row->data['body'])->not->toContain(finCodexNotifyName('ro'));
+});
+
+it('names the article in the one sentence a run that translated nothing gets', function (): void {
+    $user = finCodexNotifyUser();
+    $article = finCodexNotifyArticle();
+
+    finCodexNotifyFire($article, $user->id, finCodexNotifyReport(
+        [],
+        ['hu' => AiReason::RATE_LIMITED],
+        ['ro'],
+    ));
+
+    $row = finCodexNotificationsFor($user)->first();
+
+    expect($row->data['status'])->toBe('warning')
+        ->and($row->data['title'])->toBe(__('fin-codex::fin-codex.notification.title.failed'))
+        ->and($row->data['body'])->toBe(__('fin-codex::fin-codex.notification.body.failed_only', [
+            'title' => ArticleTitle::ofModel($article->load('translations')),
+            'languages' => finCodexNotifyName('hu').' ('.AiReason::label(AiReason::RATE_LIMITED).')',
+        ]))
+        ->and($row->data['body'])->toContain('Users')
         ->and($row->data['body'])->not->toContain(finCodexNotifyName('ro'));
 });
 
@@ -170,7 +204,11 @@ it('says nothing was needed when every language was skipped', function (): void 
     $row = finCodexNotificationsFor($user)->first();
 
     expect($row->data['status'])->toBe('success')
-        ->and($row->data['body'])->toBe(__('fin-codex::fin-codex.notification.nothing_to_do'));
+        ->and($row->data['title'])->toBe(__('fin-codex::fin-codex.notification.title.nothing'))
+        ->and($row->data['body'])->toBe(__('fin-codex::fin-codex.notification.body.nothing_to_do', [
+            'title' => ArticleTitle::ofModel($article->load('translations')),
+        ]))
+        ->and($row->data['body'])->toContain('Users');
 });
 
 it('is registered by the service provider', function (): void {
@@ -195,7 +233,7 @@ it('tells nobody when the user id is null or the user is gone', function (): voi
     expect(DB::table('notifications')->count())->toBe(0);
 });
 
-it('names a deleted article by its id and offers no button', function (): void {
+it('names a deleted article by its id inside the body and offers no button', function (): void {
     $user = finCodexNotifyUser();
     $article = finCodexNotifyArticle();
     $id = $article->id;
@@ -213,7 +251,17 @@ it('names a deleted article by its id and offers no button', function (): void {
 
     $row = $stored->first();
 
-    expect($row->data['title'])->toBe(__('fin-codex::fin-codex.notification.deleted_article', ['id' => $id]))
+    $deleted = (string) __('fin-codex::fin-codex.notification.deleted_article', ['id' => $id]);
+
+    expect($row->data['title'])->toBe(__('fin-codex::fin-codex.notification.title.failed'))
+        // The deleted-article string is the article's NAME now, not the title.
+        ->and($row->data['title'])->not->toContain($deleted)
+        ->and($row->data['body'])->toBe(__('fin-codex::fin-codex.notification.body.failed_only', [
+            'title' => $deleted,
+            'languages' => finCodexNotifyName('de').' ('.AiReason::label(AiReason::UNKNOWN).'), '
+                .finCodexNotifyName('hu').' ('.AiReason::label(AiReason::UNKNOWN).')',
+        ]))
+        ->and($row->data['body'])->toContain($deleted)
         ->and($row->data['actions'])->toBe([])
         ->and($row->data['status'])->toBe('warning');
 });

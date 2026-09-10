@@ -163,11 +163,12 @@ it('runs the job, stores the translation and the notification, and toasts, all i
     $row = $stored->first();
 
     expect($row->data['status'])->toBe('success')
-        ->and($row->data['title'])->toBe(ArticleTitle::ofModel($gap->load('translations')))
-        ->and($row->data['title'])->toBe('EN users')
-        ->and($row->data['body'])->toBe(__('fin-codex::fin-codex.notification.translated', [
+        ->and($row->data['title'])->toBe(__('fin-codex::fin-codex.notification.title.translated'))
+        ->and($row->data['body'])->toBe(__('fin-codex::fin-codex.notification.body.translated', [
+            'title' => ArticleTitle::ofModel($gap->load('translations')),
             'languages' => finCodexE2eName('de'),
         ]))
+        ->and($row->data['body'])->toContain('EN users')
         ->and($row->data['actions'][0]['url'])->toEndWith('/codex-articles/'.$gap->id.'/edit');
 
     // And the list paints the language the admin just filled.
@@ -207,13 +208,26 @@ it('stores one notification per article through the bulk action', function (): v
         ->count())->toBe(2)
         ->and($fake->requests)->toHaveCount(2);
 
-    $titles = finCodexNotificationsFor($this->admin)
+    $rows = finCodexNotificationsFor($this->admin);
+
+    // Two rows under the same fixed title, each naming its own article in the
+    // body: the title says what happened, the body says what it happened to.
+    $titles = $rows
         ->map(static fn (DatabaseNotification $row): string => (string) $row->data['title'])
+        ->unique()
+        ->values()
+        ->all();
+
+    $bodies = $rows
+        ->map(static fn (DatabaseNotification $row): string => (string) $row->data['body'])
         ->sort()
         ->values()
         ->all();
 
-    expect($titles)->toBe(['EN billing', 'EN users']);
+    expect($rows)->toHaveCount(2)
+        ->and($titles)->toBe([(string) __('fin-codex::fin-codex.notification.title.translated')])
+        ->and($bodies[0])->toContain('EN billing')
+        ->and($bodies[1])->toContain('EN users');
 });
 
 it('turns the notification into a warning and logs when a language fails', function (): void {
@@ -236,9 +250,12 @@ it('turns the notification into a warning and logs when a language fails', funct
 
     expect($row)->not->toBeNull()
         ->and($row->data['status'])->toBe('warning')
-        ->and($row->data['body'])->toBe(__('fin-codex::fin-codex.notification.failed', [
+        ->and($row->data['title'])->toBe(__('fin-codex::fin-codex.notification.title.failed'))
+        ->and($row->data['body'])->toBe(__('fin-codex::fin-codex.notification.body.failed_only', [
+            'title' => ArticleTitle::ofModel($gap->load('translations')),
             'languages' => finCodexE2eName('de').' ('.AiReason::label(AiReason::RATE_LIMITED).')',
-        ]));
+        ]))
+        ->and($row->data['body'])->toContain('EN users');
 
     Log::shouldHaveReceived('warning')
         ->once()

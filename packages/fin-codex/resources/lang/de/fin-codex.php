@@ -361,9 +361,17 @@ return [
     ],
     'notification' => [
         'deleted_article' => 'Gelöschter Artikel #:id',
-        'translated' => 'Übersetzt: :languages.',
-        'failed' => 'Fehlgeschlagen: :languages.',
-        'nothing_to_do' => 'Alle angeforderten Sprachen waren bereits ausgefüllt.',
+        'title' => [
+            'translated' => 'Hilfeartikel übersetzt',
+            'failed' => 'Übersetzung des Hilfeartikels fehlgeschlagen',
+            'nothing' => 'Nichts zu übersetzen',
+        ],
+        'body' => [
+            'translated' => '„:title“ wurde in diese Sprachen übersetzt: :languages.',
+            'failed_only' => '„:title“ konnte nicht in diese Sprachen übersetzt werden: :languages.',
+            'also_failed' => 'Fehlgeschlagen: :languages.',
+            'nothing_to_do' => 'Bei „:title“ waren alle angeforderten Sprachen bereits ausgefüllt.',
+        ],
         'open' => 'Artikel öffnen',
     ],
 ];

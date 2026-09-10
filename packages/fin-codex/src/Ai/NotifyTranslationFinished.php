@@ -22,8 +22,8 @@ use Throwable;
 
 /**
  * The panel's answer to a finished translation run: one stored notification
- * for the admin who queued it, naming the languages that arrived and the ones
- * that did not, with a button back to the article.
+ * for the admin who queued it, naming the article and the languages that
+ * arrived and the ones that did not, with a button back to the article.
  *
  * A plain listener, not a queued one. lin-codex fires ArticleTranslated at
  * the very end of its own queued job, so this already runs on the worker; a
@@ -54,9 +54,16 @@ use Throwable;
  * notification could be stored: a failed language is something the host's log
  * should carry even when the admin's bell says the same thing (locked).
  *
+ * The title is a fixed label saying what happened - translated, failed, or
+ * nothing to do - and never the article's own title. A bell row that reads
+ * "Create an account" out of context looks like news about creating an
+ * account; the article belongs in the first sentence of the body, where the
+ * surrounding words say what is being reported about it.
+ *
  * The notification renders under the application locale, because a worker has
  * no panel and therefore no panel language. A deleted article is named by its
- * id and gets no button, since there is no page left to open.
+ * id inside that first sentence and gets no button, since there is no page
+ * left to open.
  */
 final class NotifyTranslationFinished
 {
@@ -123,10 +130,8 @@ final class NotifyTranslationFinished
     private function build(ArticleTranslated $event, ?Article $article): Notification
     {
         $notification = Notification::make()
-            ->title($article === null
-                ? (string) __('fin-codex::fin-codex.notification.deleted_article', ['id' => $event->articleId])
-                : ArticleTitle::ofModel($article))
-            ->body($this->body($event->report));
+            ->title($this->title($event->report))
+            ->body($this->body($event->report, $this->articleName($event, $article)));
 
         if ($event->report->hasFailures()) {
             $notification->warning();
@@ -147,39 +152,80 @@ final class NotifyTranslationFinished
     }
 
     /**
-     * Up to two sentences: what was translated, and what failed with the
-     * reason label of each language. Skipped languages are not named - the
-     * admin asked for the missing ones and a language somebody filled in the
-     * meantime is not news. When neither sentence applies, every requested
-     * language was already there.
+     * The fixed label the row is headed with, by outcome: something arrived,
+     * nothing arrived but something failed, or there was nothing to do. Three
+     * strings, none of them the article's own title.
      */
-    private function body(TranslationReport $report): string
+    private function title(TranslationReport $report): string
+    {
+        if ($report->translatedLocales() !== []) {
+            return (string) __('fin-codex::fin-codex.notification.title.translated');
+        }
+
+        if ($report->failedLocales() !== []) {
+            return (string) __('fin-codex::fin-codex.notification.title.failed');
+        }
+
+        return (string) __('fin-codex::fin-codex.notification.title.nothing');
+    }
+
+    /**
+     * What the body calls the article: its title in the panel's own rendering,
+     * or - once the article is gone - its id, which is all that is left of it.
+     */
+    private function articleName(ArticleTranslated $event, ?Article $article): string
+    {
+        return $article === null
+            ? (string) __('fin-codex::fin-codex.notification.deleted_article', ['id' => $event->articleId])
+            : ArticleTitle::ofModel($article);
+    }
+
+    /**
+     * Up to two sentences, the first of which names the article: what was
+     * translated, and what failed with the reason label of each language.
+     * Skipped languages are not named - the admin asked for the missing ones
+     * and a language somebody filled in the meantime is not news. When neither
+     * sentence applies, every requested language was already there.
+     *
+     * Only failures is one sentence rather than two, so the article is still
+     * named where the news is: a bare "Failed: ..." under a fixed title would
+     * never say which article failed.
+     */
+    private function body(TranslationReport $report, string $name): string
     {
         $resolver = app(LocaleResolver::class);
-        $sentences = [];
 
         $translated = $report->translatedLocales();
-
-        if ($translated !== []) {
-            $names = array_map(static fn (string $locale): string => $resolver->displayName($locale), $translated);
-
-            $sentences[] = (string) __('fin-codex::fin-codex.notification.translated', ['languages' => implode(', ', $names)]);
-        }
-
         $failed = $report->failedLocales();
 
-        if ($failed !== []) {
-            $pairs = [];
-
-            foreach ($failed as $locale => $reason) {
-                $pairs[] = $resolver->displayName($locale).' ('.AiReason::label($reason).')';
-            }
-
-            $sentences[] = (string) __('fin-codex::fin-codex.notification.failed', ['languages' => implode(', ', $pairs)]);
+        if ($translated === [] && $failed === []) {
+            return (string) __('fin-codex::fin-codex.notification.body.nothing_to_do', ['title' => $name]);
         }
 
-        if ($sentences === []) {
-            return (string) __('fin-codex::fin-codex.notification.nothing_to_do');
+        $pairs = [];
+
+        foreach ($failed as $locale => $reason) {
+            $pairs[] = $resolver->displayName($locale).' ('.AiReason::label($reason).')';
+        }
+
+        if ($translated === []) {
+            return (string) __('fin-codex::fin-codex.notification.body.failed_only', [
+                'title' => $name,
+                'languages' => implode(', ', $pairs),
+            ]);
+        }
+
+        $names = array_map(static fn (string $locale): string => $resolver->displayName($locale), $translated);
+
+        $sentences = [(string) __('fin-codex::fin-codex.notification.body.translated', [
+            'title' => $name,
+            'languages' => implode(', ', $names),
+        ])];
+
+        if ($pairs !== []) {
+            $sentences[] = (string) __('fin-codex::fin-codex.notification.body.also_failed', [
+                'languages' => implode(', ', $pairs),
+            ]);
         }
 
         return implode(' ', $sentences);

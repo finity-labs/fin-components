@@ -361,9 +361,17 @@ return [
     ],
     'notification' => [
         'deleted_article' => 'Deleted article #:id',
-        'translated' => 'Translated: :languages.',
-        'failed' => 'Failed: :languages.',
-        'nothing_to_do' => 'Every requested language was already filled.',
+        'title' => [
+            'translated' => 'Help article translated',
+            'failed' => 'Help article translation failed',
+            'nothing' => 'Nothing to translate',
+        ],
+        'body' => [
+            'translated' => '":title" was translated to: :languages.',
+            'failed_only' => '":title" could not be translated to: :languages.',
+            'also_failed' => 'Failed: :languages.',
+            'nothing_to_do' => '":title" already had every requested language.',
+        ],
         'open' => 'Open article',
     ],
 ];

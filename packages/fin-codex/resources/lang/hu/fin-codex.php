@@ -361,9 +361,17 @@ return [
     ],
     'notification' => [
         'deleted_article' => 'Törölt cikk #:id',
-        'translated' => 'Lefordítva: :languages.',
-        'failed' => 'Nem sikerült: :languages.',
-        'nothing_to_do' => 'Minden kért nyelv már ki volt töltve.',
+        'title' => [
+            'translated' => 'Súgócikk lefordítva',
+            'failed' => 'A súgócikk fordítása nem sikerült',
+            'nothing' => 'Nincs mit fordítani',
+        ],
+        'body' => [
+            'translated' => 'A(z) „:title” cikk lefordítva a következő nyelvekre: :languages.',
+            'failed_only' => 'A(z) „:title” cikket nem sikerült lefordítani a következő nyelvekre: :languages.',
+            'also_failed' => 'Nem sikerült: :languages.',
+            'nothing_to_do' => 'A(z) „:title” cikkben már minden kért nyelv ki volt töltve.',
+        ],
         'open' => 'Cikk megnyitása',
     ],
 ];
