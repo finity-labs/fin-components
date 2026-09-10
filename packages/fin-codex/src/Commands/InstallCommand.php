@@ -526,8 +526,9 @@ class InstallCommand extends Command
      * The tier list is the seam's, so the choices carry the concrete model
      * ids rather than the word "Default", and a provider that answers with
      * the same id for two tiers is offered once. A provider the SDK reaches
-     * over a URL is never asked for a key, and a provider whose key is
-     * already in config/ai.php is asked for one it may leave blank.
+     * over a URL is never asked for a key, and one that already has a key -
+     * stored here or in the SDK's own config - is asked for one it may leave
+     * blank, with the hint saying which of the two a blank answer keeps.
      *
      * Nothing is written before the connection answers: a run that fails the
      * test leaves the host exactly as it found it.
@@ -581,16 +582,29 @@ class InstallCommand extends Command
 
         $label = $providers[$provider];
         $envConfigured = ProviderCatalog::envConfigured($provider);
+        $stored = AiSettings::storedApiKey();
 
         $key = ProviderCatalog::isKeyless($provider) ? '' : (string) password(
             label: "API key for {$label}",
-            required: ! $envConfigured,
-            hint: $envConfigured ? 'Leave blank to use the key from config/ai.php' : '',
+            // Asked for only when there is nothing else to reach the provider
+            // with: no key of its own in storage, and none in the SDK's own
+            // config for it. The settings page's own rule.
+            required: $stored === null && ! $envConfigured,
+            hint: $this->keyHint($stored !== null, $envConfigured),
         );
+
+        /*
+         * A blank answer KEEPS the stored key, which is what the settings
+         * page's blank save does and what the prompt now says. Only a host
+         * with nothing stored writes null, and there null means "use the
+         * SDK's own credential". Re-running this step to change the model
+         * must not cost the host the key it is already translating with.
+         */
+        $apiKey = $key !== '' ? $key : $stored;
 
         $this->comment('Testing the connection...');
 
-        $reason = $client->testConnection($provider, $model, $key !== '' ? $key : null);
+        $reason = $client->testConnection($provider, $model, $apiKey);
 
         if ($reason !== null) {
             $this->components->error('AI connection test failed: '.AiReason::label($reason));
@@ -603,12 +617,27 @@ class InstallCommand extends Command
             'enabled' => true,
             'provider' => $provider,
             'model' => $model,
-            'api_key' => $key !== '' ? $key : null,
+            'api_key' => $apiKey,
         ]);
 
         $this->aiConfigured = true;
         $this->info("  AI translation configured: {$label}, {$model}");
         $this->line('  Open a non-default language tab in the editor and press Translate with AI.');
+    }
+
+    /**
+     * What a blank answer to the key prompt does, in the order the value is
+     * resolved in: keep the key already stored, else use the one the SDK's
+     * config carries for this provider. With neither, there is no hint - the
+     * prompt is required instead.
+     */
+    private function keyHint(bool $stored, bool $envConfigured): string
+    {
+        if ($stored) {
+            return 'Leave blank to keep the key already stored';
+        }
+
+        return $envConfigured ? 'Leave blank to use the key from config/ai.php' : '';
     }
 
     /**

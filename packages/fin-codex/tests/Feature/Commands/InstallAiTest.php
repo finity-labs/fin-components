@@ -1,5 +1,6 @@
 <?php
 
+use FinityLabs\FinCodex\Ai\AiSettings;
 use FinityLabs\FinCodex\Commands\InstallCommand;
 use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
 use FinityLabs\FinCodex\Tests\Fixtures\TempAppTree;
@@ -315,6 +316,10 @@ it("makes the key optional when the SDK's env key is set", function () {
     $fake = finCodexFakeAi();
     config(['ai.providers.anthropic.key' => 'env-key']);
 
+    // Nothing stored: this is the branch where a blank answer means "use the
+    // SDK's own credential" and null is the honest thing to write.
+    expect(AiSettings::storedApiKey())->toBeNull();
+
     $this->artisan('fin-codex:install --ai-only')
         ->expectsChoice('Which provider should translate the articles?', 'anthropic', finCodexAiProviderOptions())
         ->expectsChoice('Which model?', 'default', finCodexAiTierOptions())
@@ -326,6 +331,54 @@ it("makes the key optional when the SDK's env key is set", function () {
     expect($stored->api_key)->toBeNull()
         ->and($stored->enabled)->toBeTrue()
         ->and($fake->connectionTests[0]['apiKey'])->toBeNull();
+});
+
+it('keeps the stored key when the prompt is left blank', function () {
+    finCodexAiSkipUnlessGateMet();
+
+    $fake = finCodexFakeAi();
+
+    // A host that is already translating: the key is in storage, encrypted,
+    // and config/ai.php carries none. Re-running the step to change the model
+    // must not cost the host that key - the settings page's blank save keeps
+    // it, and this prompt says so too.
+    AiSettings::write(['api_key' => 'sk-stored']);
+
+    expect(AiSettings::storedApiKey())->toBe('sk-stored');
+
+    $this->artisan('fin-codex:install --ai-only')
+        ->expectsChoice('Which provider should translate the articles?', 'anthropic', finCodexAiProviderOptions())
+        ->expectsChoice('Which model?', 'smartest', finCodexAiTierOptions())
+        // Blank is accepted with nothing in config/ai.php, because the stored
+        // key is something to reach the provider with.
+        ->expectsQuestion('API key for Anthropic', '')
+        ->assertExitCode(0);
+
+    $stored = finCodexAiStored();
+
+    expect($stored->api_key)->toBe('sk-stored')
+        ->and($stored->model)->toBe('fake-smartest')
+        ->and($stored->enabled)->toBeTrue()
+        // And the connection was tested with the key that was about to be
+        // saved, not with whatever the SDK would have fallen back to.
+        ->and($fake->connectionTests[0]['apiKey'])->toBe('sk-stored');
+});
+
+it('replaces the stored key when one is typed', function () {
+    finCodexAiSkipUnlessGateMet();
+
+    $fake = finCodexFakeAi();
+
+    AiSettings::write(['api_key' => 'sk-stored']);
+
+    $this->artisan('fin-codex:install --ai-only')
+        ->expectsChoice('Which provider should translate the articles?', 'anthropic', finCodexAiProviderOptions())
+        ->expectsChoice('Which model?', 'default', finCodexAiTierOptions())
+        ->expectsQuestion('API key for Anthropic', 'sk-new')
+        ->assertExitCode(0);
+
+    expect(finCodexAiStored()->api_key)->toBe('sk-new')
+        ->and($fake->connectionTests[0]['apiKey'])->toBe('sk-new');
 });
 
 it('writes nothing when the connection test fails', function () {
