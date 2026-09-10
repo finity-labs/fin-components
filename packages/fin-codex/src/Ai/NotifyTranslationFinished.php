@@ -50,6 +50,10 @@ use Throwable;
  * lost notification was about. A host without the table keeps its finished
  * translations either way.
  *
+ * A report with failures also writes a warning line, whether or not the
+ * notification could be stored: a failed language is something the host's log
+ * should carry even when the admin's bell says the same thing (locked).
+ *
  * The notification renders under the application locale, because a worker has
  * no panel and therefore no panel language. A deleted article is named by its
  * id and gets no button, since there is no page left to open.
@@ -58,6 +62,14 @@ final class NotifyTranslationFinished
 {
     public function handle(ArticleTranslated $event): void
     {
+        if ($event->report->hasFailures()) {
+            Log::warning('fin-codex: AI translation failed for some languages', [
+                'article_id' => $event->articleId,
+                'user_id' => $event->userId,
+                'failed' => $event->report->failedLocales(),
+            ]);
+        }
+
         if ($event->userId === null) {
             return;
         }

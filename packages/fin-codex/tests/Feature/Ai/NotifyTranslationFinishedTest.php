@@ -3,17 +3,22 @@
 use Filament\Notifications\DatabaseNotification;
 use FinityLabs\FinCodex\Ai\NotifyTranslationFinished;
 use FinityLabs\FinCodex\Editor\ArticleTitle;
+use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Ai\AiReason;
 use FinityLabs\LinCodex\Events\ArticleTranslated;
+use FinityLabs\LinCodex\Jobs\TranslateArticle;
 use FinityLabs\LinCodex\Locale\LocaleResolver;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use FinityLabs\LinCodex\Translation\TranslationReport;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Schema;
 
 /*
  * AIBULK-03: the admin who queued a translation run is told how it went.
@@ -224,4 +229,89 @@ it('stores the row inside the call on a faked queue', function (): void {
     expect(finCodexNotificationsFor($user))->toHaveCount(1);
 
     Queue::assertNothingPushed();
+});
+
+it('logs a warning naming the failed languages and their reasons whether or not anyone is told', function (): void {
+    $user = finCodexNotifyUser();
+    $article = finCodexNotifyArticle();
+
+    Log::spy();
+
+    $report = finCodexNotifyReport([], [
+        'hu' => AiReason::RATE_LIMITED,
+        'ro' => AiReason::TIMEOUT,
+    ]);
+
+    finCodexNotifyFire($article, $user->id, $report);
+
+    expect(finCodexNotificationsFor($user))->toHaveCount(1);
+
+    Log::shouldHaveReceived('warning')
+        ->once()
+        ->withArgs(fn (string $message, array $context): bool => $message === 'fin-codex: AI translation failed for some languages'
+            && $context['article_id'] === $article->id
+            && $context['user_id'] === $user->id
+            && $context['failed'] === ['hu' => 'rate_limited', 'ro' => 'timeout']);
+
+    finCodexNotifyFire($article, null, $report);
+
+    expect(finCodexNotificationsFor($user))->toHaveCount(1);
+
+    Log::shouldHaveReceived('warning')->twice();
+});
+
+it('logs no warning when nothing failed', function (): void {
+    $user = finCodexNotifyUser();
+    $article = finCodexNotifyArticle();
+
+    Log::spy();
+
+    finCodexNotifyFire($article, $user->id, finCodexNotifyReport(['de'], [], ['hu']));
+
+    expect(finCodexNotificationsFor($user))->toHaveCount(1);
+
+    Log::shouldNotHaveReceived('warning');
+    Log::shouldNotHaveReceived('error');
+});
+
+it('logs an error with context and lets the job finish when the notification cannot be stored', function (): void {
+    $user = finCodexNotifyUser();
+    $article = finCodexNotifyArticle();
+
+    $report = finCodexNotifyReport(['de'], ['hu' => AiReason::QUOTA_EXCEEDED]);
+
+    Schema::drop('notifications');
+
+    Log::spy();
+
+    finCodexNotifyFire($article, $user->id, $report);
+
+    Log::shouldHaveReceived('error')
+        ->once()
+        ->withArgs(fn (string $message, array $context): bool => $message === 'fin-codex: could not store the translation notification'
+            && $context['article_id'] === $article->id
+            && $context['user_id'] === $user->id
+            && $context['locales'] === ['de', 'hu']
+            && $context['report'] === $report->toArray()
+            && $context['exception'] instanceof QueryException);
+
+    Log::shouldHaveReceived('warning')->once();
+});
+
+it('keeps the queued job green when the store fails inside it', function (): void {
+    $user = finCodexNotifyUser();
+    $article = finCodexNotifyArticle();
+
+    finCodexFakeAi(FakeAiClient::translating(['title' => 'Benutzer', 'excerpt' => null, 'body' => 'Text']));
+    finCodexEnableAi();
+
+    Schema::drop('notifications');
+
+    Log::spy();
+
+    dispatch_sync(new TranslateArticle($article->id, ['de'], $user->id));
+
+    expect(ArticleTranslation::query()->where('article_id', $article->id)->where('locale', 'de')->exists())->toBeTrue();
+
+    Log::shouldHaveReceived('error')->once();
 });
