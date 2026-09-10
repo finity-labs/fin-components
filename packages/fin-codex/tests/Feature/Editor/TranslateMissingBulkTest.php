@@ -146,6 +146,19 @@ function finCodexBulkArticle(string $slug, array $translations): Article
     return $article;
 }
 
+/** The mounted bulk modal's live language CheckboxList. */
+function finCodexBulkLocaleList(Testable $component): CheckboxList
+{
+    $page = $component->instance();
+    $schema = $page->getSchema((string) $page->getMountedActionSchemaName());
+    $locales = $schema?->getFlatFields()['locales'] ?? null;
+
+    expect($locales)->toBeInstanceOf(CheckboxList::class);
+
+    /** @var CheckboxList $locales */
+    return $locales;
+}
+
 /**
  * The mounted bulk modal's language options, code => display, read off the
  * live CheckboxList rather than out of the rendered HTML: the list's own
@@ -155,14 +168,7 @@ function finCodexBulkArticle(string $slug, array $translations): Article
  */
 function finCodexBulkOptions(Testable $component): array
 {
-    $page = $component->instance();
-    $schema = $page->getSchema((string) $page->getMountedActionSchemaName());
-    $locales = $schema?->getFlatFields()['locales'] ?? null;
-
-    expect($locales)->toBeInstanceOf(CheckboxList::class);
-
-    /** @var CheckboxList $locales */
-    return $locales->getOptions();
+    return finCodexBulkLocaleList($component)->getOptions();
 }
 
 /**
@@ -262,6 +268,20 @@ it('offers every configured non-default language pre-checked, in settings order'
 
     expect(finCodexBulkOptions($reordered))->toBe(finCodexBulkDisplays(['hu', 'de']))
         ->and(finCodexBulkOptions($reordered))->not->toHaveKey('en');
+});
+
+it('lays the languages out in three columns rather than one tall one', function (): void {
+    $gapBoth = finCodexBulkArticle('users', ['en' => 'Users']);
+
+    $locales = finCodexBulkLocaleList(
+        Livewire::test(ListArticles::class)->mountTableBulkAction('translate_missing', [$gapBoth]),
+    );
+
+    // An integer count is a large-breakpoint one and Filament's own grid
+    // helper defaults every smaller breakpoint to one column, so a narrow
+    // modal on a phone still gets the single column it has room for.
+    expect($locales->getColumns('lg'))->toBe(3)
+        ->and($locales->getColumns())->toBe(['lg' => 3]);
 });
 
 it('names how many articles are selected and says the work runs in the background', function (): void {

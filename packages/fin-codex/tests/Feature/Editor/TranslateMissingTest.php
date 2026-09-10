@@ -213,7 +213,13 @@ it('lists the missing languages by their configured display names and says the w
         ->and($checkboxes->getOptions())->toBe([
             'de' => finCodexMissingDisplay('de'),
             'hu' => finCodexMissingDisplay('hu'),
-        ]);
+        ])
+        // Three columns, as in the bulk modal: the two modals look alike. An
+        // integer count is a large-breakpoint one and Filament's own grid
+        // helper defaults every smaller breakpoint to one column, so a narrow
+        // modal on a phone still gets the single column it has room for.
+        ->and($checkboxes->getColumns('lg'))->toBe(3)
+        ->and($checkboxes->getColumns())->toBe(['lg' => 3]);
 });
 
 it('hides it for each unavailable state', function (Closure $state): void {

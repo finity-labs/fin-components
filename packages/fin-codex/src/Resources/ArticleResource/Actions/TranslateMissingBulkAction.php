@@ -40,6 +40,12 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
  *   translations relation. The selection is fetched through the table's own
  *   query, so with('translations') has already run for the whole selection.
  *
+ * The language list is laid out in three columns, as the row action's is. This
+ * one offers EVERY configured non-default language rather than one article's
+ * gaps, so it is the longer of the two and a single column left the modal
+ * scrolling past its own submit button. An integer is a large-breakpoint count
+ * in Filament, so a phone still gets the single column it has room for.
+ *
  * Availability is a plain bool handed down from the table: a bulk action has
  * no per-record gate to hang it on, and hiding it also takes the checkbox
  * column away, so with AI unavailable the list renders exactly as it did
@@ -102,6 +108,7 @@ final class TranslateMissingBulkAction
             ->schema([
                 CheckboxList::make('locales')
                     ->label(__('fin-codex::fin-codex.editor.translate_missing.languages'))
+                    ->columns(3)
                     ->options($candidates)
                     ->default(array_keys($candidates))
                     ->required()

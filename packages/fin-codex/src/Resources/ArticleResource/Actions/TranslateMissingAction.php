@@ -52,6 +52,11 @@ use FinityLabs\LinCodex\Translation\MissingTranslations;
  * agree about what "missing" means and a language filled in between is
  * skipped rather than overwritten.
  *
+ * The language list is laid out in three columns, as the bulk action's is: a
+ * host with a dozen languages otherwise gets one tall column and a modal that
+ * scrolls past its own submit button. An integer is a large-breakpoint count
+ * in Filament, so a phone still gets the single column it has room for.
+ *
  * Inside the modal, three rules:
  *
  * - at least one language. The pick is required, and the submit button is
@@ -107,6 +112,7 @@ final class TranslateMissingAction
             ->schema(static fn (Article $record): array => self::sourceBlank($record, $default) ? [] : [
                 CheckboxList::make('locales')
                     ->label(__('fin-codex::fin-codex.editor.translate_missing.languages'))
+                    ->columns(3)
                     ->options(static fn (Article $record): array => self::options($missing->for($record), $displayNames))
                     ->default(static fn (Article $record): array => $missing->for($record))
                     ->in(static fn (): array => $missing->candidates())
