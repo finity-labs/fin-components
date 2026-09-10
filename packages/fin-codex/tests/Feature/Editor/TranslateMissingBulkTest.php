@@ -1,13 +1,19 @@
 <?php
 
 use Filament\Forms\Components\CheckboxList;
+use Filament\Notifications\Notification;
 use FinityLabs\FinCodex\Resources\ArticleResource\Pages\ListArticles;
 use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
+use FinityLabs\LinCodex\Jobs\TranslateArticle;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
@@ -24,6 +30,74 @@ use Livewire\Livewire;
  * asserts the markup as well as the button: with AI unavailable the list looks
  * exactly as it did before the slot existed.
  */
+
+/**
+ * A host that lets this user read the article list but never update anything
+ * on it. It defines update() rather than leaving it out, so the denial is an
+ * answer and ArticleAbility's fallback cannot rescue it.
+ *
+ * Not the shipped DenyAllArticlePolicy: that one refuses viewAny too, and
+ * Livewire replays the panel's route middleware on every update request, so
+ * the list page answers 403 on the request the press itself makes and the
+ * component is gone before the loop can count anything. A user who may not
+ * even open the list never reaches this action; a user who may open it and
+ * may not write is the case the count exists for.
+ */
+class FinCodexBulkNoUpdatePolicy
+{
+    public function viewAny(Authenticatable $user): bool
+    {
+        return true;
+    }
+
+    public function view(Authenticatable $user, Article $article): bool
+    {
+        return true;
+    }
+
+    public function create(Authenticatable $user): bool
+    {
+        return true;
+    }
+
+    public function update(Authenticatable $user, Article $article): bool
+    {
+        return false;
+    }
+
+    public function delete(Authenticatable $user, Article $article): bool
+    {
+        return true;
+    }
+
+    public function restore(Authenticatable $user, Article $article): bool
+    {
+        return true;
+    }
+
+    public function import(Authenticatable $user): bool
+    {
+        return true;
+    }
+
+    public function convert(Authenticatable $user, Article $article): bool
+    {
+        return true;
+    }
+}
+
+/**
+ * The same host, one article at a time: everything is updatable except the one
+ * whose slug is "locked". It is what makes the third clause read "One article
+ * was skipped" beside two queued jobs.
+ */
+class FinCodexBulkLockedSlugPolicy extends FinCodexBulkNoUpdatePolicy
+{
+    public function update(Authenticatable $user, Article $article): bool
+    {
+        return $article->slug !== 'locked';
+    }
+}
 
 /** A fixture user signed in on the admin panel; the same row on every call. */
 function finCodexBulkUser(string $name = 'Bulk'): User
@@ -120,6 +194,31 @@ function finCodexBulkDescription(Testable $component): string
     return $description instanceof Htmlable ? $description->toHtml() : (string) $description;
 }
 
+/**
+ * The summary toast the press is expected to send: two numbers always, the
+ * not-permitted clause as a third sentence only when there is one.
+ */
+function finCodexBulkToast(int $queued, int $nothing, int $notPermitted = 0): Notification
+{
+    $body = (string) __('fin-codex::fin-codex.editor.translate_missing.bulk_summary', [
+        'queued' => $queued,
+        'nothing' => $nothing,
+    ]);
+
+    if ($notPermitted > 0) {
+        $body .= ' '.trans_choice(
+            'fin-codex::fin-codex.editor.translate_missing.bulk_not_permitted',
+            $notPermitted,
+            ['count' => $notPermitted],
+        );
+    }
+
+    return Notification::make()
+        ->success()
+        ->title(__('fin-codex::fin-codex.editor.translate_missing.queued_title'))
+        ->body($body);
+}
+
 beforeEach(function (): void {
     finCodexBulkUseLanguages();
     finCodexFakeAi();
@@ -184,4 +283,195 @@ it('names how many articles are selected and says the work runs in the backgroun
     expect($one)->toBe(trans_choice('fin-codex::fin-codex.editor.translate_missing.bulk_description', 1, ['count' => 1]))
         ->and($one)->toContain('One article is selected')
         ->and($one)->toContain('runs in the background');
+});
+
+it('queues one job per article for the ticked languages it lacks and reports the two counts', function (): void {
+    Queue::fake();
+
+    $user = finCodexBulkUser();
+    $full = finCodexBulkArticle('billing', ['en' => 'Billing', 'de' => 'Abrechnung', 'hu' => 'Számlázás']);
+    $gapDe = finCodexBulkArticle('users', ['en' => 'Users', 'hu' => 'Felhasználók']);
+    $gapBoth = finCodexBulkArticle('zebra', ['en' => 'Zebra']);
+
+    Livewire::test(ListArticles::class)
+        ->callTableBulkAction('translate_missing', [$full, $gapDe, $gapBoth], data: ['locales' => ['de']])
+        ->assertHasNoTableBulkActionErrors()
+        ->assertNotified(finCodexBulkToast(queued: 2, nothing: 1));
+
+    Queue::assertPushed(TranslateArticle::class, 2);
+
+    Queue::assertPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $gapDe->id
+        && $job->locales === ['de']
+        && $job->userId === $user->id);
+
+    // hu was not ticked, so the article that lacks both still gets only de.
+    Queue::assertPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $gapBoth->id
+        && $job->locales === ['de']
+        && $job->userId === $user->id);
+
+    Queue::assertNotPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $full->id);
+});
+
+it('fills every gap when the pick is left as it is', function (): void {
+    Queue::fake();
+
+    $gapDe = finCodexBulkArticle('users', ['en' => 'Users', 'hu' => 'Felhasználók']);
+    $gapBoth = finCodexBulkArticle('zebra', ['en' => 'Zebra']);
+
+    Livewire::test(ListArticles::class)
+        ->mountTableBulkAction('translate_missing', [$gapDe, $gapBoth])
+        ->callMountedTableBulkAction()
+        ->assertHasNoTableBulkActionErrors()
+        ->assertNotified(finCodexBulkToast(queued: 2, nothing: 0));
+
+    Queue::assertPushed(TranslateArticle::class, 2);
+
+    Queue::assertPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $gapDe->id
+        && $job->locales === ['de']);
+
+    Queue::assertPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $gapBoth->id
+        && $job->locales === ['de', 'hu']);
+});
+
+it('queues nothing for a selection that lacks nothing', function (): void {
+    Queue::fake();
+
+    $full = finCodexBulkArticle('billing', ['en' => 'Billing', 'de' => 'Abrechnung', 'hu' => 'Számlázás']);
+
+    Livewire::test(ListArticles::class)
+        ->callTableBulkAction('translate_missing', [$full], data: ['locales' => ['de', 'hu']])
+        ->assertHasNoTableBulkActionErrors()
+        ->assertNotified(finCodexBulkToast(queued: 0, nothing: 1));
+
+    Queue::assertNothingPushed();
+});
+
+it('refuses an empty pick and queues nothing', function (): void {
+    Queue::fake();
+
+    $gapBoth = finCodexBulkArticle('zebra', ['en' => 'Zebra']);
+
+    Livewire::test(ListArticles::class)
+        ->callTableBulkAction('translate_missing', [$gapBoth], data: ['locales' => []])
+        ->assertHasTableBulkActionErrors(['locales' => 'required']);
+
+    Queue::assertNothingPushed();
+
+    expect(__('fin-codex::fin-codex.editor.translate_missing.pick_one'))->toBe('Tick at least one language.');
+});
+
+it('skips and counts the articles the admin may not update', function (): void {
+    Queue::fake();
+
+    $full = finCodexBulkArticle('billing', ['en' => 'Billing', 'de' => 'Abrechnung', 'hu' => 'Számlázás']);
+    $gapDe = finCodexBulkArticle('users', ['en' => 'Users', 'hu' => 'Felhasználók']);
+    $gapBoth = finCodexBulkArticle('zebra', ['en' => 'Zebra']);
+
+    // The policy is swapped after the mount, which is also the realistic
+    // story: a permission revoked while the admin has the list open.
+    $component = Livewire::test(ListArticles::class);
+
+    Gate::policy(Article::class, FinCodexBulkNoUpdatePolicy::class);
+
+    $component
+        ->callTableBulkAction('translate_missing', [$gapDe, $gapBoth, $full], data: ['locales' => ['de', 'hu']])
+        ->assertNotified(finCodexBulkToast(queued: 0, nothing: 0, notPermitted: 3));
+
+    Queue::assertNothingPushed();
+
+    // The article that lacks nothing is counted as not permitted, not as
+    // needing nothing: the ability is asked first, before the gaps.
+    expect(trans_choice('fin-codex::fin-codex.editor.translate_missing.bulk_not_permitted', 3, ['count' => 3]))
+        ->toBe('3 articles were skipped because you may not update them.');
+});
+
+it('counts the one article it may not update and queues the rest', function (): void {
+    Queue::fake();
+
+    $user = finCodexBulkUser();
+    $locked = finCodexBulkArticle('locked', ['en' => 'Locked']);
+    $gapBoth = finCodexBulkArticle('zebra', ['en' => 'Zebra']);
+
+    $component = Livewire::test(ListArticles::class);
+
+    Gate::policy(Article::class, FinCodexBulkLockedSlugPolicy::class);
+
+    $component
+        ->callTableBulkAction('translate_missing', [$locked, $gapBoth], data: ['locales' => ['de', 'hu']])
+        ->assertNotified(finCodexBulkToast(queued: 1, nothing: 0, notPermitted: 1));
+
+    Queue::assertPushed(TranslateArticle::class, 1);
+
+    Queue::assertPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $gapBoth->id
+        && $job->locales === ['de', 'hu']
+        && $job->userId === $user->id);
+
+    Queue::assertNotPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $locked->id);
+
+    expect(trans_choice('fin-codex::fin-codex.editor.translate_missing.bulk_not_permitted', 1, ['count' => 1]))
+        ->toBe('One article was skipped because you may not update it.');
+});
+
+it('reads the gaps off the loaded translations, with no query per article', function (): void {
+    Queue::fake();
+
+    $first = finCodexBulkArticle('alpha', ['en' => 'Alpha']);
+    $second = finCodexBulkArticle('beta', ['en' => 'Beta']);
+    $third = finCodexBulkArticle('gamma', ['en' => 'Gamma']);
+
+    $translations = app(ArticleTranslation::class)->getTable();
+
+    /**
+     * Every statement the press issues against the translations table, over a
+     * page that holds the same three rows whatever the selection is.
+     *
+     * @param  list<Article>  $selection
+     *
+     * @return list<string>
+     */
+    $reads = function (array $selection) use ($translations): array {
+        $component = Livewire::test(ListArticles::class);
+
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $component->callTableBulkAction('translate_missing', $selection, data: ['locales' => ['de', 'hu']]);
+
+        $queries = array_map(fn (array $entry): string => (string) $entry['query'], DB::getQueryLog());
+
+        DB::disableQueryLog();
+
+        return array_values(array_filter($queries, fn (string $query): bool => str_contains($query, $translations)));
+    };
+
+    $one = $reads([$first]);
+    $three = $reads([$first, $second, $third]);
+
+    // The render is identical either way, so the only thing that could grow
+    // with the selection is the loop - and it does not.
+    expect($one)->not->toBeEmpty()
+        ->and($three)->toHaveCount(count($one));
+
+    // Every read is a set: MissingTranslations::for() on an article whose
+    // relation was NOT loaded would issue "article_id" = ? once per row.
+    foreach ($three as $query) {
+        expect($query)->not->toContain('"article_id" = ');
+    }
+
+    Queue::assertPushed(TranslateArticle::class, 4);
+});
+
+it('treats a blank default language like any other article', function (): void {
+    Queue::fake();
+
+    $blank = finCodexBulkArticle('blank', ['en' => '']);
+
+    Livewire::test(ListArticles::class)
+        ->callTableBulkAction('translate_missing', [$blank], data: ['locales' => ['de', 'hu']])
+        ->assertNotified(finCodexBulkToast(queued: 1, nothing: 0));
+
+    Queue::assertPushed(TranslateArticle::class, 1);
+
+    Queue::assertPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $blank->id
+        && $job->locales === ['de', 'hu']);
 });

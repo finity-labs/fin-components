@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace FinityLabs\FinCodex\Resources\ArticleResource\Actions;
 
 use Filament\Actions\BulkAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinCodex\Auth\ArticleAbility;
+use FinityLabs\LinCodex\Jobs\TranslateArticle;
+use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Translation\MissingTranslations;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
@@ -56,8 +60,25 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
  * There is no cap on the selection size. One job per article is the unit of
  * work, and the queue is what a queue is for.
  *
- * The loop, the three counts and the summary land with the bulk plan's second
- * task; the picker is here now.
+ * The press counts three things and reports two of them. Queued and "needed
+ * nothing" are the normal summary, always both, because a selection made from
+ * a list of flags routinely contains articles that are already complete and an
+ * admin who ticked twenty rows wants to know that nine of them were fine. The
+ * not-permitted count is a third sentence and appears only when it is not
+ * zero: a summary that ends "and 0 were skipped" on every press trains the
+ * admin to stop reading it.
+ *
+ * The ticked languages are intersected with each article's CURRENT gaps rather
+ * than queued as they were picked, so a modal left open while somebody else
+ * filled a language in never queues that language again. The job re-checks
+ * per locale anyway - it runs on a freshly fetched article - so this is the
+ * cheaper half of the same promise, not the only one.
+ *
+ * The row action's blank-source rule has no counterpart here. That one has a
+ * single article in front of it and can say which language to fill in first;
+ * a selection may hold twenty, so this action does not judge any article's
+ * source. An article whose default language is empty is queued like the rest
+ * and the job fails those locales with a reason of its own.
  */
 final class TranslateMissingBulkAction
 {
@@ -87,13 +108,85 @@ final class TranslateMissingBulkAction
                     ->validationMessages(['required' => __('fin-codex::fin-codex.editor.translate_missing.pick_one')]),
             ])
             ->modalSubmitActionLabel(__('fin-codex::fin-codex.editor.translate_missing.submit'))
-            ->action(static function (): void {
-                Notification::make()
-                    ->success()
-                    ->title(__('fin-codex::fin-codex.editor.translate_missing.queued_title'))
-                    ->send();
-            })
+            ->action(
+                /**
+                 * @param  array<string, mixed>  $data
+                 */
+                static function (EloquentCollection $records, array $data) use ($missing): void {
+                    // The selection is fetched through the table's own query,
+                    // so these are Articles with their translations loaded.
+                    /** @var EloquentCollection<int, Article> $records */
+                    $picked = self::picked($data);
+                    $id = Filament::auth()->id();
+                    $userId = is_numeric($id) ? (int) $id : null;
+
+                    $queued = 0;
+                    $nothing = 0;
+                    $notPermitted = 0;
+
+                    foreach ($records as $article) {
+                        if (! ArticleAbility::allows('update', $article)) {
+                            $notPermitted++;
+
+                            continue;
+                        }
+
+                        $locales = array_values(array_intersect($missing->for($article), $picked));
+
+                        if ($locales === []) {
+                            $nothing++;
+
+                            continue;
+                        }
+
+                        TranslateArticle::dispatch($article->id, $locales, $userId);
+                        $queued++;
+                    }
+
+                    $body = (string) __('fin-codex::fin-codex.editor.translate_missing.bulk_summary', [
+                        'queued' => $queued,
+                        'nothing' => $nothing,
+                    ]);
+
+                    if ($notPermitted > 0) {
+                        $body .= ' '.trans_choice(
+                            'fin-codex::fin-codex.editor.translate_missing.bulk_not_permitted',
+                            $notPermitted,
+                            ['count' => $notPermitted],
+                        );
+                    }
+
+                    Notification::make()
+                        ->success()
+                        ->title(__('fin-codex::fin-codex.editor.translate_missing.queued_title'))
+                        ->body($body)
+                        ->send();
+                },
+            )
             ->deselectRecordsAfterCompletion();
+    }
+
+    /**
+     * The locale codes the admin left ticked. Anything that is not a string is
+     * dropped rather than cast: the only source of these values is the
+     * CheckboxList's own option keys, so a non-string is a tampered request,
+     * not a language.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @return list<string>
+     */
+    private static function picked(array $data): array
+    {
+        $picked = [];
+
+        foreach ((array) ($data['locales'] ?? []) as $locale) {
+            if (is_string($locale)) {
+                $picked[] = $locale;
+            }
+        }
+
+        return $picked;
     }
 
     /**
