@@ -144,6 +144,22 @@ return [
             'failed' => 'Translation failed',
             'check_settings' => 'Check Help settings.',
         ],
+        'translate_missing' => [
+            'label' => 'Translate missing',
+            'bulk_label' => 'Translate missing',
+            'heading' => 'Translate the missing languages of ":title"?',
+            'bulk_heading' => 'Translate the missing languages of the selected articles?',
+            'description' => 'Only the languages this article still lacks are listed. The translation runs in the background, and the languages appear on the list when it finishes.',
+            'bulk_description' => '{1} One article is selected; it gets only the languages it still lacks among the ticked ones. The work runs in the background, and the languages appear on the list when it finishes.|[2,*] :count articles are selected; each gets only the languages it still lacks among the ticked ones. The work runs in the background, and the languages appear on the list when it finishes.',
+            'blank_source' => 'The :language title or body is empty, so there is nothing to translate from. Fill it in the editor first.',
+            'languages' => 'Languages',
+            'pick_one' => 'Tick at least one language.',
+            'submit' => 'Queue translation',
+            'queued_title' => 'Translation queued',
+            'queued_body' => 'It runs in the background; the languages appear on the list when it finishes.',
+            'bulk_summary' => 'Queued: :queued. Nothing to do: :nothing.',
+            'bulk_not_permitted' => '{1} One article was skipped because you may not update it.|[2,*] :count articles were skipped because you may not update them.',
+        ],
         'validation' => [
             'slug_format' => 'The slug must be kebab-case segments separated by slashes.',
             'parent_missing' => 'No article exists at :parent.',
@@ -342,5 +358,12 @@ return [
     'search' => [
         'category' => 'Help',
         'open_here' => 'Open here',
+    ],
+    'notification' => [
+        'deleted_article' => 'Deleted article #:id',
+        'translated' => 'Translated: :languages.',
+        'failed' => 'Failed: :languages.',
+        'nothing_to_do' => 'Every requested language was already filled.',
+        'open' => 'Open article',
     ],
 ];

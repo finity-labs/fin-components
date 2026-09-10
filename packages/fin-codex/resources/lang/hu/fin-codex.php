@@ -144,6 +144,22 @@ return [
             'failed' => 'A fordítás nem sikerült',
             'check_settings' => 'Nézze meg a súgóbeállításokat.',
         ],
+        'translate_missing' => [
+            'label' => 'Hiányzók fordítása',
+            'bulk_label' => 'Hiányzók fordítása',
+            'heading' => 'Lefordítja a(z) „:title” hiányzó nyelveit?',
+            'bulk_heading' => 'Lefordítja a kijelölt cikkek hiányzó nyelveit?',
+            'description' => 'Csak azok a nyelvek szerepelnek, amelyek ebből a cikkből még hiányoznak. A fordítás a háttérben fut, és a nyelvek megjelennek a listán, amint elkészül.',
+            'bulk_description' => '{1} Egy cikk van kijelölve; a bejelölt nyelvek közül csak azokat kapja meg, amelyek még hiányoznak belőle. A munka a háttérben fut, és a nyelvek megjelennek a listán, amint elkészül.|[2,*] :count cikk van kijelölve; mindegyik a bejelölt nyelvek közül csak azokat kapja meg, amelyek még hiányoznak belőle. A munka a háttérben fut, és a nyelvek megjelennek a listán, amint elkészül.',
+            'blank_source' => 'A(z) :language cím vagy törzs üres, így nincs miből fordítani. Töltse ki előbb a szerkesztőben.',
+            'languages' => 'Nyelvek',
+            'pick_one' => 'Jelöljön be legalább egy nyelvet.',
+            'submit' => 'Fordítás sorba állítása',
+            'queued_title' => 'A fordítás sorba állítva',
+            'queued_body' => 'A háttérben fut; a nyelvek megjelennek a listán, amint elkészül.',
+            'bulk_summary' => 'Sorba állítva: :queued. Nincs teendő: :nothing.',
+            'bulk_not_permitted' => '{1} Egy cikk kimaradt, mert Ön nem frissítheti.|[2,*] :count cikk kimaradt, mert Ön nem frissítheti őket.',
+        ],
         'validation' => [
             'slug_format' => 'A slug kötőjeles szegmensekből álljon, perjellel elválasztva.',
             'parent_missing' => 'Nem létezik cikk a(z) :parent helyen.',
@@ -342,5 +358,12 @@ return [
     'search' => [
         'category' => 'Súgó',
         'open_here' => 'Megnyitás itt',
+    ],
+    'notification' => [
+        'deleted_article' => 'Törölt cikk #:id',
+        'translated' => 'Lefordítva: :languages.',
+        'failed' => 'Nem sikerült: :languages.',
+        'nothing_to_do' => 'Minden kért nyelv már ki volt töltve.',
+        'open' => 'Cikk megnyitása',
     ],
 ];

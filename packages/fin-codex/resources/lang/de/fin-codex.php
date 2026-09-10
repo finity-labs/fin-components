@@ -144,6 +144,22 @@ return [
             'failed' => 'Übersetzung fehlgeschlagen',
             'check_settings' => 'Sehen Sie in den Hilfe-Einstellungen nach.',
         ],
+        'translate_missing' => [
+            'label' => 'Fehlende übersetzen',
+            'bulk_label' => 'Fehlende übersetzen',
+            'heading' => 'Die fehlenden Sprachen von „:title“ übersetzen?',
+            'bulk_heading' => 'Die fehlenden Sprachen der ausgewählten Artikel übersetzen?',
+            'description' => 'Aufgeführt sind nur die Sprachen, die diesem Artikel noch fehlen. Die Übersetzung läuft im Hintergrund; die Sprachen erscheinen in der Liste, sobald sie fertig ist.',
+            'bulk_description' => '{1} Ein Artikel ist ausgewählt; er erhält von den angekreuzten Sprachen nur die, die ihm noch fehlen. Die Arbeit läuft im Hintergrund; die Sprachen erscheinen in der Liste, sobald sie fertig ist.|[2,*] :count Artikel sind ausgewählt; jeder erhält von den angekreuzten Sprachen nur die, die ihm noch fehlen. Die Arbeit läuft im Hintergrund; die Sprachen erscheinen in der Liste, sobald sie fertig ist.',
+            'blank_source' => 'Titel oder Inhalt in :language sind leer, es gibt also nichts zu übersetzen. Füllen Sie sie zuerst im Editor aus.',
+            'languages' => 'Sprachen',
+            'pick_one' => 'Kreuzen Sie mindestens eine Sprache an.',
+            'submit' => 'Übersetzung einreihen',
+            'queued_title' => 'Übersetzung eingereiht',
+            'queued_body' => 'Sie läuft im Hintergrund; die Sprachen erscheinen in der Liste, sobald sie fertig ist.',
+            'bulk_summary' => 'Eingereiht: :queued. Nichts zu tun: :nothing.',
+            'bulk_not_permitted' => '{1} Ein Artikel wurde übersprungen, weil Sie ihn nicht aktualisieren dürfen.|[2,*] :count Artikel wurden übersprungen, weil Sie sie nicht aktualisieren dürfen.',
+        ],
         'validation' => [
             'slug_format' => 'Der Slug muss aus Kebab-Case-Segmenten bestehen, durch Schrägstriche getrennt.',
             'parent_missing' => 'Unter :parent existiert kein Artikel.',
@@ -342,5 +358,12 @@ return [
     'search' => [
         'category' => 'Hilfe',
         'open_here' => 'Hier öffnen',
+    ],
+    'notification' => [
+        'deleted_article' => 'Gelöschter Artikel #:id',
+        'translated' => 'Übersetzt: :languages.',
+        'failed' => 'Fehlgeschlagen: :languages.',
+        'nothing_to_do' => 'Alle angeforderten Sprachen waren bereits ausgefüllt.',
+        'open' => 'Artikel öffnen',
     ],
 ];
