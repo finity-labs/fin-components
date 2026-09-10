@@ -38,7 +38,7 @@
     },
     "suggest": {
         "bezhansalleh/filament-shield": "Optional page permissions for the settings and coverage pages (^4.0).",
-        "finity-labs/fin-ai": "AI settings UI for drafting, rewriting, and translating articles from the editor."
+        "laravel/ai": "AI translation in the editor (PHP 8.3+, Laravel 12+; lin-codex's optional SDK)."
     },
     "repositories": [
         {
