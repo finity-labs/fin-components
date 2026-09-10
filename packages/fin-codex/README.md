@@ -31,7 +31,7 @@ In-app help for Filament panels. Codex puts a help drawer in the topbar, shows a
 - PHP 8.2+
 - Laravel 11, 12 or 13
 - Filament 4 or 5
-- [`finity-labs/lin-codex`](https://github.com/finity-labs/lin-codex) ^0.3
+- [`finity-labs/lin-codex`](https://github.com/finity-labs/lin-codex) ^0.3.1
 - Optional, for AI translation: PHP 8.3+, Laravel 12+ and [`laravel/ai`](https://github.com/laravel/ai) ^0.11 — lin-codex's suggested SDK, documented in [its README](https://github.com/finity-labs/lin-codex#ai-translation)
 
 Codex is split across two packages, and it matters for where you configure things. **lin-codex** owns the content: the `codex_*` tables, the Markdown renderer, the filesystem source, visibility rules, search, translations and the JSON API. It ships its own config file, its own install command and its own Blade drawer, and it works in any Laravel app with no Filament at all.
@@ -277,9 +277,36 @@ One tab per language from the [settings](#settings). Each tab holds the title, e
 
 **Translate with AI** sits beside Copy from default on every non-default tab of a Markdown article, on the create page as well as the edit page, while [AI translation](#ai-translation) is on and you may update the article — when the button isn't there, the settings page says why. It sends the default tab's title, excerpt and body exactly as they stand in the form, unsaved text included, and fills this tab with the answer. A tab that already holds text asks before it's replaced; an empty one just runs. Nothing is saved until you save the article yourself, and a failure leaves the tab as it was, with a notification naming the reason. Until the default language has both a title and a body the button is there but disabled, with a tooltip saying so.
 
-The call runs inside the request and waits for up to the timeout in the settings — 120 seconds by default — so your web server's own read timeout has to sit above it, or the translation dies before the model answers. nginx's `fastcgi_read_timeout` is 60 seconds out of the box; `Timeout` is Apache's and `request_terminate_timeout` php-fpm's. Raise those or lower the setting. For a provider slow enough to make that awkward, translate through [the queued job in lin-codex](https://github.com/finity-labs/lin-codex#missing-translations-and-the-queued-job) instead of the button.
+The call runs inside the request and waits for up to the timeout in the settings — 120 seconds by default — so your web server's own read timeout has to sit above it, or the translation dies before the model answers. nginx's `fastcgi_read_timeout` is 60 seconds out of the box; `Timeout` is Apache's and `request_terminate_timeout` php-fpm's. Raise those or lower the setting. For a provider slow enough to make that awkward, queue the work from the list instead: [Translate missing](#translating-from-the-list) runs the same translation in the background.
 
 A language is either translated or **Missing**, in the tabs and in the list's languages column, with a *Missing language* filter. There is no "outdated" marking: the editor cannot tell a corrected typo in the default text from a rewrite, and a badge that fires on both is soon ignored. `Editor\OutdatedTranslations` still computes which translations were saved before the default language, and the scope behind it, for a host that wants to surface that itself.
+
+### Translating from the list
+
+Two actions on the article list fill an article's gaps without opening the editor. Both hand the work to lin-codex's queued translation job instead of running it in the request, and both need [AI translation](#ai-translation) to be available — when it isn't, neither is there.
+
+**Translate missing** sits beside Edit on every article that still lacks a language and that you may update. Its modal lists only the languages that article is missing, all ticked, and queues one job for the ones you leave ticked; untick them all and the press is refused with a line under the list rather than a greyed button. The languages appear on the list when the job finishes. If the default language has no title or no body there is nothing to translate from — the button stays, and the modal says which language to fill in first and offers nothing to submit. (The editor greys its own button and hangs a tooltip on it. A table row has no room for a tooltip, and a button that simply isn't there explains nothing.) Only missing languages are ever offered: a translation that went stale because the default text changed afterwards is a judgement call about text that already exists, so refresh that one from the editor, where you can read both versions first.
+
+The same action in the toolbar does a selection at once. Tick the articles, and the modal offers every configured non-default language, all ticked, with the number of selected articles in its description. Each article then gets only the languages it still lacks among the ones you left ticked: one job per article that has something to do, and nothing at all for an article that lacks nothing. The summary names how many articles were queued and how many needed nothing, plus how many were skipped because you may not update them, when that happened. There is no limit on the selection.
+
+When a job finishes, the admin who queued it gets one Filament database notification per article: the article's title, the languages that arrived and the ones that failed with the reason for each, green when everything landed and amber the moment one language fails, and an **Open article** button that opens the article's edit page on your default panel. The text renders in the application's language — the job runs on a worker, and a worker has no panel and no panel locale.
+
+The bell needs two things from you, neither of which fin-codex checks for: Laravel's notifications table, and database notifications on the panel.
+
+```bash
+php artisan make:notifications-table
+php artisan migrate
+```
+
+```php
+$panel->databaseNotifications()
+```
+
+The job writes the notification itself, inside the job, so a panel without the bell loses nothing: the translations are written either way and the list's language flags catch up on the next load. A missing table, or a user model that can't be notified, is logged as an error with the article, the admin and the whole report, and the job still finishes. Every failed language is logged as a warning as well, bell or no bell — grep for `fin-codex: AI translation failed for some languages`.
+
+**The queue.** The job goes to your default queue connection and queue unless `lin-codex.ai.queue` names another. On the `sync` driver it runs inside the request, so the translation and the notification are both there by the time the page comes back. With a worker there is one thing to check: the job sizes its own timeout as languages × the settings timeout + 30 seconds, and the database and Redis drivers re-deliver a job that is still running once `retry_after` has passed — 90 seconds by default, well under that — so raise `retry_after` on the connection above the job's timeout or the same article gets translated twice at once. [lin-codex's README](https://github.com/finity-labs/lin-codex#missing-translations-and-the-queued-job) does the arithmetic.
+
+An HTML article is translated as it stands, tags included; the editor's advice to convert it to Markdown first applies here too. The tab action hides on an HTML article because its body is read-only in the editor — these two don't judge the format.
 
 ### Images
 
@@ -345,7 +372,7 @@ Deleting an *article* leaves its `codex_media` rows with a null `article_id`. Th
 
 A fourth section appears once `laravel/ai` is installed. Without it you get one note naming what it takes — PHP 8.3+, Laravel 12+ and `composer require laravel/ai` — and nothing else about AI.
 
-A status line at the top says whether translation can run right now: *AI translation is available* in green, or the reason in amber — the SDK is missing, the AI settings were never migrated, the switch is off, or there's no provider and no key. That line is the counterpart of the button in the editor. [Translate with AI](#languages) hides itself for those same four reasons, and this is the page that says which one.
+A status line at the top says whether translation can run right now: *AI translation is available* in green, or the reason in amber — the SDK is missing, the AI settings were never migrated, the switch is off, or there's no provider and no key. That line is the counterpart of the button in the editor. [Translate with AI](#languages) hides itself for those same four reasons, and so do the [Translate missing](#translating-from-the-list) actions on the article list — which queue lin-codex's translation job rather than translating in the request. This is the page that says which reason it is.
 
 The fields stay editable while the switch is off:
 
@@ -547,6 +574,8 @@ It removes `FinCodexPlugin::make()` from every panel provider that carries it, d
 ```bash
 php artisan codex:uninstall
 ```
+
+**Stored notifications stay too.** The completion notifications the translation job wrote are rows in your application's own `notifications` table, not in anything Codex owns, so neither command touches them. Delete them yourself if you want them gone.
 
 **It also leaves `app/Policies/ArticlePolicy.php` alone**, even though `shield:generate` may have written it. That is exactly the path where an application with its own `App\Models\Article` keeps its own policy, the command cannot tell the two apart, and deleting it is unrecoverable. Remove it yourself if it was ours.
 
