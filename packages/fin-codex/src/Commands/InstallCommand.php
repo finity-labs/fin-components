@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex\Commands;
 
+use FinityLabs\FinCodex\Ai\AiSettings;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinSupport\Console\Concerns\DiscoversPanelProviders;
 use FinityLabs\FinSupport\Console\Concerns\EditsPanelProviders;
 use FinityLabs\FinSupport\Console\Concerns\EditsShieldConfig;
+use FinityLabs\LinCodex\Ai\AiCallFailed;
+use FinityLabs\LinCodex\Ai\AiReason;
 use FinityLabs\LinCodex\Ai\Contracts\AiClient;
+use FinityLabs\LinCodex\Ai\ProviderCatalog;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleContext;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
@@ -23,7 +27,9 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
 
 use function Laravel\Prompts\confirm;
+use function Laravel\Prompts\password;
 use function Laravel\Prompts\select;
+use function Laravel\Prompts\text;
 
 use Symfony\Component\Process\Process;
 use Throwable;
@@ -513,10 +519,96 @@ class InstallCommand extends Command
         $this->promptAndSaveAi();
     }
 
-    /** Task 2 of this plan replaces this with the three prompts, the connection test and the save. */
+    /**
+     * The three questions the settings page also asks - provider, model and
+     * key - one connection test, and one save.
+     *
+     * The tier list is the seam's, so the choices carry the concrete model
+     * ids rather than the word "Default", and a provider that answers with
+     * the same id for two tiers is offered once. A provider the SDK reaches
+     * over a URL is never asked for a key, and a provider whose key is
+     * already in config/ai.php is asked for one it may leave blank.
+     *
+     * Nothing is written before the connection answers: a run that fails the
+     * test leaves the host exactly as it found it.
+     */
     private function promptAndSaveAi(): void
     {
-        $this->line('  AI translation setup is not available yet.');
+        $client = app(AiClient::class);
+        $providers = $client->providers();
+
+        if ($providers === []) {
+            $this->components->error('The installed SDK offers no provider.');
+
+            return;
+        }
+
+        $provider = (string) select(
+            label: 'Which provider should translate the articles?',
+            options: $providers,
+            required: true,
+        );
+
+        try {
+            $tiers = $client->tierModels($provider);
+        } catch (AiCallFailed) {
+            $tiers = [];
+        }
+
+        $models = [];
+        $options = [];
+
+        foreach ($tiers as $tier => $id) {
+            if (in_array($id, $models, true)) {
+                continue;
+            }
+
+            $models[$tier] = $id;
+            $options[$tier] = ucfirst($tier)." ({$id})";
+        }
+
+        $options['custom'] = 'Custom model id';
+
+        $choice = (string) select(
+            label: 'Which model?',
+            options: $options,
+            default: $models === [] ? 'custom' : 'default',
+        );
+
+        $model = $choice === 'custom'
+            ? trim((string) text(label: 'Model id', required: true))
+            : $models[$choice];
+
+        $label = $providers[$provider];
+        $envConfigured = ProviderCatalog::envConfigured($provider);
+
+        $key = ProviderCatalog::isKeyless($provider) ? '' : (string) password(
+            label: "API key for {$label}",
+            required: ! $envConfigured,
+            hint: $envConfigured ? 'Leave blank to use the key from config/ai.php' : '',
+        );
+
+        $this->comment('Testing the connection...');
+
+        $reason = $client->testConnection($provider, $model, $key !== '' ? $key : null);
+
+        if ($reason !== null) {
+            $this->components->error('AI connection test failed: '.AiReason::label($reason));
+            $this->line('  Nothing was saved. Run php artisan fin-codex:install --ai-only to try again.');
+
+            return;
+        }
+
+        AiSettings::write([
+            'enabled' => true,
+            'provider' => $provider,
+            'model' => $model,
+            'api_key' => $key !== '' ? $key : null,
+        ]);
+
+        $this->aiConfigured = true;
+        $this->info("  AI translation configured: {$label}, {$model}");
+        $this->line('  Open a non-default language tab in the editor and press Translate with AI.');
     }
 
     /**

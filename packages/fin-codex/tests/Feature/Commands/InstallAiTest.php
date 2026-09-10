@@ -3,9 +3,12 @@
 use FinityLabs\FinCodex\Commands\InstallCommand;
 use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
 use FinityLabs\FinCodex\Tests\Fixtures\TempAppTree;
+use FinityLabs\LinCodex\Ai\AiReason;
 use FinityLabs\LinCodex\Settings\CodexAiSettings;
+use FinityLabs\LinCodex\Translation\DefaultInstructions;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
+use Spatie\LaravelSettings\Models\SettingsProperty;
 
 /*
  * AISET-04, the AI step in fin-codex:install.
@@ -206,4 +209,164 @@ it('points at codex:install when the core tables are missing', function () {
     expect($exitCode)->toBe(0)
         ->and($output)->toContain('codex:install')
         ->and($fake->connectionTests)->toBe([]);
+});
+
+/*
+ * The prompting half. Every row below runs `--ai-only` through
+ * $this->artisan() with the mocked output, so the three AI questions are the
+ * only questions in the run and each one has to be expected by name.
+ */
+
+/** @return array<string, string> The provider select's options, the fake's labels. */
+function finCodexAiProviderOptions(): array
+{
+    return ['anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'ollama' => 'Ollama'];
+}
+
+/** @return array<string, string> The model select's options: the fake's three tiers, then Custom. */
+function finCodexAiTierOptions(): array
+{
+    return [
+        'default' => 'Default (fake-default)',
+        'cheapest' => 'Cheapest (fake-cheapest)',
+        'smartest' => 'Smartest (fake-smartest)',
+        'custom' => 'Custom model id',
+    ];
+}
+
+it('asks provider, model and key, tests and saves with AI on', function () {
+    finCodexAiSkipUnlessGateMet();
+
+    $fake = finCodexFakeAi();
+
+    $this->artisan('fin-codex:install --ai-only')
+        ->expectsChoice('Which provider should translate the articles?', 'anthropic', finCodexAiProviderOptions())
+        ->expectsChoice('Which model?', 'default', finCodexAiTierOptions())
+        ->expectsQuestion('API key for Anthropic', 'sk-test')
+        ->expectsOutputToContain('AI translation configured')
+        ->expectsOutputToContain('Translate with AI')
+        ->assertExitCode(0);
+
+    $stored = finCodexAiStored();
+
+    expect($stored->enabled)->toBeTrue()
+        ->and($stored->provider)->toBe('anthropic')
+        ->and($stored->model)->toBe('fake-default')
+        ->and($stored->api_key)->toBe('sk-test')
+        ->and($stored->timeout)->toBe(120)
+        ->and($fake->connectionTests)->toBe([
+            ['provider' => 'anthropic', 'model' => 'fake-default', 'apiKey' => 'sk-test'],
+        ]);
+});
+
+it('accepts a custom model id', function () {
+    finCodexAiSkipUnlessGateMet();
+
+    $fake = finCodexFakeAi();
+
+    $this->artisan('fin-codex:install --ai-only')
+        ->expectsChoice('Which provider should translate the articles?', 'anthropic', finCodexAiProviderOptions())
+        ->expectsChoice('Which model?', 'custom', finCodexAiTierOptions())
+        ->expectsQuestion('Model id', 'my-model')
+        ->expectsQuestion('API key for Anthropic', 'sk-test')
+        ->assertExitCode(0);
+
+    expect(finCodexAiStored()->model)->toBe('my-model')
+        ->and($fake->connectionTests[0]['model'])->toBe('my-model');
+});
+
+it('offers only the custom id when the seam cannot list tiers', function () {
+    finCodexAiSkipUnlessGateMet();
+
+    $fake = finCodexFakeAi(new FakeAiClient(tiers: null));
+
+    $this->artisan('fin-codex:install --ai-only')
+        ->expectsChoice('Which provider should translate the articles?', 'openai', finCodexAiProviderOptions())
+        ->expectsChoice('Which model?', 'custom', ['custom' => 'Custom model id'])
+        ->expectsQuestion('Model id', 'gpt-whatever')
+        ->expectsQuestion('API key for OpenAI', 'sk-test')
+        ->assertExitCode(0);
+
+    expect(finCodexAiStored()->model)->toBe('gpt-whatever')
+        ->and($fake->connectionTests[0]['provider'])->toBe('openai');
+});
+
+it('never asks Ollama for a key', function () {
+    finCodexAiSkipUnlessGateMet();
+
+    $fake = finCodexFakeAi();
+
+    $this->artisan('fin-codex:install --ai-only')
+        ->expectsChoice('Which provider should translate the articles?', 'ollama', finCodexAiProviderOptions())
+        ->expectsChoice('Which model?', 'default', finCodexAiTierOptions())
+        ->assertExitCode(0);
+
+    $stored = finCodexAiStored();
+
+    expect($stored->provider)->toBe('ollama')
+        ->and($stored->api_key)->toBeNull()
+        ->and($stored->enabled)->toBeTrue()
+        ->and($fake->connectionTests[0]['apiKey'])->toBeNull();
+});
+
+it("makes the key optional when the SDK's env key is set", function () {
+    finCodexAiSkipUnlessGateMet();
+
+    $fake = finCodexFakeAi();
+    config(['ai.providers.anthropic.key' => 'env-key']);
+
+    $this->artisan('fin-codex:install --ai-only')
+        ->expectsChoice('Which provider should translate the articles?', 'anthropic', finCodexAiProviderOptions())
+        ->expectsChoice('Which model?', 'default', finCodexAiTierOptions())
+        ->expectsQuestion('API key for Anthropic', '')
+        ->assertExitCode(0);
+
+    $stored = finCodexAiStored();
+
+    expect($stored->api_key)->toBeNull()
+        ->and($stored->enabled)->toBeTrue()
+        ->and($fake->connectionTests[0]['apiKey'])->toBeNull();
+});
+
+it('writes nothing when the connection test fails', function () {
+    finCodexAiSkipUnlessGateMet();
+
+    finCodexFakeAi(new FakeAiClient(connection: AiReason::AUTHENTICATION_FAILED));
+
+    $this->artisan('fin-codex:install --ai-only')
+        ->expectsChoice('Which provider should translate the articles?', 'anthropic', finCodexAiProviderOptions())
+        ->expectsChoice('Which model?', 'default', finCodexAiTierOptions())
+        ->expectsQuestion('API key for Anthropic', 'sk-wrong')
+        ->expectsOutputToContain(AiReason::label(AiReason::AUTHENTICATION_FAILED))
+        ->expectsOutputToContain('fin-codex:install --ai-only')
+        ->doesntExpectOutputToContain('AI translation configured')
+        ->assertExitCode(0);
+
+    $stored = finCodexAiStored();
+
+    expect($stored->enabled)->toBeFalse()
+        ->and($stored->provider)->toBeNull();
+});
+
+it('seeds the group when it was never written', function () {
+    finCodexAiSkipUnlessGateMet();
+
+    finCodexFakeAi();
+    finCodexAiUnseed();
+
+    expect(finCodexAiRows())->toBe(0);
+
+    $this->artisan('fin-codex:install --ai-only')
+        ->expectsChoice('Which provider should translate the articles?', 'anthropic', finCodexAiProviderOptions())
+        ->expectsChoice('Which model?', 'smartest', finCodexAiTierOptions())
+        ->expectsQuestion('API key for Anthropic', 'sk-test')
+        ->assertExitCode(0);
+
+    $stored = finCodexAiStored();
+
+    expect(finCodexAiRows())->toBe(6)
+        ->and($stored->enabled)->toBeTrue()
+        ->and($stored->model)->toBe('fake-smartest')
+        ->and($stored->translation_instructions)->toBe(DefaultInstructions::TEXT)
+        ->and(SettingsProperty::query()->where('group', 'lin-codex')->count())->toBe(5);
 });
