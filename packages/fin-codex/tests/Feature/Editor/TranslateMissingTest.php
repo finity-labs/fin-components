@@ -333,6 +333,31 @@ it('records the panel the press was made on with the press', function (): void {
     expect(Context::get(NotificationPanel::KEY))->toBe('admin');
 });
 
+it('raises a short execution limit by the timeout of every language it queues', function (): void {
+    Queue::fake();
+
+    $original = ini_get('max_execution_time');
+
+    try {
+        // A wall-clock host with the stock 30-second limit: on the sync
+        // driver the two calls this press sets off would be killed halfway.
+        ini_set('max_execution_time', '30');
+
+        Livewire::test(ListArticles::class)
+            ->callTableAction('translate_missing', $this->gap, data: ['locales' => ['de', 'hu']])
+            ->assertHasNoTableActionErrors();
+
+        // Two languages at the configured 120 seconds, plus the helper's own
+        // 30 seconds of headroom - the tab action's arithmetic for one call.
+        expect((int) ini_get('max_execution_time'))->toBe(2 * 120 + 30);
+    } finally {
+        // Back to the CLI default, or the rest of the suite runs on a clock.
+        set_time_limit(is_string($original) ? (int) $original : 0);
+    }
+
+    Queue::assertPushed(TranslateArticle::class, 1);
+});
+
 it('queues every pre-checked language when the pick is left as it is', function (): void {
     Queue::fake();
 

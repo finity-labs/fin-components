@@ -391,6 +391,35 @@ it('records the panel the press was made on once for the press', function (): vo
     Context::shouldHaveReceived('add', [NotificationPanel::KEY, 'admin'])->once();
 });
 
+it('raises a short execution limit by the timeout of every language the press can queue', function (): void {
+    Queue::fake();
+
+    $gapDe = finCodexBulkArticle('users', ['en' => 'Users', 'hu' => 'Felhasználók']);
+    $gapBoth = finCodexBulkArticle('zebra', ['en' => 'Zebra']);
+
+    $original = ini_get('max_execution_time');
+
+    try {
+        // A wall-clock host with the stock 30-second limit: on the sync
+        // driver every job this press queues runs inline in the request.
+        ini_set('max_execution_time', '30');
+
+        Livewire::test(ListArticles::class)
+            ->callTableBulkAction('translate_missing', [$gapDe, $gapBoth], data: ['locales' => ['de', 'hu']])
+            ->assertHasNoTableBulkActionErrors();
+
+        // The ceiling of the press - two articles times two ticked languages
+        // at the configured 120 seconds - plus the helper's own 30 seconds.
+        // One of the four is skipped, and a limit is never lowered anyway.
+        expect((int) ini_get('max_execution_time'))->toBe(2 * 2 * 120 + 30);
+    } finally {
+        // Back to the CLI default, or the rest of the suite runs on a clock.
+        set_time_limit(is_string($original) ? (int) $original : 0);
+    }
+
+    Queue::assertPushed(TranslateArticle::class, 2);
+});
+
 it('fills every gap when the pick is left as it is', function (): void {
     Queue::fake();
 

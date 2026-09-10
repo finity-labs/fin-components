@@ -140,6 +140,19 @@ final class TranslateMissingBulkAction
                     NotificationLocale::remember();
                     NotificationPanel::remember();
 
+                    /*
+                     * On the sync driver every job below runs inline in this
+                     * request, one call per language per article, so the press
+                     * needs the room the tab action gives its single call -
+                     * times the ceiling of what it can set off here, every
+                     * selected article against every ticked language. The
+                     * exact gaps are only known inside the loop, and the
+                     * helper only ever raises a limit, never lowers one.
+                     */
+                    TranslateWithAiAction::extendTimeLimit(
+                        TranslateWithAiAction::configuredTimeout() * $records->count() * count($picked),
+                    );
+
                     $queued = 0;
                     $nothing = 0;
                     $notPermitted = 0;

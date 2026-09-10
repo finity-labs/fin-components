@@ -86,8 +86,11 @@ use FinityLabs\LinCodex\Translation\MissingTranslations;
  * The toast is a queue-time promise and nothing more: the work has not run
  * yet, so it says the languages will appear on the list when it finishes.
  * Whether the admin also gets a notification when it does is the listener's
- * business, and the job's own queue and timeout are the job's - nothing here
- * names either.
+ * business, and which queue the job runs on is the job's - nothing here names
+ * it. The configured timeout is read for one reason only: on the sync driver
+ * the job runs inside this request, so the press raises the execution limit
+ * for the calls it is about to set off, exactly as the tab action does for
+ * its one call.
  *
  * The press does leave the listener two things: the language this panel is
  * being read in, recorded through NotificationLocale so the notification comes
@@ -163,6 +166,14 @@ final class TranslateMissingAction
                 // that panel's edit URL. A worker has neither to ask.
                 NotificationLocale::remember();
                 NotificationPanel::remember();
+
+                // On the sync driver the job below runs inline in this very
+                // request, one call per language, so the press needs the room
+                // the tab action gives its single call - times the languages
+                // it is queuing. On a real queue this changes nothing.
+                TranslateWithAiAction::extendTimeLimit(
+                    TranslateWithAiAction::configuredTimeout() * count($locales),
+                );
 
                 TranslateArticle::dispatch($record->id, $locales, $userId);
 

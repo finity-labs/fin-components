@@ -92,10 +92,7 @@ final class TranslateWithAiAction
             ]))
             ->modalSubmitActionLabel(__('fin-codex::fin-codex.editor.translate.submit'))
             ->action(static function (Get $get, Set $set) use ($code, $default, $display): void {
-                $settings = AiSettings::values();
-                $timeout = $settings['timeout'] ?? 120;
-
-                self::extendTimeLimit(is_numeric($timeout) ? (int) $timeout : 120);
+                self::extendTimeLimit(self::configuredTimeout());
 
                 $excerpt = $get("translations.{$default}.excerpt");
 
@@ -138,6 +135,22 @@ final class TranslateWithAiAction
                     ->title(__('fin-codex::fin-codex.editor.translate.done', ['language' => $display]))
                     ->send();
             });
+    }
+
+    /**
+     * What one call is allowed to take, in seconds: the configured timeout,
+     * falling back to the package default when the settings group is unseeded
+     * or holds something that is not a number.
+     *
+     * Shared with the two list actions, which are given the same helper below
+     * multiplied by the number of calls a press can set off - on the sync
+     * driver their queued jobs run inline in the same request this one does.
+     */
+    public static function configuredTimeout(): int
+    {
+        $timeout = AiSettings::values()['timeout'] ?? 120;
+
+        return is_numeric($timeout) ? (int) $timeout : 120;
     }
 
     /**
