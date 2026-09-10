@@ -6,6 +6,7 @@ use FinityLabs\FinCodex\Help\ArticleLookup;
 use FinityLabs\FinCodex\Help\DeclaredContexts;
 use FinityLabs\FinCodex\Panel\CurrentPage;
 use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
+use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\FinCodex\Tests\TestCase;
 use FinityLabs\LinCodex\Ai\Contracts\AiClient;
 use FinityLabs\LinCodex\Contracts\ContentSource;
@@ -13,6 +14,8 @@ use FinityLabs\LinCodex\Settings\CodexAiSettings;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
 use FinityLabs\LinCodex\View\PageHelpResolver;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Notifications\DatabaseNotification;
 use Spatie\LaravelSettings\Models\SettingsProperty;
 
 uses(TestCase::class)->in(__DIR__);
@@ -136,6 +139,18 @@ function finCodexAiUnseed(): void
 function finCodexAiRows(): int
 {
     return SettingsProperty::query()->where('group', 'lin-codex-ai')->count();
+}
+
+/**
+ * The stored Filament notifications of one fixture user, read with the panel
+ * bell's own query (data->format = filament), so a row a test reads here is a
+ * row the panel would show and a plain Laravel notification never counts.
+ *
+ * @return Collection<int, DatabaseNotification>
+ */
+function finCodexNotificationsFor(User $user): Collection
+{
+    return $user->notifications()->where('data->format', 'filament')->get();
 }
 
 /**
