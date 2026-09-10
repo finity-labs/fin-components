@@ -5,11 +5,14 @@ use FinityLabs\FinCodex\Resources\ArticleResource\Schemas\TranslationTabs;
 use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
 use FinityLabs\FinCodex\Tests\Fixtures\Policies\DenyAllArticlePolicy;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
+use FinityLabs\LinCodex\Jobs\TranslateArticle;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use FinityLabs\LinCodex\Settings\CodexSettings;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Queue;
 use Livewire\Livewire;
 
 /*
@@ -29,6 +32,42 @@ use Livewire\Livewire;
  * on the sync driver, so an unfaked press would translate inline through the
  * job and prove something else entirely. The sync chain is 11-06's subject.
  */
+
+/**
+ * A host policy that lets an admin read the list but never edit an article.
+ *
+ * The forged press needs one: the deny-all policy refuses viewAny too, so the
+ * list page 403s on the request that carries the press and the component is
+ * gone before the action is reached. This one leaves the page open and denies
+ * exactly the ability the action gates on.
+ */
+class FinCodexMissingReadOnlyPolicy
+{
+    public function viewAny(Authenticatable $user): bool
+    {
+        return true;
+    }
+
+    public function view(Authenticatable $user, Article $article): bool
+    {
+        return true;
+    }
+
+    public function create(Authenticatable $user): bool
+    {
+        return false;
+    }
+
+    public function update(Authenticatable $user, Article $article): bool
+    {
+        return false;
+    }
+
+    public function delete(Authenticatable $user, Article $article): bool
+    {
+        return false;
+    }
+}
 
 /** A fixture user signed in on the admin panel. */
 function finCodexMissingUser(string $name = 'Missing'): User
@@ -134,6 +173,9 @@ it('shows Translate missing beside Edit on an article that lacks a language and 
         ->assertTableActionVisible('translate_missing', $this->gap)
         ->assertTableActionVisible('translate_missing', $this->gapHu)
         ->assertTableActionHidden('translate_missing', $this->full)
+        // A blank default language is not a reason to hide it; the modal
+        // explains that one instead.
+        ->assertTableActionVisible('translate_missing', $this->blank)
         ->assertTableActionExists('edit', record: $this->gap)
         ->assertTableActionsExistInOrder(['edit', 'translate_missing']);
 });
@@ -226,4 +268,117 @@ it('issues the settings reads once per table build, not per row', function (): v
     // The memoised candidates() costs two settings reads on the first row and
     // nothing after; without lin-codex's memo four extra rows would cost eight.
     expect($on)->toBeLessThanOrEqual($off + 3);
+});
+
+it('queues one job for the ticked languages and the signed-in admin', function (): void {
+    Queue::fake();
+
+    Livewire::test(ListArticles::class)
+        ->callTableAction('translate_missing', $this->gap, data: ['locales' => ['hu']])
+        ->assertHasNoTableActionErrors()
+        ->assertNotified(__('fin-codex::fin-codex.editor.translate_missing.queued_title'));
+
+    Queue::assertPushed(TranslateArticle::class, 1);
+    Queue::assertPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $this->gap->id
+        && $job->locales === ['hu']
+        && $job->userId === $this->admin->id);
+});
+
+it('queues every pre-checked language when the pick is left as it is', function (): void {
+    Queue::fake();
+
+    Livewire::test(ListArticles::class)
+        ->mountTableAction('translate_missing', $this->gap)
+        ->callMountedTableAction()
+        ->assertHasNoTableActionErrors();
+
+    Queue::assertPushed(TranslateArticle::class, 1);
+    Queue::assertPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $this->gap->id
+        && $job->locales === ['de', 'hu']
+        && $job->userId === $this->admin->id);
+});
+
+it('refuses an empty pick with a message and queues nothing', function (): void {
+    Queue::fake();
+
+    $component = Livewire::test(ListArticles::class)
+        ->callTableAction('translate_missing', $this->gap, data: ['locales' => []])
+        ->assertHasTableActionErrors(['locales' => 'required']);
+
+    // The message the admin reads, not just the rule that fired. It lives in
+    // the error bag rather than in the rendered page: Filament's modal body
+    // is rendered inside the modal, which this build only paints once it is
+    // open in the browser.
+    expect($component->errors()->get('mountedActions.0.data.locales'))
+        ->toBe([__('fin-codex::fin-codex.editor.translate_missing.pick_one')]);
+
+    Queue::assertNothingPushed();
+
+    // The refused action stays mounted, so the second press needs a fresh
+    // component: calling it again on this one throws instead of pressing.
+    Livewire::test(ListArticles::class)
+        ->callTableAction('translate_missing', $this->gap, data: ['locales' => ['de']])
+        ->assertHasNoTableActionErrors();
+
+    Queue::assertPushed(TranslateArticle::class, 1);
+});
+
+it('drops a ticked language that was filled in the meantime', function (): void {
+    Queue::fake();
+
+    $component = Livewire::test(ListArticles::class)
+        ->mountTableAction('translate_missing', $this->gap)
+        ->assertTableActionDataSet(['locales' => ['de', 'hu']]);
+
+    finCodexMissingTranslate($this->gap, 'hu');
+
+    $component->callMountedTableAction()->assertHasNoTableActionErrors();
+
+    Queue::assertPushed(TranslateArticle::class, 1);
+    Queue::assertPushed(TranslateArticle::class, fn (TranslateArticle $job): bool => $job->articleId === $this->gap->id
+        && $job->locales === ['de']);
+});
+
+it('stays visible on a blank default language and explains it in the modal instead', function (array $en): void {
+    Queue::fake();
+
+    $article = finCodexMissingArticle('blank-source', ['en' => $en]);
+
+    $component = Livewire::test(ListArticles::class)
+        ->assertTableActionVisible('translate_missing', $article)
+        ->mountTableAction('translate_missing', $article);
+
+    $action = $component->instance()->getMountedAction();
+
+    expect($action)->not->toBeNull()
+        ->and($action->shouldOpenModal())->toBeTrue()
+        ->and($action->getModalDescription())->toBe(__(
+            'fin-codex::fin-codex.editor.translate_missing.blank_source',
+            ['language' => finCodexMissingDisplay('en')],
+        ))
+        ->and($action->getModalSubmitAction())->toBeNull();
+
+    $component->callMountedTableAction()
+        ->assertNotNotified(__('fin-codex::fin-codex.editor.translate_missing.queued_title'));
+
+    Queue::assertNothingPushed();
+})->with([
+    'no title' => [['title' => '']],
+    'no body' => [['body' => '']],
+]);
+
+it('queues nothing on a forged press from a refused user', function (): void {
+    Queue::fake();
+
+    $component = Livewire::test(ListArticles::class)
+        ->assertTableActionVisible('translate_missing', $this->gap);
+
+    Gate::policy(Article::class, FinCodexMissingReadOnlyPolicy::class);
+
+    // Not callTableAction(): that asserts the action is visible first, which
+    // is the thing being denied. Filament answers the forged press by
+    // refusing the mount, so nothing is ever called.
+    $component->mountTableAction('translate_missing', $this->gap)->callMountedTableAction();
+
+    Queue::assertNothingPushed();
 });
