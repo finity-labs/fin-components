@@ -133,7 +133,8 @@ class TestCase extends Orchestra
     /**
      * Runs after the providers boot, so model listeners registered during the
      * migrations survive. Host tables first (users, settings), then lin-codex's
-     * migrations by include()->up() in dependency order, then the settings seed.
+     * migrations by include()->up() in dependency order, then the two settings
+     * seeds: the core group and the AI group.
      * The users table carries a nullable password column because Laravel's
      * AuthenticateSession middleware reads getAuthPassword() on every panel
      * request, and a remember_token because SessionGuard::logout() writes
@@ -168,6 +169,7 @@ class TestCase extends Orchestra
         }
 
         (include $database.'/settings/create_codex_settings.php')->up();
+        (include $database.'/settings/create_codex_ai_settings.php')->up();
     }
 
     /**
