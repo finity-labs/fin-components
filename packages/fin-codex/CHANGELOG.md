@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Requires `finity-labs/lin-codex` ^0.4, the core release that lets a host switch the public help center off; nothing in fin-codex reads that switch yet.
+
 ## [0.4.0] - 2026-09-10
 
 ### Added
