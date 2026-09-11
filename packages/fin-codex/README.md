@@ -109,6 +109,7 @@ FinCodexPlugin::make()
     ->drawerWidth(480)                         // drawer width in pixels
     ->helpButton()                             // show the topbar button (default: true)
     ->guestDrawer()                            // drawer and link on simple-layout pages (default: true)
+    ->authoring()                              // this panel manages help content (default: true)
     ->globalSearch()                           // Help category in the panel search (default: false)
     ->helpButtonRenderHook(PanelsRenderHook::USER_MENU_AFTER)
     ->navigationGroup('Help')
@@ -125,6 +126,7 @@ FinCodexPlugin::make()
 | `drawerWidth(int\|Closure)` | `480` | Drawer width in pixels. |
 | `helpButton(bool\|Closure)` | `true` | Renders the topbar help button. `false` removes the button only — the drawer, its shortcut and field hints stay. |
 | `guestDrawer(bool\|Closure)` | `true` | The "Need help?" link and the drawer on simple-layout pages: login, register, password reset, email verification and any host `SimplePage`. `false` removes all three there; signed-in pages are unaffected. |
+| `authoring(bool\|Closure)` | `true` | Whether this panel manages help content. `false` registers the article resource, Help settings and Help coverage nowhere in it — no navigation items, no routes — and leaves the reading half untouched. See [One panel authors, the others read](#one-panel-authors-the-others-read). |
 | `globalSearch(bool\|Closure)` | `false` | Appends a Help category to the panel's global search results. See [Global search](#global-search). |
 | `helpButtonRenderHook(string\|Closure)` | `USER_MENU_AFTER` | Where the button renders. Set it explicitly and Codex honours it as given. Leave it alone and the button sits beside the user menu: in the topbar's end group next to the notification bell, or in the sidebar footer on a panel with `->topbar(false)`. A panel with `->userMenu(false)` gets it at `TOPBAR_END`, or `SIDEBAR_FOOTER` without a topbar. Under SPA mode Filament persists the topbar's end group across navigations, so the badge there keeps the count of the first page; name `TOPBAR_END` if you want it live. |
 | `navigationGroup(string\|UnitEnum\|Closure\|null)` | `NavigationGroup::Help` | The navigation group for the resource and both pages. The default enum's label follows the panel locale. |
@@ -149,6 +151,26 @@ class MyArticleResource extends ArticleResource
     }
 }
 ```
+
+### One panel authors, the others read
+
+Register the plugin in a second panel and that panel gets everything: the button, the drawer, field hints — and a Help menu with the editor, Help settings and Help coverage in it. Useful on a staff panel whose editors write articles; noise on a panel that should only read them.
+
+`->authoring(false)` splits the two halves:
+
+```php
+// app/Providers/Filament/AdminPanelProvider.php — writes help
+->plugin(FinCodexPlugin::make())
+
+// app/Providers/Filament/ManagementPanelProvider.php — reads it
+->plugin(FinCodexPlugin::make()->authoring(false))
+```
+
+The management panel keeps the button, the drawer, its shortcut, field hints, global search if it asked for it, the panel scope and the public help center. What it no longer has is the three admin screens: `/management/help-articles` is not a route there, and nothing files under a Help group in its navigation. Articles, media, revisions and Shield abilities are untouched — one knowledge base, edited from one place.
+
+Two things stay true with authoring off. Articles still scope per panel, so an article written for `management` shows up in that panel's drawer even though the editor lives in `admin` (see [Contexts](#contexts)). And Help coverage still scans every panel, so a management screen without an article is still a gap on the report — a cleaner one, since the panel's own Help screens no longer count themselves.
+
+The option is read once, when the panel registers the plugin, so a closure may read config but not panel state or the signed-in user. Who may edit is a separate question with a separate answer: see [Authorization](#authorization).
 
 ## Contextual help
 

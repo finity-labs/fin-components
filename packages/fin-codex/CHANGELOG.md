@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `FinCodexPlugin::make()->authoring(false)` for a panel that reads help but does not manage it. The article resource, Help settings and Help coverage are then registered nowhere in that panel — no navigation items and no routes — while the button, the drawer, its shortcut, field hints, global search, the panel scope and the help center all stay. Registering the plugin in a second panel to get the drawer no longer gives that panel a Help menu it has no use for; the default is `true`, so a panel that says nothing keeps everything it had
+
 ## [0.4.1] - 2026-09-11
 
 ### Fixed

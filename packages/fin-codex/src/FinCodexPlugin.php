@@ -28,9 +28,10 @@ use UnitEnum;
  *
  * Every option that can differ between two panels lives here as a fluent
  * method, never in config: the help button hook, the shortcut, the drawer
- * width, whether the button and the guest drawer render at all, global
- * search, navigation placement and the class overrides. Later code reads
- * them through filament('fin-codex').
+ * width, whether the button and the guest drawer render at all, whether the
+ * panel manages help content or only reads it, global search, navigation
+ * placement and the class overrides. Later code reads them through
+ * filament('fin-codex').
  */
 class FinCodexPlugin implements Plugin
 {
@@ -45,6 +46,8 @@ class FinCodexPlugin implements Plugin
     protected bool|Closure $helpButton = true;
 
     protected bool|Closure $guestDrawer = true;
+
+    protected bool|Closure $authoring = true;
 
     protected bool|Closure $globalSearch = false;
 
@@ -142,6 +145,16 @@ class FinCodexPlugin implements Plugin
 
         $panel->renderHook(PanelsRenderHook::SIMPLE_PAGE_END, fn (array $scopes = []): HtmlString => $this->mount()->guestLink($this, $panel));
         $panel->renderHook(PanelsRenderHook::BODY_END, fn (array $scopes = []): HtmlString => $this->mount()->drawer($this, $panel));
+
+        // A panel that only reads help registers none of the three admin screens:
+        // ->authoring(false) keeps the button, the drawer, the hints and the help
+        // center and leaves the editor, Help settings and Help coverage to the
+        // panels that answer true. Evaluated here for the same reason the button
+        // hook is — the plugin is fully configured before ->plugin() runs — so the
+        // closure may read config but not panel state or the request user.
+        if (! $this->hasAuthoring()) {
+            return;
+        }
 
         // Panel::resources() appends to the host's list, it never replaces it. An
         // articleResource() override must extend Resources\ArticleResource; navigation
@@ -354,6 +367,29 @@ class FinCodexPlugin implements Plugin
     public function hasGuestDrawer(): bool
     {
         return $this->evaluate($this->guestDrawer);
+    }
+
+    /**
+     * Whether this panel manages help content. false registers the article
+     * resource, Help settings and Help coverage nowhere in it — no navigation
+     * items and no routes — which is how a second panel carries the reading
+     * half alone: the button, the drawer, its shortcut, field hints, the
+     * panel scope and the help center all stay. Articles, abilities and the
+     * panels that answer true are untouched.
+     *
+     * Read once, when the panel registers the plugin, so a closure here may
+     * read config but not panel state or the signed-in user.
+     */
+    public function authoring(bool|Closure $condition = true): static
+    {
+        $this->authoring = $condition;
+
+        return $this;
+    }
+
+    public function hasAuthoring(): bool
+    {
+        return $this->evaluate($this->authoring);
     }
 
     public function globalSearch(bool|Closure $enabled = true): static
