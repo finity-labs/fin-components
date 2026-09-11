@@ -5,3 +5,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | Applies to | Rule file |
 | --- | --- |
 | packages/*/src/** | .ai/rules/src.md |
+| packages/*/tests/** | .ai/rules/tests.md |
