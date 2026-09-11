@@ -20,6 +20,7 @@ use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Enums\Visibility;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleContext;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
@@ -113,6 +114,21 @@ function finCodexContextsKeyPicker(Testable $component, string $item): ModalTabl
 
     /** @var ModalTableSelect $picker */
     return $picker;
+}
+
+/** One context warning with its panel filled in, as the row renders it. */
+function finCodexContextsWarning(string $key, string $panel): string
+{
+    return (string) __('fin-codex::fin-codex.editor.contexts.'.$key, ['panel' => $panel]);
+}
+
+/**
+ * The half of a warning that names no panel, so a silent row is proved
+ * silent whichever panel a regression would have picked.
+ */
+function finCodexContextsWarningTail(string $key): string
+{
+    return trim(Str::after((string) __('fin-codex::fin-codex.editor.contexts.'.$key), ':panel'));
 }
 
 it('saves picker rows in drag order with any-panel as null', function (): void {
@@ -466,4 +482,60 @@ it('says where the sign-in pages went, and only where there is something to say'
 
     expect(finCodexContextsKeyPicker($component, $item)->getAction('select')?->getModalDescription())
         ->toBeNull();
+});
+
+it('warns when an any-panel row holds a key only one panel registers', function (): void {
+    $user = finCodexContextsUser();
+    $this->usesPanel('admin', $user);
+
+    // Defect 3 of the UAT in one row: the help article resource lives on the
+    // admin panel alone, so "any panel" widens the binding to nothing.
+    $component = Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexContextsState([
+            ['panel_id' => ContextPicker::ANY_PANEL, 'type' => 'class', 'key' => AdminHelpArticleResource::class],
+        ]))
+        ->assertSee(finCodexContextsWarning('key_panel_warning', 'admin'));
+
+    $item = array_key_first(data_get($component->instance()->data, 'contexts'));
+
+    // Naming that panel settles it, and the key was never taken away or the
+    // save blocked while the row disagreed with itself.
+    $component
+        ->set("data.contexts.{$item}.panel_id", 'admin')
+        ->assertSet("data.contexts.{$item}.key", AdminHelpArticleResource::class)
+        ->assertDontSee(finCodexContextsWarningTail('key_panel_warning'));
+});
+
+it('warns about a panel-bound route under any panel and leaves a panel-less one alone', function (): void {
+    $user = finCodexContextsUser();
+    $this->usesPanel('admin', $user);
+
+    Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexContextsState([
+            ['panel_id' => ContextPicker::ANY_PANEL, 'type' => 'route', 'key' => 'filament.admin.resources.users.index'],
+        ]))
+        ->assertSee(finCodexContextsWarning('key_panel_warning', 'admin'));
+
+    // A route belonging to no panel is precisely what any panel is for, and
+    // the picker's own em dash already says so.
+    Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexContextsState([
+            ['panel_id' => ContextPicker::ANY_PANEL, 'type' => 'route', 'key' => 'filament.exports.download'],
+        ]))
+        ->assertDontSee(finCodexContextsWarningTail('key_panel_warning'));
+});
+
+it('stays quiet under any panel for a shared class, an auth page and an empty row', function (): void {
+    $user = finCodexContextsUser();
+    $this->usesPanel('admin', $user);
+
+    // Two panels register the resource, the sign-in page carries no panel at
+    // all, and a row with nothing picked has nothing to disagree about.
+    Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexContextsState([
+            ['panel_id' => ContextPicker::ANY_PANEL, 'type' => 'class', 'key' => UserResource::class],
+            ['panel_id' => ContextPicker::ANY_PANEL, 'type' => 'class', 'key' => Login::class],
+            ['panel_id' => ContextPicker::ANY_PANEL, 'type' => 'class', 'key' => null],
+        ]))
+        ->assertDontSee(finCodexContextsWarningTail('key_panel_warning'));
 });
