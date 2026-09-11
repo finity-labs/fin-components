@@ -1,7 +1,9 @@
 <?php
 
 use Filament\Auth\Pages\Login;
+use Filament\Forms\Components\Field;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\TextInput;
 use FinityLabs\FinCodex\Editor\ContextPicker;
 use FinityLabs\FinCodex\Editor\PageClassPickerTable;
 use FinityLabs\FinCodex\Editor\RoutePickerTable;
@@ -95,25 +97,40 @@ function finCodexContextsFormRows(Testable $component): array
 }
 
 /**
- * The key picker of one repeater row, rebuilt from the component's current
- * form so a changed panel or type is reflected.
+ * One visible field of one repeater row, rebuilt from the component's
+ * current form so a changed panel or type is reflected.
  */
-function finCodexContextsKeyPicker(Testable $component, string $item): ModalTableSelect
+function finCodexContextsRowField(Testable $component, string $item, string $name): mixed
 {
     $repeater = $component->instance()->form->getComponent(
         fn (mixed $schemaComponent): bool => $schemaComponent instanceof Repeater && $schemaComponent->getName() === 'contexts',
     );
 
-    $picker = $repeater instanceof Repeater
+    return $repeater instanceof Repeater
         ? $repeater->getChildSchema($item)?->getComponent(
-            fn (mixed $schemaComponent): bool => $schemaComponent instanceof ModalTableSelect && $schemaComponent->getName() === 'key',
+            fn (mixed $schemaComponent): bool => $schemaComponent instanceof Field && $schemaComponent->getName() === $name,
         )
         : null;
+}
+
+function finCodexContextsKeyPicker(Testable $component, string $item): ModalTableSelect
+{
+    $picker = finCodexContextsRowField($component, $item, 'key');
 
     expect($picker)->toBeInstanceOf(ModalTableSelect::class);
 
     /** @var ModalTableSelect $picker */
     return $picker;
+}
+
+function finCodexContextsUrlInput(Testable $component, string $item): TextInput
+{
+    $input = finCodexContextsRowField($component, $item, 'url');
+
+    expect($input)->toBeInstanceOf(TextInput::class);
+
+    /** @var TextInput $input */
+    return $input;
 }
 
 /** One context warning with its panel filled in, as the row renders it. */
@@ -538,4 +555,49 @@ it('stays quiet under any panel for a shared class, an auth page and an empty ro
             ['panel_id' => ContextPicker::ANY_PANEL, 'type' => 'class', 'key' => null],
         ]))
         ->assertDontSee(finCodexContextsWarningTail('key_panel_warning'));
+});
+
+it('warns when a url pattern sits under a panel the row did not choose', function (): void {
+    $user = finCodexContextsUser();
+    $this->usesPanel('admin', $user);
+
+    // The same silent miss the key check catches, in the one place the editor
+    // still takes free text.
+    $component = Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexContextsState([
+            ['panel_id' => 'admin', 'type' => 'url', 'url' => '/portal/things/*'],
+        ]))
+        ->assertSee(finCodexContextsWarning('url_panel_warning', 'portal'));
+
+    $item = array_key_first(data_get($component->instance()->data, 'contexts'));
+
+    // Without the round trip on blur the warning would wait for an unrelated
+    // update instead of appearing while the author is still on the row.
+    expect(finCodexContextsUrlInput($component, $item)->isLiveOnBlur())->toBeTrue();
+
+    // Naming the panel the pattern already sits under settles it, and the
+    // pattern itself is never taken away or announced.
+    $component
+        ->set("data.contexts.{$item}.panel_id", 'portal')
+        ->assertSet("data.contexts.{$item}.url", '/portal/things/*')
+        ->assertDontSee(finCodexContextsWarningTail('url_panel_warning'))
+        ->assertNotNotified();
+});
+
+it('leaves a url pattern alone when it matches, spans every panel or belongs to none', function (): void {
+    $user = finCodexContextsUser();
+    $this->usesPanel('admin', $user);
+
+    // In order: the row's own panel, a leading wildcard segment that matches
+    // no literal prefix, a path no panel claims, and Any panel, which the
+    // warning is not about at all.
+    Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexContextsState([
+            ['panel_id' => 'admin', 'type' => 'url', 'url' => '/admin/users/*'],
+            ['panel_id' => 'admin', 'type' => 'url', 'url' => '/*/things'],
+            ['panel_id' => 'admin', 'type' => 'url', 'url' => '/somewhere-else'],
+            ['panel_id' => ContextPicker::ANY_PANEL, 'type' => 'url', 'url' => '/portal/things/*'],
+            ['panel_id' => 'admin', 'type' => 'url', 'url' => null],
+        ]))
+        ->assertDontSee(finCodexContextsWarningTail('url_panel_warning'));
 });
