@@ -147,7 +147,11 @@ class InstallCommand extends Command
         ];
 
         if ($this->shieldConfigured) {
-            $nextSteps[] = ['Assign permissions', 'Give the new Codex permissions to your roles in Shield'];
+            // The ability is named, the permission is not: the Shield config
+            // this process loaded predates the edit just made to it, so a name
+            // derived here would be right on a re-run and empty on a first
+            // install. Naming the ability is what ends the dead end.
+            $nextSteps[] = ['Assign permissions', 'Shield → Roles: tick the Codex permissions. viewAllPanels is the one that lets a role read every panel\'s help from inside one panel'];
         }
 
         if ($this->aiConfigured) {
@@ -440,13 +444,17 @@ class InstallCommand extends Command
             $args[] = "--panel={$this->panelId}";
         }
 
-        $process = new Process($args, base_path());
-        $process->setTimeout(60);
-        $process->run();
+        [$exitCode, $output] = $this->runShieldGenerate($args);
 
-        if ($process->isSuccessful()) {
+        $this->printShieldOutput($output);
+
+        if ($exitCode === 0) {
             $this->shieldConfigured = true;
             $this->info('  Shield permissions and policies generated');
+
+            if ($this->reportsSkippedPolicy($output)) {
+                $this->components->info('Shield skipped the Article policy because fin-codex registers its own. That is expected and there is nothing to fix: the shipped policy reads Shield\'s permissions itself, so ticking them on a role is all that is left.');
+            }
         } else {
             $this->components->warn('Could not generate the Shield permissions automatically. Run manually:');
             $this->line("  php artisan shield:generate{$panelFlag} --option=policies_and_permissions --ignore-existing-policies");
@@ -454,6 +462,59 @@ class InstallCommand extends Command
 
         // Pages are discovered, not configured, so they are a separate run.
         $this->line("  Help settings and Help coverage are discovered by Shield: php artisan shield:generate{$panelFlag} --page=HelpSettings,HelpCoverage");
+    }
+
+    /**
+     * Run shield:generate and hand back its exit code and everything it said,
+     * standard and error output together.
+     *
+     * A seam, and the only reason this is a method of its own: a fresh PHP
+     * process cannot be handed a fake Artisan command, so a test that wants to
+     * prove what this command does with Shield's answer has to replace the run
+     * itself. The package test harness has no Shield at all.
+     *
+     * @param  list<string>  $args
+     *
+     * @return array{0: int, 1: string}
+     */
+    protected function runShieldGenerate(array $args): array
+    {
+        $process = new Process($args, base_path());
+        $process->setTimeout(60);
+        $process->run();
+
+        return [
+            $process->getExitCode() ?? 1,
+            trim($process->getOutput()."\n".$process->getErrorOutput()),
+        ];
+    }
+
+    /**
+     * Echo what the other process said, indented, before this command judges
+     * it. Shield's skipped-policy line lives in here and used to be swallowed.
+     */
+    protected function printShieldOutput(string $output): void
+    {
+        foreach (preg_split('/\R/', $output) ?: [] as $line) {
+            if (trim($line) !== '') {
+                $this->line('  '.trim($line));
+            }
+        }
+    }
+
+    /**
+     * Whether Shield reported skipping a policy.
+     *
+     * It always does for the article: fin-codex binds a policy for the model
+     * itself, so Shield's generator decides the model is provided for and writes
+     * no host class. Read off the output rather than assumed, so a Shield that
+     * ever stops skipping stops being explained.
+     */
+    protected function reportsSkippedPolicy(string $output): bool
+    {
+        $output = strtolower($output);
+
+        return str_contains($output, 'skipped') && str_contains($output, 'policy');
     }
 
     /**
