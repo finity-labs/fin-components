@@ -136,6 +136,15 @@ it('lets an explicit panel prefix win over resolution', function (): void {
     expect(finCodexPanels()->forContext($context))->toBe(['staff']);
 });
 
+/*
+ * The next two rows pin the question this class answers: which panel does a
+ * screen file under, and which screens belong to none. The coverage report
+ * reads those answers and the Help Center's panel filter will offer them, so
+ * they are unchanged by 14-05 — what changed there is that the panel scope no
+ * longer puts the question at all for a context carrying no panel of its own.
+ * A panel-less context does not restrict a reader; it still files under
+ * whatever its key resolves into, which is what these rows hold.
+ */
 it('resolves a context without a panel prefix by its type', function (): void {
     $panels = finCodexPanels();
 

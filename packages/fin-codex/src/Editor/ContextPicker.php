@@ -104,6 +104,13 @@ final class ContextPicker
      * registers it, and every panel that does — the columns of the modal
      * picker, so an editor choosing between two "Users" sees which is which.
      *
+     * A resource's own sub-pages are deliberately not among them: the drawer
+     * identifies a resource page by its resource class and the core compares
+     * class keys as exact strings, so a sub-page key would be offered here and
+     * then never match a reader. Bind a whole resource by class, and a single
+     * sub-page with the `route:` kind below (listed as "Resource › Page") or
+     * with a help declaration on the page class itself.
+     *
      * @return list<array{key: string, label: string, kind: string, uri: ?string, panel: list<string>}>
      */
     public function classRows(?string $panelId): array
