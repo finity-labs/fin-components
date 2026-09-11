@@ -27,7 +27,11 @@ function finCodexBootUser(string $email = 'boot@example.com'): User
     return User::create(['name' => 'Boot', 'email' => $email]);
 }
 
-function finCodexBootArticle(string $slug, ?ContextType $type = null, string $key = ''): Article
+/**
+ * One published, public article. The fourth argument pins the context to a
+ * panel; without it the context names no panel and is read from every one.
+ */
+function finCodexBootArticle(string $slug, ?ContextType $type = null, string $key = '', ?string $panelId = null): Article
 {
     $factory = Article::factory()->public()->published()->withTranslation('en', [
         'title' => ucfirst(str_replace('-', ' ', $slug)),
@@ -35,7 +39,7 @@ function finCodexBootArticle(string $slug, ?ContextType $type = null, string $ke
     ]);
 
     if ($type !== null) {
-        $factory = $factory->withContext($type, $key);
+        $factory = $factory->withContext($type, $key, $panelId);
     }
 
     return $factory->create(['slug' => $slug]);
@@ -62,8 +66,8 @@ it('installs the hook when a fin-codex panel boots', function (): void {
 
 it('keeps a host hook as the inner one, and both vetoes apply', function (): void {
     finCodexBootArticle('intro');
-    finCodexBootArticle('admin-guide', ContextType::Route, 'filament.admin.pages.dashboard');
-    finCodexBootArticle('staff-guide', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexBootArticle('admin-guide', ContextType::Route, 'filament.admin.pages.dashboard', 'admin');
+    finCodexBootArticle('staff-guide', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     $closure = fn (Viewer $viewer, ArticleData $article): bool => $article->slug !== 'intro';
     config()->set('lin-codex.auth.gate', $closure);
 

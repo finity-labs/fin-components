@@ -61,11 +61,13 @@ function finCodexScopeSurfaceArticle(string $slug, string $title, ?ContextType $
  * The eight-article set every row reads, all public and published:
  *
  * - intro            general, so every panel shows it
- * - admin-only       admin's dashboard route
+ * - admin-only       admin's dashboard route, pinned to admin
  * - staff-only       the Dashboard page class pinned to staff (both fixture
  *                    panels register that page, so the prefix is what makes it
  *                    staff's)
- * - outside          a plain Laravel route: outside every panel, hidden in all
+ * - outside          a plain Laravel route carrying no panel of its own: the
+ *                    set's "any panel" member, read from every panel since
+ *                    14-05 and the discriminator none of these rows uses
  * - guides           a general section with no body — a navigation shell —
  *                    holding the single staff-bound child guides/staff-tips
  * - manuals          the Dashboard page class pinned to admin, with the
@@ -81,7 +83,7 @@ function finCodexScopeSeed(): array
 {
     $articles = [
         'intro' => finCodexScopeSurfaceArticle('intro', 'Intro guide'),
-        'admin-only' => finCodexScopeSurfaceArticle('admin-only', 'Admin only', ContextType::Route, 'filament.admin.pages.dashboard'),
+        'admin-only' => finCodexScopeSurfaceArticle('admin-only', 'Admin only', ContextType::Route, 'filament.admin.pages.dashboard', 'admin'),
         'staff-only' => finCodexScopeSurfaceArticle('staff-only', 'Staff only', ContextType::PageClass, Dashboard::class, 'staff'),
         'outside' => finCodexScopeSurfaceArticle('outside', 'Outside page', ContextType::Route, 'shop.index'),
     ];
@@ -90,7 +92,7 @@ function finCodexScopeSeed(): array
         ->withTranslation('en', ['title' => 'Guides', 'body' => ''])
         ->create(['slug' => 'guides']);
 
-    $articles['guides/staff-tips'] = finCodexScopeSurfaceArticle('guides/staff-tips', 'Staff tips', ContextType::Route, 'filament.staff.pages.dashboard');
+    $articles['guides/staff-tips'] = finCodexScopeSurfaceArticle('guides/staff-tips', 'Staff tips', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     $articles['manuals'] = finCodexScopeSurfaceArticle('manuals', 'Manuals', ContextType::PageClass, Dashboard::class, 'admin');
     $articles['manuals/roles'] = finCodexScopeSurfaceArticle('manuals/roles', 'Manual roles');
 
@@ -144,8 +146,9 @@ it('shows general and own-panel articles in the browse tab and hides the rest', 
         ->toContain('Admin only')
         ->toContain('Manuals')
         ->toContain('Manual roles')
+        // Its context names no panel of its own, so it restricts nothing.
+        ->toContain('Outside page')
         ->not->toContain('Staff only')
-        ->not->toContain('Outside page')
         ->not->toContain('Staff tips')
         // The empty section goes with the child that was its only reason to exist.
         ->not->toContain('data-codex-tree-node="guides"')
@@ -162,6 +165,8 @@ it('shows the other panel\'s articles in the browse tab on that panel', function
         ->toContain('Staff only')
         ->toContain('Staff tips')
         ->toContain('data-codex-tree-node="guides"')
+        // The same panel-less article the admin row reads, from here too.
+        ->toContain('Outside page')
         ->not->toContain('Admin only')
         // A panel-bound section takes its general child with it.
         ->not->toContain('Manuals')
@@ -266,9 +271,49 @@ it('scopes the guest drawer on the panel login page', function (): void {
 });
 
 /*
+ * The install seeds two starter articles, account/signing-in and
+ * account/creating-an-account, bound by class to Filament's Login and Register
+ * pages and carrying no panel of their own. No panel registers those pages, so
+ * from 14-03 until 14-05 the scope hid them inside every panel — the login page
+ * they were written for included. The shape is seeded here rather than the
+ * install run, because the rule is what these rows are about.
+ */
+
+it('shows the starter login article in the guest drawer on the panel login page', function (): void {
+    finCodexScopeSeed();
+    finCodexScopeSurfaceArticle('account/signing-in', 'Signing in', ContextType::PageClass, Login::class);
+
+    $this->get('/admin/login')->assertOk();
+
+    $tree = finCodexScopeSurfaceDrawer('admin', 'web', Login::class)->call('goTo', 'tree')->html();
+
+    expect(auth('web')->check())->toBeFalse()
+        ->and($tree)->toContain('Signing in')
+        ->toContain('Intro guide')
+        ->not->toContain('Staff only');
+});
+
+it('shows that same starter article in another panel\'s drawer', function (): void {
+    finCodexScopeSeed();
+    finCodexScopeSurfaceArticle('account/signing-in', 'Signing in', ContextType::PageClass, Login::class);
+    $this->usesPanel('staff', finCodexScopeSurfaceUser('staff-surface@example.com'));
+
+    $tree = finCodexScopeSurfaceDrawer('staff', 'staff')->call('open')->call('goTo', 'tree')->html();
+
+    // Every panel, not the one the class happens to resolve into: no panel
+    // registers Filament's auth pages at all.
+    expect($tree)->toContain('Signing in')
+        ->not->toContain('Admin only');
+});
+
+/*
  * SCOPE-03 on a real surface: the host decides, per viewer, who reads every
  * panel's help. The control row underneath it is the same drawer with the
  * shipped policy, which grants nobody.
+ *
+ * What the lift adds is staff's three articles and the section that holds one
+ * of them; "Outside page" is no discriminator here, because a panel-less
+ * context is read from admin with or without the lift.
  */
 
 it('shows every panel\'s articles to a viewer whose host policy grants viewAllPanels', function (): void {
@@ -281,7 +326,6 @@ it('shows every panel\'s articles to a viewer whose host policy grants viewAllPa
     $html = finCodexScopeSurfaceDrawer('admin', 'web')->call('open')->call('goTo', 'tree')->html();
 
     expect($html)->toContain('Staff only')
-        ->toContain('Outside page')
         ->toContain('Staff tips')
         ->toContain('data-codex-tree-node="guides"');
 });
@@ -294,7 +338,6 @@ it('shows the same viewer nothing extra under the shipped policy', function (): 
 
     expect($html)->toContain('Admin only')
         ->not->toContain('Staff only')
-        ->not->toContain('Outside page')
         ->not->toContain('Staff tips')
         ->not->toContain('data-codex-tree-node="guides"');
 });
