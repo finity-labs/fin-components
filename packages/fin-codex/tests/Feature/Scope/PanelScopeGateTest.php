@@ -1,7 +1,9 @@
 <?php
 
+use Filament\Auth\Pages\Login;
 use Filament\Pages\Dashboard;
 use FinityLabs\FinCodex\Policies\ArticlePolicy;
+use FinityLabs\FinCodex\Scope\ContextPanels;
 use FinityLabs\FinCodex\Scope\PanelScopeGate;
 use FinityLabs\FinCodex\Tests\Fixtures\Policies\DenyAllArticlePolicy;
 use FinityLabs\FinCodex\Tests\Fixtures\Policies\ViewAllPanelsArticlePolicy;
@@ -157,6 +159,102 @@ it('shows the same panel-less class article on the staff panel', function (): vo
     $this->usesPanel('staff', $user);
 
     expect(finCodexSeen(Viewer::authenticated($user, 'staff')))->toBe(['intro', 'shared-page']);
+});
+
+/*
+ * The "any panel" sentinel, decided 2026-09-11 after this phase's UAT: a
+ * context that names no panel of its own does not restrict, whatever its type.
+ * The editor's panel select promises "Any panel" and the core's resolver
+ * delivers it, so the gate had to stop reading a panel-less route or url key
+ * as a pin to the one panel that key happens to name. An article is hidden
+ * only when every one of its contexts names a different explicit panel.
+ */
+it('shows a panel-less route context on the panel the route names', function (): void {
+    finCodexScopeArticle('intro');
+    finCodexScopeArticle('any-route', ContextType::Route, 'filament.admin.pages.dashboard');
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('admin', $user);
+
+    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['any-route', 'intro']);
+});
+
+it('shows that same panel-less route context on another panel', function (): void {
+    finCodexScopeArticle('intro');
+    finCodexScopeArticle('any-route', ContextType::Route, 'filament.admin.pages.dashboard');
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('staff', $user);
+
+    expect(finCodexSeen(Viewer::authenticated($user, 'staff')))->toBe(['any-route', 'intro']);
+});
+
+it('shows a panel-less url context on a panel the path does not name', function (): void {
+    finCodexScopeArticle('intro');
+    finCodexScopeArticle('any-url', ContextType::Url, '/admin/reports');
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('staff', $user);
+
+    expect(finCodexSeen(Viewer::authenticated($user, 'staff')))->toBe(['any-url', 'intro']);
+});
+
+/*
+ * The shape of the two starter articles the install seeds: a class no panel
+ * registers, carrying no panel of its own. ContextPanels still files that
+ * context under no panel at all — the right answer for the coverage report,
+ * which is the consumer that asks — and the gate simply no longer asks it. The
+ * forClass() expectation in the same row fails loudly if Filament ever puts
+ * its auth pages into a panel's page registry, which would leave the row
+ * proving something else.
+ */
+it('shows a panel-less context on a class no panel registers', function (): void {
+    finCodexScopeArticle('intro');
+    finCodexScopeArticle('account/signing-in', ContextType::PageClass, Login::class);
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('admin', $user);
+
+    expect(app(ContextPanels::class)->forClass(Login::class))->toBe([])
+        ->and(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['account/signing-in', 'intro']);
+});
+
+it('shows that same unregistered-class article on another panel', function (): void {
+    finCodexScopeArticle('intro');
+    finCodexScopeArticle('account/signing-in', ContextType::PageClass, Login::class);
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('staff', $user);
+
+    expect(app(ContextPanels::class)->forClass(Login::class))->toBe([])
+        ->and(finCodexSeen(Viewer::authenticated($user, 'staff')))->toBe(['account/signing-in', 'intro']);
+});
+
+it('hides an article whose every context names a different explicit panel', function (): void {
+    finCodexScopeArticle('intro');
+    Article::factory()->public()->published()->withTranslation('en', ['title' => 'Elsewhere', 'body' => 'Elsewhere body.'])
+        ->withContext(ContextType::Route, 'filament.staff.pages.dashboard', 'staff')
+        ->withContext(ContextType::PageClass, Dashboard::class, 'portal')
+        ->create(['slug' => 'elsewhere']);
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('admin', $user);
+
+    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['intro']);
+});
+
+it('shows an article carrying another panel\'s context beside a panel-less one', function (): void {
+    Article::factory()->public()->published()->withTranslation('en', ['title' => 'Mixed', 'body' => 'Mixed body.'])
+        ->withContext(ContextType::PageClass, Dashboard::class, 'staff')
+        ->withContext(ContextType::Route, 'shop.index')
+        ->create(['slug' => 'mixed']);
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('admin', $user);
+
+    // One context without a panel is enough; the explicit staff one cannot
+    // take the article away from admin on its own.
+    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['mixed']);
 });
 
 it('shows a two-panel article on admin', function (): void {
