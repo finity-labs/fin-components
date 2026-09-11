@@ -140,7 +140,15 @@ final class ContextsRepeater
                             ->iconButton()
                             ->modalHeading(__(self::isRoute($get)
                                 ? 'fin-codex::fin-codex.editor.contexts.pick_route'
-                                : 'fin-codex::fin-codex.editor.contexts.pick_page')))
+                                : 'fin-codex::fin-codex.editor.contexts.pick_page'))
+                            // Where the sign-in and account pages went. The
+                            // line belongs on the action rather than in
+                            // PageClassPickerTable, which is handed a Table on
+                            // the modal's own Livewire component and can never
+                            // see the row's panel.
+                            ->modalDescription(self::isRoute($get) || ! self::isNamedPanel($get)
+                                ? null
+                                : __('fin-codex::fin-codex.editor.contexts.auth_any_panel')))
                         ->emptyStateSelectButton()
                         ->visible(fn (Get $get): bool => ! self::isUrl($get))
                         ->required(fn (Get $get): bool => ! self::isUrl($get)),
@@ -346,5 +354,13 @@ final class ContextsRepeater
         $panel = $get('panel_id');
 
         return is_string($panel) ? $panel : null;
+    }
+
+    /** Whether the row names one panel rather than the "any panel" sentinel. */
+    private static function isNamedPanel(Get $get): bool
+    {
+        $panel = self::panel($get);
+
+        return $panel !== null && $panel !== '' && $panel !== ContextPicker::ANY_PANEL;
     }
 }
