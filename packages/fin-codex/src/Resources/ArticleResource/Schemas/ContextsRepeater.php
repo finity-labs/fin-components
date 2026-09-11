@@ -20,6 +20,7 @@ use FinityLabs\FinCodex\Editor\PageClassPickerTable;
 use FinityLabs\FinCodex\Editor\RoutePickerTable;
 use FinityLabs\FinCodex\Help\Declaration;
 use FinityLabs\FinCodex\Help\DeclaredContexts;
+use FinityLabs\FinCodex\Scope\ContextPanels;
 use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Models\Article;
@@ -158,6 +159,13 @@ final class ContextsRepeater
                         ->label(__('fin-codex::fin-codex.editor.contexts.pattern'))
                         ->placeholder('/admin/users/*')
                         ->maxLength(191)
+                        // Without a round trip of its own the closure below is
+                        // only re-evaluated on the next unrelated update, so a
+                        // freshly typed pattern would not raise its warning
+                        // until the author touched something else. On blur
+                        // rather than debounced: no round trip per keystroke.
+                        ->live(onBlur: true)
+                        ->helperText(fn (Get $get): ?string => self::urlPanelWarning($get))
                         ->visible(fn (Get $get): bool => self::isUrl($get))
                         ->required(fn (Get $get): bool => self::isUrl($get)),
                 ])->columnSpan(1),
@@ -369,6 +377,34 @@ final class ContextsRepeater
         return $panel === null
             ? null
             : (string) __('fin-codex::fin-codex.editor.contexts.key_panel_warning', ['panel' => $panel]);
+    }
+
+    /**
+     * The pattern sits under one panel's path while the row names another.
+     *
+     * The pattern is left exactly as typed — free text is free text, and an
+     * author who wrote it may mean it — but the same silent miss the key
+     * check catches is worth saying out loud. The resolution is the one the
+     * coverage report already trusts, so the editor and the report agree
+     * about which panel a path belongs to.
+     */
+    private static function urlPanelWarning(Get $get): ?string
+    {
+        if (! self::isUrl($get) || ! self::isNamedPanel($get)) {
+            return null;
+        }
+
+        $pattern = $get('url');
+
+        if (! is_string($pattern) || $pattern === '') {
+            return null;
+        }
+
+        $owner = app(ContextPanels::class)->forUrl($pattern);
+
+        return $owner === null || $owner === self::panel($get)
+            ? null
+            : (string) __('fin-codex::fin-codex.editor.contexts.url_panel_warning', ['panel' => $owner]);
     }
 
     /**
