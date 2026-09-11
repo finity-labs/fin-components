@@ -126,7 +126,7 @@ it('succeeds and says Shield was not found when it is not installed', function (
         ->and($output)->toContain('Filament Shield is not installed');
 });
 
-it('writes the article resource into the Shield manage array with all eight abilities', function () {
+it('writes the article resource into the Shield manage array with all nine abilities', function () {
     TempAppTree::writePanelProvider('admin');
     $shield = TempAppTree::writeShieldConfig();
 
@@ -139,12 +139,12 @@ it('writes the article resource into the Shield manage array with all eight abil
         ->and(TempAppTree::lints($shield))->toBeTrue();
 
     // The written file still parses into the shape Shield reads, the host's
-    // own entry survives, and all eight abilities are on ours.
+    // own entry survives, and all nine abilities are on ours.
     $config = require $shield;
 
     expect($config['resources']['manage'])->toHaveCount(2)
         ->and($config['resources']['manage']['FinityLabs\FinCodex\Resources\ArticleResource'])
-        ->toBe(['viewAny', 'view', 'create', 'update', 'delete', 'restore', 'import', 'convert']);
+        ->toBe(['viewAny', 'view', 'create', 'update', 'delete', 'restore', 'import', 'convert', 'viewAllPanels']);
 });
 
 it('does not add a second Shield entry on a repeated install', function () {

@@ -75,10 +75,11 @@ class InstallCommand extends Command
     /**
      * The abilities the article resource registers with Shield. The first five
      * are Filament's own; restore (a revision restore, not a soft delete),
-     * import (adopting a file article into the database) and convert (HTML to
-     * Markdown) are fin-codex's, and only exist in a generated policy because
-     * they are listed here — `policies.merge` folds a resource's own methods
-     * into Shield's default list.
+     * import (adopting a file article into the database), convert (HTML to
+     * Markdown) and viewAllPanels (reading every panel's help from inside one
+     * panel) are fin-codex's, and only exist in a generated policy because they
+     * are listed here — `policies.merge` folds a resource's own methods into
+     * Shield's default list.
      *
      * @var list<string>
      */
@@ -91,6 +92,7 @@ class InstallCommand extends Command
         'restore',
         'import',
         'convert',
+        'viewAllPanels',
     ];
 
     /** The languages the starter articles are written in. */
