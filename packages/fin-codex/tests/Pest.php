@@ -6,6 +6,7 @@ use FinityLabs\FinCodex\Help\ArticleLookup;
 use FinityLabs\FinCodex\Help\DeclaredContexts;
 use FinityLabs\FinCodex\Panel\CurrentPage;
 use FinityLabs\FinCodex\Scope\ContextPanels;
+use FinityLabs\FinCodex\Scope\PanelScopeGate;
 use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\FinCodex\Tests\TestCase;
@@ -35,7 +36,9 @@ uses(TestCase::class)->in(__DIR__);
  * answer from before the seed. The context-to-panel resolver is dropped for
  * the DeclaredContexts reason instead: it memoises one reading of the panel
  * registry per process, so a test that registers a panel mid-test needs a
- * fresh one.
+ * fresh one. The panel scope gate is dropped for both reasons at once: it
+ * memoises one verdict map per panel per request and it asks the resolver for
+ * every context it sees.
  */
 function forgetHelpMemo(): void
 {
@@ -45,6 +48,7 @@ function forgetHelpMemo(): void
     app()->forgetInstance(ContentSource::class);
     app()->forgetInstance(DeclaredContexts::class);
     app()->forgetInstance(ContextPanels::class);
+    app()->forgetInstance(PanelScopeGate::class);
     app()->forgetInstance(CoverageReport::class);
     app()->forgetInstance(SourceWarnings::class);
 }

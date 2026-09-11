@@ -16,6 +16,7 @@ use FinityLabs\FinCodex\Livewire\HelpDrawer;
 use FinityLabs\FinCodex\Panel\CurrentPage;
 use FinityLabs\FinCodex\Policies\ArticlePolicy;
 use FinityLabs\FinCodex\Scope\ContextPanels;
+use FinityLabs\FinCodex\Scope\PanelScopeGate;
 use FinityLabs\FinSupport\Auth\PolicyRegistrar;
 use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Events\ArticleTranslated;
@@ -71,6 +72,12 @@ class FinCodexServiceProvider extends PackageServiceProvider
      * is scoped for the second half of that reason: no source memoises its
      * warnings, and the declared-help decorator reads the inner source twice
      * to produce them.
+     *
+     * PanelScopeGate is a singleton with a request-identity memo of its own,
+     * like DeclaredContextsSource: the host hook it wraps is handed to it once
+     * at panel boot and must survive the per-request flush a scoped binding
+     * would give it under Octane, while its verdict map still resets with the
+     * request.
      */
     public function packageRegistered(): void
     {
@@ -80,6 +87,7 @@ class FinCodexServiceProvider extends PackageServiceProvider
         $this->app->scoped(SourceWarnings::class);
         $this->app->singleton(DeclaredContexts::class);
         $this->app->singleton(ContextPanels::class);
+        $this->app->singleton(PanelScopeGate::class);
         $this->app->extend(ContentSource::class, static fn (ContentSource $inner, Container $app): ContentSource => new DeclaredContextsSource($inner, $app->make(DeclaredContexts::class), $app));
     }
 
