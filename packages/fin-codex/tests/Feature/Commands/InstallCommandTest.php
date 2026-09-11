@@ -4,6 +4,7 @@ use FinityLabs\FinCodex\Commands\InstallCommand;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Tests\Fixtures\Commands\ShieldStubInstallCommand;
 use FinityLabs\FinCodex\Tests\Fixtures\TempAppTree;
 use FinityLabs\LinCodex\Enums\Visibility;
 use FinityLabs\LinCodex\Models\Article;
@@ -33,6 +34,7 @@ use Illuminate\Support\Facades\Artisan;
 
 afterEach(function () {
     TempAppTree::cleanup();
+    ShieldStubInstallCommand::reset();
 });
 
 /**
@@ -171,6 +173,94 @@ it('prints the page nudge, because Shield discovers pages rather than reading th
 
     expect($exitCode)->toBe(0)
         ->and($output)->toContain('--page=HelpSettings,HelpCoverage');
+});
+
+/*
+ * What the install does with shield:generate's answer.
+ *
+ * UAT test 7 found the install reporting "Shield permissions and policies
+ * generated" over a run that had in fact skipped the Article policy — the one
+ * message that would have told the user why ticking the permission changed
+ * nothing. The harness has no Shield, so the run is canned through a seam on a
+ * fixture subclass registered over the shipped command's own name.
+ */
+
+/** Register the fixture over fin-codex:install and can shield:generate's answer. */
+function finCodexShieldStubInstall(int $exitCode, string $output): void
+{
+    ShieldStubInstallCommand::$shieldExitCode = $exitCode;
+    ShieldStubInstallCommand::$shieldOutput = $output;
+
+    Artisan::registerCommand(new ShieldStubInstallCommand);
+}
+
+it('prints what shield:generate said', function () {
+    TempAppTree::writePanelProvider('admin');
+    TempAppTree::writeShieldConfig();
+
+    finCodexShieldStubInstall(0, 'Permissions generated for the article resource'."\n".ShieldStubInstallCommand::SKIP_LINE);
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('Permissions generated for the article resource')
+        ->and($output)->toContain(ShieldStubInstallCommand::SKIP_LINE)
+        ->and($output)->toContain('Shield permissions and policies generated');
+});
+
+it('says in plain words that the skipped Article policy is expected', function () {
+    TempAppTree::writePanelProvider('admin');
+    TempAppTree::writeShieldConfig();
+
+    finCodexShieldStubInstall(0, ShieldStubInstallCommand::SKIP_LINE);
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('fin-codex registers its own')
+        ->and($output)->toContain('nothing to fix');
+});
+
+it('adds no note when shield skipped nothing', function () {
+    TempAppTree::writePanelProvider('admin');
+    TempAppTree::writeShieldConfig();
+
+    finCodexShieldStubInstall(0, 'Permissions generated for the article resource');
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->not->toContain('fin-codex registers its own');
+});
+
+it('prints the output of a failed run and still falls back to the manual command', function () {
+    TempAppTree::writePanelProvider('admin');
+    TempAppTree::writeShieldConfig();
+
+    finCodexShieldStubInstall(1, 'SQLSTATE[42S02]: Base table or view not found: permissions');
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('SQLSTATE[42S02]')
+        ->and($output)->toContain('Could not generate the Shield permissions automatically')
+        ->and($output)->toContain('php artisan shield:generate --panel=admin --option=policies_and_permissions')
+        // A run that failed configured nothing, so the next step that sends the
+        // user to Shield's role screen is not offered.
+        ->and($output)->not->toContain('Assign permissions');
+});
+
+it('names the ability that lifts the panel scope in its next steps', function () {
+    TempAppTree::writePanelProvider('admin');
+    TempAppTree::writeShieldConfig();
+
+    finCodexShieldStubInstall(0, ShieldStubInstallCommand::SKIP_LINE);
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('Assign permissions')
+        ->and($output)->toContain('viewAllPanels');
 });
 
 it('publishes nothing of lin-codex', function () {
