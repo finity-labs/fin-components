@@ -150,6 +150,7 @@ final class ContextsRepeater
                                 ? null
                                 : __('fin-codex::fin-codex.editor.contexts.auth_any_panel')))
                         ->emptyStateSelectButton()
+                        ->helperText(fn (Get $get): ?string => self::keyPanelWarning($get))
                         ->visible(fn (Get $get): bool => ! self::isUrl($get))
                         ->required(fn (Get $get): bool => ! self::isUrl($get)),
 
@@ -329,6 +330,81 @@ final class ContextsRepeater
             ContextType::Route->key() => array_key_exists($key, $picker->routeKeys($panelId)),
             default => true,
         };
+    }
+
+    /**
+     * The row says "any panel" while its key belongs to exactly one: an
+     * inline nudge, live and non-blocking, never an error.
+     *
+     * This is the mistake the UAT actually made — an admin-only route filed
+     * under any panel with nothing objecting. It stays a warning because
+     * binding one panel's screen to every panel is unusual rather than wrong,
+     * and this package's own starter content does it deliberately. Being live
+     * rather than modal-only also means a row stored before this change, and
+     * a row a help declaration produced, surface it too.
+     *
+     * A route belonging to no panel is left alone: that is what any panel is
+     * for, and nagging about the correct choice is the failure this phase set
+     * out to stop repeating. An auth page is left alone as well, because it
+     * carries no panel at all.
+     */
+    private static function keyPanelWarning(Get $get): ?string
+    {
+        if (self::isUrl($get) || self::isNamedPanel($get)) {
+            return null;
+        }
+
+        $key = $get('key');
+
+        if (! is_string($key) || $key === '') {
+            return null;
+        }
+
+        $picker = app(ContextPicker::class);
+
+        $panel = self::isRoute($get)
+            ? self::soleRoutePanel($picker->routeRows(null), $key)
+            : self::soleClassPanel($picker->classRows(null), ltrim($key, '\\'));
+
+        return $panel === null
+            ? null
+            : (string) __('fin-codex::fin-codex.editor.contexts.key_panel_warning', ['panel' => $panel]);
+    }
+
+    /**
+     * The panel a route name belongs to, which the row already carries as a
+     * nullable value meaning exactly that. A key no row matches is a key the
+     * picker no longer offers — a different problem than this warning.
+     *
+     * @param  list<array{key: string, label: string, uri: string, panel: ?string}>  $rows
+     */
+    private static function soleRoutePanel(array $rows, string $key): ?string
+    {
+        foreach ($rows as $row) {
+            if ($row['key'] === $key) {
+                return $row['panel'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The one panel registering a class, and null for every other count: an
+     * empty list is an auth page and several entries is a genuinely shared
+     * class, neither of which is the mistake.
+     *
+     * @param  list<array{key: string, label: string, kind: string, uri: ?string, panel: list<string>}>  $rows
+     */
+    private static function soleClassPanel(array $rows, string $key): ?string
+    {
+        foreach ($rows as $row) {
+            if ($row['key'] === $key) {
+                return count($row['panel']) === 1 ? $row['panel'][0] : null;
+            }
+        }
+
+        return null;
     }
 
     private static function isUrl(Get $get): bool
