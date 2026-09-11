@@ -23,10 +23,12 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * Extending this class is the shortest way there — it is not final and none of
  * its methods are static. Editing this file is not: an update overwrites it.
  *
- * A host policy that stops at the five standard abilities still works. The
- * three custom ones resolve through Auth\ArticleAbility, which falls back to
- * update (restore, convert) or create (import) when the registered policy has
- * no method for them.
+ * A host policy that stops at the five standard abilities still works. Three
+ * of the four custom ones resolve through Auth\ArticleAbility, which falls
+ * back to update (restore, convert) or create (import) when the registered
+ * policy has no method for them. The fourth, viewAllPanels, has nothing to
+ * fall back to and answers no when the registered policy has no method for it:
+ * lifting the panel scope is a grant a host writes down rather than inherits.
  */
 class ArticlePolicy
 {
@@ -81,5 +83,22 @@ class ArticlePolicy
     public function convert(Authenticatable $user, Article $article): bool
     {
         return true;
+    }
+
+    /**
+     * Whether the user may read every panel's help from inside one panel.
+     *
+     * Off in the shipped policy: the panel scope (Scope\PanelScopeGate) shows a
+     * viewer general articles plus the current panel's own, and only a host
+     * that writes this method at {policyNamespace}\ArticlePolicy lifts it, per
+     * viewer.
+     *
+     * A class-level check like import(): the user alone, no record — and no
+     * standard ability to fall back to either, so a policy without the method
+     * answers no rather than inheriting viewAny.
+     */
+    public function viewAllPanels(Authenticatable $user): bool
+    {
+        return false;
     }
 }
