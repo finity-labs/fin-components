@@ -109,15 +109,19 @@ function finCodexScopeShell(string $slug, string $body = ''): Article
 }
 
 /**
- * The six-article set the panel rule is read off: one general, one resolving
- * into admin by route, one into staff by route, one pinned to staff by
- * prefix, one on a plain Laravel route and one on a class no panel has.
+ * The six-article set the panel rule is read off: one general, three pinned by
+ * an explicit prefix (admin's route, staff's route, staff's page class) and
+ * two carrying no panel of their own — a plain Laravel route and a class no
+ * panel has, the set's two "any panel" members, read from every panel.
+ *
+ * On admin the set is intro, admin-guide, plain-page and unknown-class; the
+ * two staff articles are what the rule takes away.
  */
 function finCodexSeedScopeSet(): void
 {
     finCodexScopeArticle('intro');
-    finCodexScopeArticle('admin-guide', ContextType::Route, 'filament.admin.pages.dashboard');
-    finCodexScopeArticle('staff-guide', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexScopeArticle('admin-guide', ContextType::Route, 'filament.admin.pages.dashboard', 'admin');
+    finCodexScopeArticle('staff-guide', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     finCodexScopeArticle('prefixed-staff', ContextType::PageClass, Dashboard::class, 'staff');
     finCodexScopeArticle('plain-page', ContextType::Route, 'shop.index');
     finCodexScopeArticle('unknown-class', ContextType::PageClass, 'App\\Nowhere');
@@ -132,13 +136,14 @@ it('changes nothing when no panel is current, even with the hook installed', fun
         ->toBe(['admin-guide', 'intro', 'plain-page', 'prefixed-staff', 'staff-guide', 'unknown-class']);
 });
 
-it('shows general articles and the current panel\'s own, and hides the rest', function (): void {
+it('shows general, own-panel and panel-less articles, and hides another panel\'s', function (): void {
     finCodexSeedScopeSet();
     finCodexInstallScope();
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
 
-    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['admin-guide', 'intro']);
+    expect(finCodexSeen(Viewer::authenticated($user, 'web')))
+        ->toBe(['admin-guide', 'intro', 'plain-page', 'unknown-class']);
 });
 
 it('shows an article bound to a class the admin panel registers', function (): void {
@@ -281,10 +286,26 @@ it('shows the same two-panel article on staff', function (): void {
     expect(finCodexSeen(Viewer::authenticated($user, 'staff')))->toBe(['both-panels']);
 });
 
-it('scopes url contexts by the panel path, and treats a wildcard pattern as outside', function (): void {
+/*
+ * A url context that names no panel is a panel-less context like any other, so
+ * all three of these are read from admin however their patterns resolve. That
+ * resolution is still exactly what it was and ContextPanelsTest is where it is
+ * pinned; the row below this one is the one that scopes by the path.
+ */
+it('reads every panel-less url context from the current panel', function (): void {
     finCodexScopeArticle('admin-url', ContextType::Url, '/admin/reports');
     finCodexScopeArticle('staff-url', ContextType::Url, '/staff/reports');
     finCodexScopeArticle('wild-url', ContextType::Url, '/**');
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('admin', $user);
+
+    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['admin-url', 'staff-url', 'wild-url']);
+});
+
+it('scopes url contexts that name their panel', function (): void {
+    finCodexScopeArticle('admin-url', ContextType::Url, '/admin/reports', 'admin');
+    finCodexScopeArticle('staff-url', ContextType::Url, '/staff/reports', 'staff');
     finCodexInstallScope();
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
@@ -357,7 +378,7 @@ it('hides a panel-bound section and its general child on another panel', functio
 
 it('hides a general container whose only descendant belongs to another panel', function (): void {
     finCodexScopeShell('guides');
-    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     finCodexInstallScope();
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
@@ -376,7 +397,7 @@ it('hides a general container whose only descendant belongs to another panel', f
  */
 it('keeps a general section that has a body of its own when no descendant survives', function (): void {
     finCodexScopeArticle('guides');
-    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     finCodexInstallScope();
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
@@ -386,7 +407,7 @@ it('keeps a general section that has a body of its own when no descendant surviv
 
 it('treats a whitespace-only section body as no body at all', function (): void {
     finCodexScopeShell('guides', "  \n\t ");
-    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     finCodexInstallScope();
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
@@ -398,7 +419,7 @@ it('reads the body of a section that has no default-locale translation', functio
     Article::factory()->public()->published()
         ->withTranslation('de', ['title' => 'Handbücher', 'body' => 'Nur auf Deutsch.'])
         ->create(['slug' => 'guides']);
-    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     finCodexInstallScope();
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
@@ -408,7 +429,7 @@ it('reads the body of a section that has no default-locale translation', functio
 
 it('shows that same container and child on the panel the child belongs to', function (): void {
     finCodexScopeShell('guides');
-    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     finCodexInstallScope();
     $user = finCodexScopeUser();
     $this->usesPanel('staff', $user);
@@ -419,7 +440,7 @@ it('shows that same container and child on the panel the child belongs to', func
 it('keeps a container alive for its surviving general child', function (): void {
     finCodexScopeShell('guides');
     finCodexScopeArticle('guides/intro');
-    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     finCodexInstallScope();
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
@@ -430,7 +451,7 @@ it('keeps a container alive for its surviving general child', function (): void 
 it('empties a whole chain of containers when the only leaf belongs elsewhere', function (): void {
     finCodexScopeShell('a');
     finCodexScopeShell('a/b');
-    finCodexScopeArticle('a/b/c', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexScopeArticle('a/b/c', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     finCodexInstallScope();
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
@@ -441,7 +462,7 @@ it('empties a whole chain of containers when the only leaf belongs elsewhere', f
 it('revives the whole chain of containers as soon as one leaf survives', function (): void {
     finCodexScopeShell('a');
     finCodexScopeShell('a/b');
-    finCodexScopeArticle('a/b/c', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexScopeArticle('a/b/c', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
     finCodexScopeArticle('a/b/d');
     finCodexInstallScope();
     $user = finCodexScopeUser();
@@ -490,8 +511,14 @@ it('lifts the scope for a viewer the policy allows, and for nobody else', functi
         ViewAllPanelsArticlePolicy::class,
         ['admin-guide', 'intro', 'plain-page', 'prefixed-staff', 'staff-guide', 'unknown-class'],
     ],
-    'a host policy without the method' => [DenyAllArticlePolicy::class, ['admin-guide', 'intro']],
-    'the shipped policy' => [ArticlePolicy::class, ['admin-guide', 'intro']],
+    'a host policy without the method' => [
+        DenyAllArticlePolicy::class,
+        ['admin-guide', 'intro', 'plain-page', 'unknown-class'],
+    ],
+    'the shipped policy' => [
+        ArticlePolicy::class,
+        ['admin-guide', 'intro', 'plain-page', 'unknown-class'],
+    ],
 ]);
 
 it('never asks the policy about a guest', function (): void {
@@ -501,7 +528,7 @@ it('never asks the policy about a guest', function (): void {
 
     Gate::policy(Article::class, FinCodexAskedArticlePolicy::class);
 
-    expect(finCodexSeen(Viewer::guest('web')))->toBe(['admin-guide', 'intro']);
+    expect(finCodexSeen(Viewer::guest('web')))->toBe(['admin-guide', 'intro', 'plain-page', 'unknown-class']);
 });
 
 it('asks the policy about a viewer that has a user', function (): void {
@@ -524,7 +551,7 @@ it('runs a host closure hook first and vetoes on top of it', function (): void {
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
 
-    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['admin-guide']);
+    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['admin-guide', 'plain-page', 'unknown-class']);
 });
 
 it('resolves an inner hook given as a class name through the container', function (): void {
@@ -534,7 +561,7 @@ it('resolves an inner hook given as a class name through the container', functio
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
 
-    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['admin-guide']);
+    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['admin-guide', 'plain-page', 'unknown-class']);
 });
 
 it('refuses an inner hook that is neither null, a class name nor a callable', function (): void {
@@ -583,16 +610,17 @@ it('keeps its verdict map for the request and drops it with the memo', function 
     $user = finCodexScopeUser();
     $this->usesPanel('admin', $user);
     $viewer = Viewer::authenticated($user, 'web');
+    $onAdmin = ['admin-guide', 'intro', 'plain-page', 'unknown-class'];
 
-    expect(finCodexSeen($viewer))->toBe(['admin-guide', 'intro']);
+    expect(finCodexSeen($viewer))->toBe($onAdmin);
 
-    finCodexScopeArticle('late-staff', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexScopeArticle('late-staff', ContextType::Route, 'filament.staff.pages.dashboard', 'staff');
 
-    expect(finCodexSeen($viewer))->toBe(['admin-guide', 'intro', 'late-staff']);
+    expect(finCodexSeen($viewer))->toBe(['admin-guide', 'intro', 'late-staff', 'plain-page', 'unknown-class']);
 
     forgetHelpMemo();
 
-    expect(finCodexSeen($viewer))->toBe(['admin-guide', 'intro']);
+    expect(finCodexSeen($viewer))->toBe($onAdmin);
 });
 
 it('leaves the published rule to the core', function (): void {
@@ -615,7 +643,7 @@ it('leaves the published rule to the core', function (): void {
 it('counts an unpublished descendant of this panel for the container rule', function (): void {
     finCodexScopeShell('guides');
     Article::factory()->public()->unpublished()->withTranslation('en', ['title' => 'Draft', 'body' => 'Draft body.'])
-        ->withContext(ContextType::Route, 'filament.admin.pages.dashboard')
+        ->withContext(ContextType::Route, 'filament.admin.pages.dashboard', 'admin')
         ->create(['slug' => 'guides/draft']);
     finCodexInstallScope();
     $user = finCodexScopeUser();

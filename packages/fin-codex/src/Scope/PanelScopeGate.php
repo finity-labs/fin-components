@@ -25,19 +25,32 @@ use InvalidArgumentException;
  * way with no change of its own. The hook can only veto; published and
  * visibility are decided before it is asked and stay the core's.
  *
- * Four rules, applied to one article at a time:
+ * Five rules, applied to one article at a time:
  *
  * - **General.** An article with no contexts at all belongs everywhere and is
  *   shown in every panel.
  * - **Own panel.** An article with at least one context resolving into the
  *   current panel is shown. An article in two panels is shown in both.
- * - **Outside panels.** An article whose every context resolves into another
- *   panel, or into no panel at all (a plain Laravel route, an unregistered
- *   route name, a class no panel has, a pattern spanning panels), is hidden.
- *   Outside is not general: it is a real bucket and it is hidden everywhere.
+ * - **Any panel.** A context that names no panel of its own does not restrict,
+ *   whatever its key would resolve into, so one of them is enough to show the
+ *   article in every panel. The core reads a panel-less context the same way
+ *   and the editor's panel select promises exactly that.
+ * - **Another panel.** An article is hidden only when every one of its
+ *   contexts names a different explicit panel.
  * - **Container.** A section carrying no contexts and no body of its own is
  *   shown only while at least one descendant survives the scoping,
  *   recursively.
+ *
+ * Two consequences of the "any panel" rule, which are the same rule twice: an
+ * article whose only context is a plain Laravel route is read inside every
+ * panel rather than in none, and the starter articles the install seeds — bound
+ * by class to Filament's login and register pages, which no panel registers —
+ * are read in every panel, including the login page they were written for.
+ *
+ * Filing a screen under a panel is a different question, and a screen that
+ * belongs to no panel at all still has a bucket of its own: ContextPanels keeps
+ * both, for the coverage report and the Help Center's panel filter. Nothing
+ * moved there; the gate simply stopped asking it about a panel-less context.
  *
  * A section that *does* carry contexts is scoped exactly like an article, and
  * the core's ancestor rule then takes its whole subtree with it, general
@@ -247,8 +260,22 @@ final class PanelScopeGate
     }
 
     /**
-     * Whether any of the article's contexts resolves into this panel. An
-     * article with no contexts is general and belongs to every panel.
+     * Whether the article's contexts leave it readable inside this panel. An
+     * article with no contexts at all is general and belongs to every panel.
+     *
+     * A context that names no panel of its own does not restrict. That is the
+     * core's own reading — its resolver matches a panel-less context from
+     * whichever panel the reader is in — and it is what the editor's panel
+     * select promises when it offers "any panel". So the first such context
+     * settles the article for every panel, whatever its key would have
+     * resolved into on its own.
+     *
+     * An article is hidden only when every one of its contexts names a
+     * different explicit panel. Resolving one of those still goes through
+     * ContextPanels, so the three consumers that share the class never grow a
+     * second reading of a panel prefix between them. "Which panel does this
+     * screen file under" stays that class's question, and the bucket for a
+     * screen belonging to none of them stays with it, unused here.
      */
     private function belongsTo(ArticleData $article, string $panelId): bool
     {
@@ -257,6 +284,10 @@ final class PanelScopeGate
         }
 
         foreach ($article->contexts as $context) {
+            if ($context->panelId === null) {
+                return true;
+            }
+
             if (in_array($panelId, $this->panels->forContext($context), true)) {
                 return true;
             }
