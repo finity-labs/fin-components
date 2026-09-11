@@ -1,8 +1,8 @@
 <?php
 
-use Filament\Facades\Filament;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
+use Filament\PanelRegistry;
 use FinityLabs\FinCodex\Scope\ContextPanels;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\UserResource;
 use FinityLabs\FinCodex\Tests\Fixtures\Resources\UserResource\Pages\ListUsers;
@@ -21,6 +21,18 @@ use FinityLabs\LinCodex\Enums\ContextType;
 function finCodexPanels(): ContextPanels
 {
     return app(ContextPanels::class);
+}
+
+/**
+ * Register a panel after the providers have booted. The facade's own
+ * registerPanel() is not usable here: it defers the registration into a
+ * container resolving() callback for PanelRegistry, and that singleton is
+ * long resolved by the time a test runs, so the call would be a silent
+ * no-op. The registry takes a late panel directly.
+ */
+function finCodexRegisterPanel(Panel $panel): void
+{
+    app(PanelRegistry::class)->register($panel);
 }
 
 it('answers the panel that owns a filament route name', function (): void {
@@ -90,7 +102,7 @@ it('lets a root-path panel claim only what no other panel claims', function (): 
 
     expect($panels->forUrl('/shop'))->toBeNull();
 
-    Filament::registerPanel(Panel::make()->id('root')->path(''));
+    finCodexRegisterPanel(Panel::make()->id('root')->path(''));
 
     // The path list is memoised like the class index, so the answer only
     // changes once the memo is dropped.
@@ -107,7 +119,7 @@ it('builds the class index once and rebuilds it after forget', function (): void
 
     expect($panels->forClass(Dashboard::class))->toHaveCount(4);
 
-    Filament::registerPanel(Panel::make()->id('extra')->path('extra')->pages([Dashboard::class]));
+    finCodexRegisterPanel(Panel::make()->id('extra')->path('extra')->pages([Dashboard::class]));
 
     expect($panels->forClass(Dashboard::class))->toHaveCount(4);
 

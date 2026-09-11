@@ -15,6 +15,7 @@ use FinityLabs\FinCodex\Help\DeclaredContextsSource;
 use FinityLabs\FinCodex\Livewire\HelpDrawer;
 use FinityLabs\FinCodex\Panel\CurrentPage;
 use FinityLabs\FinCodex\Policies\ArticlePolicy;
+use FinityLabs\FinCodex\Scope\ContextPanels;
 use FinityLabs\FinSupport\Auth\PolicyRegistrar;
 use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Events\ArticleTranslated;
@@ -53,7 +54,10 @@ class FinCodexServiceProvider extends PackageServiceProvider
      * yields a fresh, decorated instance (extenders live outside the
      * instance map). DeclaredContexts is a singleton whose registry scan is
      * lazy: the panel providers register after this one, so the scan has to
-     * wait for the first read.
+     * wait for the first read. ContextPanels is a singleton for the same
+     * reason and with the same lifetime: the panel registry does not change
+     * after boot, so its class index and path list are built once per
+     * process rather than once per request or once per article.
      *
      * ArticleLookup is scoped for the same reason as CurrentPage: one lookup
      * per request answers the title and the gate verdict for every field
@@ -75,6 +79,7 @@ class FinCodexServiceProvider extends PackageServiceProvider
         $this->app->scoped(CoverageReport::class);
         $this->app->scoped(SourceWarnings::class);
         $this->app->singleton(DeclaredContexts::class);
+        $this->app->singleton(ContextPanels::class);
         $this->app->extend(ContentSource::class, static fn (ContentSource $inner, Container $app): ContentSource => new DeclaredContextsSource($inner, $app->make(DeclaredContexts::class), $app));
     }
 
