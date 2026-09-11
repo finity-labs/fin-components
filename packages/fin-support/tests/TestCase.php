@@ -66,6 +66,15 @@ class TestCase extends Orchestra
 
     protected function defineDatabaseMigrations(): void
     {
+        $this->createUsersTable();
+    }
+
+    /**
+     * The users table the panel guard authenticates against. Overridden by
+     * UuidUserTestCase, which keys it by a string instead.
+     */
+    protected function createUsersTable(): void
+    {
         Schema::create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name');

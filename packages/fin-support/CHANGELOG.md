@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-11
+
+### Fixed
+
+- `Panel\Concerns\ResolvesPanelUser::panelUserId()` answered null on a host whose user model uses `HasUuids` or `HasUlids`, because it narrowed `Filament::auth()->id()` to `?int` and threw a string key away. Every package that stores the author of a row recorded nobody. It returns `int|string|null` now and hands the key over as the model gives it; anything that is neither an int nor a non-empty string is still null. Widen your own `?int` declarations if you assign the result
+
+### Added
+
+- `Panel\PanelUser::id()`: the same answer as a static call, for the static closures of a schema or an action where there is no `$this` to take the trait method from. `ResolvesPanelUser` delegates to it, so there is one implementation
+
 ## [0.1.0] - 2026-09-09
 
 First release: the pieces every Finity Labs Filament plugin repeated.

@@ -83,7 +83,23 @@ class InstallCommand extends Command
 
 ### The panel user
 
-`FinityLabs\FinSupport\Panel\Concerns\ResolvesPanelUser::panelUserId()` is `Filament::auth()->id()` narrowed to `?int`, for packages that store the author in an integer column.
+`FinityLabs\FinSupport\Panel\Concerns\ResolvesPanelUser::panelUserId()` is `Filament::auth()->id()` narrowed to `int|string|null`, for packages that store the author of a row. An auto-increment host hands back the int, a host whose user model uses `HasUuids` or `HasUlids` the string key, and a guard with nobody signed in null; anything else becomes null.
+
+`FinityLabs\FinSupport\Panel\PanelUser::id()` is the same answer as a static call, for the static closures of a schema or an action where there is no `$this` to take the trait method from.
+
+### UUID or ULID user models
+
+Until 0.1.1 `panelUserId()` returned `?int` and answered null for a string key, so a package storing the author recorded nobody on a `HasUuids` or `HasUlids` host. It now returns the key as it is. If your own code narrows the result, widen the type it is assigned to:
+
+```php
+-protected function getAuthorId(): ?int
++protected function getAuthorId(): int|string|null
+ {
+     return $this->panelUserId();
+ }
+```
+
+There are no columns to migrate: fin-support stores nothing of its own.
 
 ## Testing
 
