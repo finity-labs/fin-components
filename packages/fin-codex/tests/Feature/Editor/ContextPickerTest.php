@@ -1,5 +1,10 @@
 <?php
 
+use Filament\Auth\MultiFactor\Pages\SetUpRequiredMultiFactorAuthentication;
+use Filament\Auth\Pages\Login;
+use Filament\Auth\Pages\PasswordReset\RequestPasswordReset;
+use Filament\Auth\Pages\PasswordReset\ResetPassword;
+use Filament\Auth\Pages\Register;
 use Filament\Pages\Dashboard;
 use FinityLabs\FinCodex\Editor\ContextPicker;
 use FinityLabs\FinCodex\Resources\ArticleResource;
@@ -68,6 +73,45 @@ it('lists resources and pages of one panel as class keys with navigation labels'
     sort($sorted);
 
     expect($labels)->toBe($sorted);
+});
+
+it('offers the panel auth pages under any panel and nowhere else', function (): void {
+    $union = finCodexPicker()->classKeys(null);
+
+    expect(array_key_exists(Login::class, $union))->toBeTrue()
+        ->and(array_key_exists(Register::class, $union))->toBeTrue()
+        ->and(array_key_exists(RequestPasswordReset::class, $union))->toBeTrue()
+        ->and(array_key_exists(ResetPassword::class, $union))->toBeTrue();
+
+    // The named-panel lists are the whole point: a context naming a panel and
+    // an auth class resolves to no panel at all, which would hide the article
+    // everywhere. The binding has to be unwritable, not merely discouraged.
+    foreach (['admin', 'staff', 'plain'] as $panelId) {
+        $scoped = finCodexPicker()->classKeys($panelId);
+
+        foreach ([Login::class, Register::class, RequestPasswordReset::class, ResetPassword::class] as $class) {
+            expect(array_key_exists($class, $scoped))->toBeFalse();
+        }
+    }
+});
+
+it('labels auth rows from this package and takes their path from the panel routes', function (): void {
+    $union = collect(finCodexPicker()->classRows(null))->keyBy('key');
+
+    expect($union[Login::class])->toBe([
+        'key' => Login::class,
+        'label' => __('fin-codex::fin-codex.editor.contexts.auth.login'),
+        'kind' => __('fin-codex::fin-codex.editor.contexts.auth_page'),
+        'uri' => '/admin/login',
+        'panel' => [],
+    ]);
+
+    expect($union[Register::class]['label'])->toBe(__('fin-codex::fin-codex.editor.contexts.auth.register'))
+        ->and($union[RequestPasswordReset::class]['label'])->toBe(__('fin-codex::fin-codex.editor.contexts.auth.password_reset_request'))
+        ->and($union[ResetPassword::class]['label'])->toBe(__('fin-codex::fin-codex.editor.contexts.auth.password_reset'));
+
+    // A feature no panel switched on contributes no row.
+    expect($union->has(SetUpRequiredMultiFactorAuthentication::class))->toBeFalse();
 });
 
 it('lists named GET routes per panel filtered by the coverage ignore list', function (): void {
