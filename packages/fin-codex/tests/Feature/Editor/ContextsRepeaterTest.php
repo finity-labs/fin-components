@@ -418,3 +418,52 @@ it('scopes the key picker rows and columns to the row panel and type', function 
         ->and(array_keys($picker->getStandaloneRecordsIndex()))->toContain('filament.staff.pages.dashboard')
         ->not->toContain('filament.admin.resources.users.index');
 });
+
+it('offers the auth pages to the live key picker under any panel only', function (): void {
+    $user = finCodexContextsUser();
+    $this->usesPanel('admin', $user);
+
+    // Plan 14.1-01's rule, proved through the form the author actually uses:
+    // a sign-in page belongs to the application, so a row naming one panel
+    // cannot bind it and never sees it.
+    $component = Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexContextsState([['panel_id' => ContextPicker::ANY_PANEL, 'type' => 'class', 'key' => null]]));
+
+    $item = array_key_first(data_get($component->instance()->data, 'contexts'));
+
+    expect(array_keys(finCodexContextsKeyPicker($component, $item)->getStandaloneRecordsIndex()))
+        ->toContain(Login::class);
+
+    $component->set("data.contexts.{$item}.panel_id", 'admin');
+
+    expect(array_keys(finCodexContextsKeyPicker($component, $item)->getStandaloneRecordsIndex()))
+        ->not->toContain(Login::class)
+        ->toContain(UserResource::class);
+});
+
+it('says where the sign-in pages went, and only where there is something to say', function (): void {
+    $user = finCodexContextsUser();
+    $this->usesPanel('admin', $user);
+
+    $component = Livewire::test(CreateArticle::class)
+        ->fillForm(finCodexContextsState([['panel_id' => 'admin', 'type' => 'class', 'key' => UserResource::class]]));
+
+    $item = array_key_first(data_get($component->instance()->data, 'contexts'));
+
+    expect(finCodexContextsKeyPicker($component, $item)->getAction('select')?->getModalDescription())
+        ->toBe(__('fin-codex::fin-codex.editor.contexts.auth_any_panel'));
+
+    // Under Any panel the pages are right there in the list, and a route row
+    // never offered them in the first place.
+    $component->set("data.contexts.{$item}.panel_id", ContextPicker::ANY_PANEL);
+
+    expect(finCodexContextsKeyPicker($component, $item)->getAction('select')?->getModalDescription())
+        ->toBeNull();
+
+    $component
+        ->set("data.contexts.{$item}.panel_id", 'admin')
+        ->set("data.contexts.{$item}.type", 'route');
+
+    expect(finCodexContextsKeyPicker($component, $item)->getAction('select')?->getModalDescription())
+        ->toBeNull();
+});
