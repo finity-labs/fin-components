@@ -9,6 +9,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
@@ -95,8 +96,18 @@ final class ContextsRepeater
                     ->default(ContextPicker::ANY_PANEL)
                     ->required()
                     ->live()
-                    ->afterStateUpdated(function (Set $set): void {
+                    ->afterStateUpdated(function (Get $get, Set $set, ?string $state): void {
+                        if (self::keySurvives($get, $state)) {
+                            return;
+                        }
+
                         $set('key', null);
+
+                        Notification::make()
+                            ->warning()
+                            ->title(__('fin-codex::fin-codex.editor.contexts.key_cleared'))
+                            ->body(__('fin-codex::fin-codex.editor.contexts.key_cleared_body'))
+                            ->send();
                     }),
 
                 Select::make('type')
@@ -277,6 +288,39 @@ final class ContextsRepeater
         return isset($record['kind']) || ! is_string($uri) || $uri === ''
             ? $key
             : $key."\n".$uri;
+    }
+
+    /**
+     * Whether the key the row is already holding is still offered under the
+     * panel just chosen.
+     *
+     * The select used to clear unconditionally, so an author who moved a row
+     * between panels re-picked the same resource every time. The picker knows
+     * the answer, so it is asked: "any panel" unions every panel and can never
+     * invalidate anything, a class two panels register survives the move, and a
+     * key that genuinely is not there is cleared rather than kept and flagged,
+     * so the row cannot be saved wrong and the field's own required rule blocks
+     * the save until the author picks again.
+     *
+     * A url row's pattern is free text and an author who typed one may mean it,
+     * so it is never touched here. An empty key is nothing to clear and nothing
+     * to announce.
+     */
+    private static function keySurvives(Get $get, ?string $panelId): bool
+    {
+        $key = $get('key');
+
+        if (! is_string($key) || $key === '') {
+            return true;
+        }
+
+        $picker = app(ContextPicker::class);
+
+        return match (self::type($get)) {
+            ContextType::PageClass->key() => array_key_exists(ltrim($key, '\\'), $picker->classKeys($panelId)),
+            ContextType::Route->key() => array_key_exists($key, $picker->routeKeys($panelId)),
+            default => true,
+        };
     }
 
     private static function isUrl(Get $get): bool
