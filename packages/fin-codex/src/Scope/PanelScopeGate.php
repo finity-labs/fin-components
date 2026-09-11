@@ -9,6 +9,7 @@ use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\LinCodex\Auth\Viewer;
 use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Data\ArticleData;
+use FinityLabs\LinCodex\Locale\LocaleResolver;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Sources\SlugPath;
 use Illuminate\Contracts\Container\Container;
@@ -34,21 +35,23 @@ use InvalidArgumentException;
  *   panel, or into no panel at all (a plain Laravel route, an unregistered
  *   route name, a class no panel has, a pattern spanning panels), is hidden.
  *   Outside is not general: it is a real bucket and it is hidden everywhere.
- * - **Container.** A section carrying no contexts is shown only while at least
- *   one descendant survives the scoping, recursively.
+ * - **Container.** A section carrying no contexts and no body of its own is
+ *   shown only while at least one descendant survives the scoping,
+ *   recursively.
  *
  * A section that *does* carry contexts is scoped exactly like an article, and
  * the core's ancestor rule then takes its whole subtree with it, general
  * children included. That is deliberate: an editor who wants an article
  * visible everywhere keeps it out of a panel-bound section.
  *
- * The container rule is read literally from `isSection`, which the sources set
- * for an `index.md`/`index.html` file **and** for a database article that has
- * children. So a database parent with a real body of its own and no contexts
- * is a container too, and it disappears on a panel where none of its
- * descendants survive. That is the locked wording implemented as written; the
- * narrower reading — a container is a section whose default-locale body is
- * empty — is a one-line change here if it turns out to be the wanted one.
+ * A container is a section with nothing of its own to read. `isSection` alone
+ * would be too wide a net: the sources set it for an `index.md`/`index.html`
+ * file **and** for any database article that has children, so a general
+ * section an editor wrote a real page into would vanish — body and all — on a
+ * panel where none of its descendants happens to survive. The body decides.
+ * A section whose default-locale body is blank is a navigation shell and goes
+ * where its children go; a section that carries one is an article like any
+ * other and stays wherever the panel rule puts it.
  *
  * Descendants are counted by the panel rule alone. The hook is only ever asked
  * about articles that already passed published and visibility, but the map it
@@ -85,6 +88,7 @@ final class PanelScopeGate
     public function __construct(
         private readonly Container $app,
         private readonly ContextPanels $panels,
+        private readonly LocaleResolver $locales,
     ) {}
 
     /**
@@ -206,9 +210,10 @@ final class PanelScopeGate
 
         $alive = [];
         $verdict = [];
+        $defaultLocale = $this->locales->defaultLocale();
 
         foreach (array_reverse($all, true) as $slug => $article) {
-            $isContainer = $article->isSection && $article->contexts === [];
+            $isContainer = $article->isSection && $article->contexts === [] && $this->hasNoBody($article, $defaultLocale);
             $visible = ($scoped[$slug] ?? true) && (! $isContainer || ($alive[$slug] ?? false));
 
             if ($visible) {
@@ -221,6 +226,24 @@ final class PanelScopeGate
         }
 
         return $verdict;
+    }
+
+    /**
+     * Whether the section has nothing of its own to read, which is what makes
+     * it a container rather than an article with children.
+     *
+     * The body lives on the translation, and the default locale is the one an
+     * article is written in first. A section written only in another language
+     * is still read there — the sources warn about the missing default-locale
+     * file rather than dropping the article — so its first translation stands
+     * in, the same substitution the filesystem assembler makes. Whitespace is
+     * not content.
+     */
+    private function hasNoBody(ArticleData $article, string $defaultLocale): bool
+    {
+        $translation = $article->translation($defaultLocale) ?? (array_values($article->translations)[0] ?? null);
+
+        return blank($translation?->body);
     }
 
     /**

@@ -94,6 +94,19 @@ function finCodexScopeArticle(string $slug, ?ContextType $type = null, string $k
 }
 
 /**
+ * A published, public section with no body of its own: the navigation shell
+ * the container rule is about. A section that carries a body is an article
+ * like any other and finCodexScopeArticle() seeds one.
+ */
+function finCodexScopeShell(string $slug, string $body = ''): Article
+{
+    return Article::factory()->public()->published()->withTranslation('en', [
+        'title' => ucfirst(str_replace(['-', '/'], ' ', $slug)),
+        'body' => $body,
+    ])->create(['slug' => $slug]);
+}
+
+/**
  * The six-article set the panel rule is read off: one general, one resolving
  * into admin by route, one into staff by route, one pinned to staff by
  * prefix, one on a plain Laravel route and one on a class no panel has.
@@ -245,7 +258,7 @@ it('hides a panel-bound section and its general child on another panel', functio
 });
 
 it('hides a general container whose only descendant belongs to another panel', function (): void {
-    finCodexScopeArticle('guides');
+    finCodexScopeShell('guides');
     finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
     finCodexInstallScope();
     $user = finCodexScopeUser();
@@ -254,8 +267,49 @@ it('hides a general container whose only descendant belongs to another panel', f
     expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe([]);
 });
 
-it('shows that same container and child on the panel the child belongs to', function (): void {
+/*
+ * The container rule asks for a section with nothing of its own to read, not
+ * for any section at all: the sources set isSection for every database article
+ * that has children, so a general section an editor wrote a page into must
+ * survive a panel where none of its descendants does, body included. The three
+ * rows below are the whole rule — a body keeps it, an empty body and a
+ * whitespace-only body do not, and a section written only in another language
+ * is read there and keeps its place too.
+ */
+it('keeps a general section that has a body of its own when no descendant survives', function (): void {
     finCodexScopeArticle('guides');
+    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('admin', $user);
+
+    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['guides']);
+});
+
+it('treats a whitespace-only section body as no body at all', function (): void {
+    finCodexScopeShell('guides', "  \n\t ");
+    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('admin', $user);
+
+    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe([]);
+});
+
+it('reads the body of a section that has no default-locale translation', function (): void {
+    Article::factory()->public()->published()
+        ->withTranslation('de', ['title' => 'Handbücher', 'body' => 'Nur auf Deutsch.'])
+        ->create(['slug' => 'guides']);
+    finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
+    finCodexInstallScope();
+    $user = finCodexScopeUser();
+    $this->usesPanel('admin', $user);
+
+    expect(finCodexSeen(Viewer::authenticated($user, 'web')))->toBe(['guides']);
+});
+
+it('shows that same container and child on the panel the child belongs to', function (): void {
+    finCodexScopeShell('guides');
     finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
     finCodexInstallScope();
     $user = finCodexScopeUser();
@@ -265,7 +319,7 @@ it('shows that same container and child on the panel the child belongs to', func
 });
 
 it('keeps a container alive for its surviving general child', function (): void {
-    finCodexScopeArticle('guides');
+    finCodexScopeShell('guides');
     finCodexScopeArticle('guides/intro');
     finCodexScopeArticle('guides/staff-only', ContextType::Route, 'filament.staff.pages.dashboard');
     finCodexInstallScope();
@@ -276,8 +330,8 @@ it('keeps a container alive for its surviving general child', function (): void 
 });
 
 it('empties a whole chain of containers when the only leaf belongs elsewhere', function (): void {
-    finCodexScopeArticle('a');
-    finCodexScopeArticle('a/b');
+    finCodexScopeShell('a');
+    finCodexScopeShell('a/b');
     finCodexScopeArticle('a/b/c', ContextType::Route, 'filament.staff.pages.dashboard');
     finCodexInstallScope();
     $user = finCodexScopeUser();
@@ -287,8 +341,8 @@ it('empties a whole chain of containers when the only leaf belongs elsewhere', f
 });
 
 it('revives the whole chain of containers as soon as one leaf survives', function (): void {
-    finCodexScopeArticle('a');
-    finCodexScopeArticle('a/b');
+    finCodexScopeShell('a');
+    finCodexScopeShell('a/b');
     finCodexScopeArticle('a/b/c', ContextType::Route, 'filament.staff.pages.dashboard');
     finCodexScopeArticle('a/b/d');
     finCodexInstallScope();
@@ -461,7 +515,7 @@ it('leaves the published rule to the core', function (): void {
  * which is the 0.4 behaviour and is left untouched on purpose.
  */
 it('counts an unpublished descendant of this panel for the container rule', function (): void {
-    finCodexScopeArticle('guides');
+    finCodexScopeShell('guides');
     Article::factory()->public()->unpublished()->withTranslation('en', ['title' => 'Draft', 'body' => 'Draft body.'])
         ->withContext(ContextType::Route, 'filament.admin.pages.dashboard')
         ->create(['slug' => 'guides/draft']);
