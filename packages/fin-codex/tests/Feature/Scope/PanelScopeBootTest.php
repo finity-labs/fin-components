@@ -1,5 +1,6 @@
 <?php
 
+use Filament\Facades\Filament;
 use FinityLabs\FinCodex\Scope\PanelScopeGate;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Auth\ArticleGate;
@@ -8,6 +9,7 @@ use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Data\ArticleData;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Models\Article;
+use Illuminate\Support\Facades\Facade;
 
 /*
  * How the hook reaches the core's slot: FinCodexPlugin::boot() puts the class
@@ -88,6 +90,22 @@ it('installs nothing for a panel that does not carry the plugin', function (): v
     expect(config('lin-codex.auth.gate'))->toBeNull();
 });
 
+/**
+ * End one in-process request and start the next the way a worker does.
+ *
+ * Testbench reuses one container for every $this->get() of a test, and
+ * Filament's manager is a scoped binding holding the current panel, so without
+ * this the panel a previous request set is still current on the next one.
+ * Octane flushes exactly these two things between requests (FPM gets a fresh
+ * process), which is what makes a core route a no-panel request in production.
+ */
+function finCodexEndRequest(): void
+{
+    app()->forgetScopedInstances();
+
+    Facade::clearResolvedInstances();
+}
+
 it('installs the hook on a real panel request and leaves the core api unscoped', function (): void {
     finCodexBootArticle('intro');
     finCodexBootArticle('staff-guide', ContextType::Route, 'filament.staff.pages.dashboard');
@@ -97,7 +115,12 @@ it('installs the hook on a real panel request and leaves the core api unscoped',
 
     expect(config('lin-codex.auth.gate'))->toBe(PanelScopeGate::class);
 
-    // The config value survives into the next in-process request; the verdict
-    // does not, because the core's own route boots no panel.
+    finCodexEndRequest();
+
+    // The config value survives into the next request of the same worker; the
+    // verdict does not, because the core's own route boots no panel.
+    expect(config('lin-codex.auth.gate'))->toBe(PanelScopeGate::class)
+        ->and(Filament::getCurrentPanel())->toBeNull();
+
     $this->get('/codex/api/tree')->assertOk()->assertSee('staff-guide');
 });

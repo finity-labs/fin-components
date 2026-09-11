@@ -17,6 +17,7 @@ use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Panel\HelpMount;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Scope\PanelScopeGate;
 use FinityLabs\FinCodex\Search\HelpSearchProvider;
 use Illuminate\Support\HtmlString;
 use Throwable;
@@ -175,6 +176,31 @@ class FinCodexPlugin implements Plugin
         $this->bootPolicy();
         $this->bootSpaExceptions($panel);
         $this->bootGlobalSearch($panel);
+        $this->bootPanelScope();
+    }
+
+    /**
+     * The panel scope: general articles plus this panel's own, everywhere the
+     * core reads (Scope\PanelScopeGate). Installed as a class name so the
+     * core resolves one container instance and repeated boots — Octane boots
+     * the panel every request, a test may boot after an HTTP request — see
+     * the class already in place and add nothing. A host hook configured
+     * before us is kept as the inner hook and runs first. Set here rather
+     * than in register(): register() runs for every panel at provider boot,
+     * boot() for the panel Filament serves, which is the Phase 13 precedent
+     * for lin-codex.routes.help_center. The gate reads the current panel at
+     * call time, so a request outside every panel keeps the core's answer.
+     */
+    private function bootPanelScope(): void
+    {
+        $current = config('lin-codex.auth.gate');
+
+        if ($current === PanelScopeGate::class) {
+            return;
+        }
+
+        app(PanelScopeGate::class)->wrap($current);
+        config()->set('lin-codex.auth.gate', PanelScopeGate::class);
     }
 
     /**
