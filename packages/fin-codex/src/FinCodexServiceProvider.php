@@ -13,6 +13,7 @@ use FinityLabs\FinCodex\Help\ArticleLookup;
 use FinityLabs\FinCodex\Help\DeclaredContexts;
 use FinityLabs\FinCodex\Help\DeclaredContextsSource;
 use FinityLabs\FinCodex\Livewire\HelpDrawer;
+use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Panel\CurrentPage;
 use FinityLabs\FinCodex\Policies\ArticlePolicy;
 use FinityLabs\FinCodex\Scope\ContextPanels;
@@ -25,6 +26,7 @@ use FinityLabs\LinCodex\Models\ArticleContext;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -78,9 +80,20 @@ class FinCodexServiceProvider extends PackageServiceProvider
      * at panel boot and must survive the per-request flush a scoped binding
      * would give it under Octane, while its verdict map still resets with the
      * request.
+     *
+     * The Help Center's slug parameter gets its pattern here, on the router
+     * itself, because Filament builds a page's route with no hook for that
+     * route's own where(). Laravel merges global patterns into a route when the
+     * route is CREATED, and register() runs before every provider's boot(), so
+     * the pattern is in place before any route file is read and survives
+     * route caching — a where() attached afterwards would not. The pattern is
+     * ".*" rather than ".+" because the parameter is optional and {panel}/help
+     * has to match with no value at all.
      */
     public function packageRegistered(): void
     {
+        Route::pattern(HelpCenter::SLUG_PARAMETER, '.*');
+
         $this->app->scoped(CurrentPage::class);
         $this->app->scoped(ArticleLookup::class);
         $this->app->scoped(CoverageReport::class);

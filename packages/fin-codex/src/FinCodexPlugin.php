@@ -13,6 +13,7 @@ use Filament\Support\Concerns\EvaluatesClosures;
 use Filament\Support\View\ViewManager;
 use Filament\View\PanelsRenderHook;
 use FinityLabs\FinCodex\Enums\NavigationGroup;
+use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Panel\HelpMount;
@@ -63,6 +64,9 @@ class FinCodexPlugin implements Plugin
 
     /** @var class-string|null */
     protected ?string $coveragePage = null;
+
+    /** @var class-string|null */
+    protected ?string $helpCenterPage = null;
 
     protected string $policyNamespace = 'App\\Policies';
 
@@ -145,6 +149,15 @@ class FinCodexPlugin implements Plugin
 
         $panel->renderHook(PanelsRenderHook::SIMPLE_PAGE_END, fn (array $scopes = []): HtmlString => $this->mount()->guestLink($this, $panel));
         $panel->renderHook(PanelsRenderHook::BODY_END, fn (array $scopes = []): HtmlString => $this->mount()->drawer($this, $panel));
+
+        // The Help Center goes on EVERY panel, ->authoring(false) included: that
+        // flag means "this panel only reads help", and this page is the reading
+        // surface the button, the drawer and the field hints point at. A
+        // helpCenterPage() override must extend Pages\HelpCenter; the
+        // enforcement lives on helpCenterPageClass(), as it does for the article
+        // resource. Panel::pages() appends, so the authoring block's own call
+        // below is unaffected.
+        $panel->pages([$this->getHelpCenterPage() ?? HelpCenter::class]);
 
         // A panel that only reads help registers none of the three admin screens:
         // ->authoring(false) keeps the button, the drawer, the hints and the help
@@ -501,6 +514,52 @@ class FinCodexPlugin implements Plugin
     public function getCoveragePage(): ?string
     {
         return $this->coveragePage;
+    }
+
+    /**
+     * Swap in your own Help Center page; it must extend Pages\HelpCenter.
+     *
+     * Unlike the settings and coverage pages, this one is registered on every
+     * panel, whether or not the panel authors help.
+     *
+     * @param  class-string  $page
+     */
+    public function helpCenterPage(string $page): static
+    {
+        $this->helpCenterPage = $page;
+
+        return $this;
+    }
+
+    /** @return class-string|null */
+    public function getHelpCenterPage(): ?string
+    {
+        return $this->helpCenterPage;
+    }
+
+    /**
+     * The Help Center page class in force for the current (or named) panel: the
+     * helpCenterPage() override when that panel has one and it extends the
+     * shipped page, Pages\HelpCenter otherwise. With no panel current the
+     * default panel answers, and the shipped page stands in when there is no
+     * default panel or it carries no plugin.
+     *
+     * This is what every caller outside the page itself builds a URL with — the
+     * drawer's footer, the field hints, the global search rows — so a host that
+     * subclasses the page has its own class linked to rather than ours.
+     *
+     * @return class-string<HelpCenter>
+     */
+    public static function helpCenterPageClass(?string $panelId = null): string
+    {
+        try {
+            $plugin = $panelId === null ? static::get() : Filament::getPanel($panelId)->getPlugin('fin-codex');
+            $override = $plugin instanceof self ? $plugin->getHelpCenterPage() : null;
+        } catch (Throwable) {
+            return HelpCenter::class;
+        }
+
+        return $override !== null && is_a($override, HelpCenter::class, true) ? $override : HelpCenter::class;
     }
 
     /**

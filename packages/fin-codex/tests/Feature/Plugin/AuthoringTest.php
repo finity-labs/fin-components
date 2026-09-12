@@ -2,6 +2,7 @@
 
 use Filament\Panel;
 use FinityLabs\FinCodex\FinCodexPlugin;
+use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Resources\ArticleResource;
@@ -55,14 +56,18 @@ it('registers the editor and both pages on a panel that authors', function (): v
     expect(array_values($panel->getResources()))->toContain(ArticleResource::class)
         ->and(array_values($panel->getPages()))
         ->toContain(HelpSettings::class)
-        ->toContain(HelpCoverage::class);
+        ->toContain(HelpCoverage::class)
+        ->toContain(HelpCenter::class);
 });
 
-it('registers no resource and neither page on a panel that only reads', function (): void {
+it('registers no resource and neither admin page on a panel that only reads', function (): void {
     $panel = codexPanel(FinCodexPlugin::make()->authoring(false));
 
+    // The Help Center is the one thing a reading-only panel keeps: it is
+    // registered above the early return, because ->authoring(false) means
+    // "this panel only reads help" and this page is what it reads with.
     expect(array_values($panel->getResources()))->toBe([])
-        ->and(array_values($panel->getPages()))->toBe([]);
+        ->and(array_values($panel->getPages()))->toBe([HelpCenter::class]);
 });
 
 it('leaves the class overrides unregistered too', function (): void {
@@ -74,8 +79,11 @@ it('leaves the class overrides unregistered too', function (): void {
             ->authoring(fn (): bool => false),
     );
 
+    // helpCenterPage() is deliberately not named here: the shipped page is
+    // registered either way, which is what separates it from the three screens
+    // the flag governs.
     expect(array_values($panel->getResources()))->toBe([])
-        ->and(array_values($panel->getPages()))->toBe([]);
+        ->and(array_values($panel->getPages()))->toBe([HelpCenter::class]);
 });
 
 it('keeps every render hook, so the button and the drawer still mount', function (): void {

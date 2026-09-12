@@ -3,6 +3,7 @@
 use Filament\Facades\Filament;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
+use Filament\PanelRegistry;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpCenter;
@@ -186,8 +187,13 @@ it('resolves the shipped page for a panel with no override and for one without t
 });
 
 it('resolves a real override and ignores one that does not extend the shipped page', function (): void {
-    Filament::registerPanel(finCodexHelpCenterPanel(FinCodexPlugin::make()->helpCenterPage(AdminHelpCenter::class), 'good'));
-    Filament::registerPanel(finCodexHelpCenterPanel(FinCodexPlugin::make()->helpCenterPage(Dashboard::class), 'stray'));
+    // Straight into the registry, not through Filament::registerPanel(): the
+    // facade's version defers the registration to a resolving() callback on the
+    // registry, which has long since been resolved by the time a test runs.
+    $registry = app(PanelRegistry::class);
+
+    $registry->register(finCodexHelpCenterPanel(FinCodexPlugin::make()->helpCenterPage(AdminHelpCenter::class), 'good'));
+    $registry->register(finCodexHelpCenterPanel(FinCodexPlugin::make()->helpCenterPage(Dashboard::class), 'stray'));
 
     expect(FinCodexPlugin::helpCenterPageClass('good'))->toBe(AdminHelpCenter::class)
         ->and(FinCodexPlugin::helpCenterPageClass('stray'))->toBe(HelpCenter::class);
