@@ -77,6 +77,29 @@ function finCodexHelpColumnPage(?string $slug = null, string $panel = 'admin'): 
 }
 
 /**
+ * The middle column of a rendered page, and nothing else.
+ *
+ * Every row below is about the article, and since 15-04 the rail renders the
+ * whole tree — carrying the same data-fin-codex-help-node markers and the same
+ * article titles — ahead of the column in the same page. Reading the whole page
+ * HTML would let the rail answer a question asked about the column. The grid
+ * order is rail, article, headings, so the column is what lies between its own
+ * class and the headings column's.
+ */
+function finCodexHelpColumnHtml(string $html): string
+{
+    $start = strpos($html, 'fin-codex-help__article');
+
+    if ($start === false) {
+        test()->fail('The page rendered no article column.');
+    }
+
+    $end = strpos($html, 'fin-codex-help__toc', $start);
+
+    return $end === false ? substr($html, $start) : substr($html, $start, $end - $start);
+}
+
+/**
  * Register the languages the core may pick from, with English the default.
  *
  * @param  list<string>  $codes
@@ -98,7 +121,7 @@ function finCodexHelpColumnLanguages(array $codes): void
 it('renders the breadcrumbs, the title, the body and the related section in that order', function (): void {
     finCodexHelpColumnSeed();
 
-    $html = finCodexHelpColumnPage('account/signing-in')->html();
+    $html = finCodexHelpColumnHtml(finCodexHelpColumnPage('account/signing-in')->html());
 
     $crumb = strpos($html, 'data-fin-codex-help-node="account"');
     $title = strpos($html, 'Signing in');
@@ -149,7 +172,7 @@ it('shows the other-language notice between the title and the body', function ()
     finCodexHelpColumnSeed();
     app()->setLocale('de');
 
-    $html = finCodexHelpColumnPage('account/signing-in')->html();
+    $html = finCodexHelpColumnHtml(finCodexHelpColumnPage('account/signing-in')->html());
 
     $expected = app(LocaleResolver::class)->fallbackNotice('en');
     $title = strpos($html, 'Signing in');
@@ -206,7 +229,7 @@ it('shows the core not-found line with HTTP 200 for a slug the reader cannot hav
 it('shows pick a topic and the top-level sections on the bare landing', function (): void {
     finCodexHelpColumnSeed();
 
-    $html = finCodexHelpColumnPage()->html();
+    $html = finCodexHelpColumnHtml(finCodexHelpColumnPage()->html());
 
     expect($html)->toContain(__('lin-codex::lin-codex.ui.pick_a_topic'))
         ->toContain('data-fin-codex-help-node="account"')

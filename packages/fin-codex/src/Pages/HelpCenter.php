@@ -6,6 +6,7 @@ namespace FinityLabs\FinCodex\Pages;
 
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
 use Filament\Panel;
 use Filament\Schemas\Components\Actions;
@@ -14,6 +15,8 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Html;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\UnorderedList;
 use Filament\Schemas\Schema;
@@ -30,8 +33,10 @@ use FinityLabs\LinCodex\Livewire\Concerns\SearchesArticles;
 use FinityLabs\LinCodex\Reading\ArticleReader;
 use FinityLabs\LinCodex\Reading\ReadArticle;
 use FinityLabs\LinCodex\Reading\TreeBuilder;
+use FinityLabs\LinCodex\Search\SearchHit;
 use FinityLabs\LinCodex\View\PageHelpResolver;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Contracts\View\View;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
@@ -151,6 +156,36 @@ class HelpCenter extends Page
     }
 
     /**
+     * Typing is the only way to reach the search, and clearing the box is the
+     * only way back: the reader never hunts for a tab.
+     *
+     * There is deliberately no tab persistence beside this. Tabs bound to a
+     * Livewire property render through a branch of their own that never reads
+     * the persistence flag, so asking for it would be a silent no-op — and it
+     * would be pointless anyway, because the tab is derived from the query and
+     * the page re-mounts on every navigation.
+     */
+    public function updatedQuery(): void
+    {
+        $this->tab = $this->hasSearchQuery() ? 'search' : 'contents';
+    }
+
+    /**
+     * Filament caches each schema for the request, and content() is built while
+     * the query field's update is still being handled — before updatedQuery()
+     * has moved the tab — so a schema built then would show the tab the reader
+     * just left. Dropping the cache here rebuilds it against the state the
+     * render is about to show; the drawer clears the same cache for the same
+     * reason.
+     */
+    public function render(): View
+    {
+        $this->cachedSchemas = [];
+
+        return parent::render();
+    }
+
+    /**
      * The whole page, out of schema components.
      *
      * The headings column is built first and the same list decides whether the
@@ -179,15 +214,141 @@ class HelpCenter extends Page
     }
 
     /**
-     * The left rail: the search box, the tab strip, the contents tree and the
-     * panel filter. Empty here — the rail is the next plan's, and the route,
-     * the article and the headings are all provable without it.
+     * The left rail: one collapsible section holding the search box and the
+     * Contents/Search tab strip.
+     *
+     * The whole rail is one Section so a narrow screen can fold it away and put
+     * the article first, and it persists that choice: at this width the reader
+     * arranges the rail once rather than on every article.
+     *
+     * The search field sits ABOVE the strip and outside both tabs, so it is
+     * never behind a tab the reader has to find first — typing is what moves
+     * them to the results.
      *
      * @return list<Component>
      */
     private function railComponents(): array
     {
-        return [];
+        return [
+            Section::make(__('fin-codex::fin-codex.help_center.rail_heading'))
+                ->id('fin-codex-help-rail')
+                ->compact()
+                ->collapsible()
+                ->persistCollapsed()
+                ->extraAttributes(['data-fin-codex-help-rail' => 'true'])
+                ->schema([
+                    // Plan 15-05 puts SCOPE-04's panel filter Select here, above
+                    // the search field and the strip, so it reads as the scope
+                    // everything below it runs in.
+                    TextInput::make('query')
+                        ->hiddenLabel()
+                        ->type('search')
+                        ->placeholder(__('lin-codex::lin-codex.ui.search_placeholder'))
+                        ->prefixIcon(Heroicon::OutlinedMagnifyingGlass)
+                        ->autocomplete(false)
+                        ->live(debounce: 300)
+                        ->extraInputAttributes([
+                            'aria-label' => __('lin-codex::lin-codex.ui.search'),
+                            'data-fin-codex-help-search' => 'true',
+                            'x-on:input' => "sessionStorage.setItem('fin-codex-help-q', \$event.target.value)",
+                        ]),
+                    $this->queryRestoreComponent(),
+                    Tabs::make('tabs')
+                        ->livewireProperty('tab')
+                        ->contained(false)
+                        ->tabs([
+                            'contents' => Tab::make(__('fin-codex::fin-codex.help_center.contents'))
+                                ->extraAttributes(['data-fin-codex-help-tab' => 'contents'])
+                                ->schema($this->treeComponents($this->tree(), 0)),
+                            'search' => Tab::make(__('lin-codex::lin-codex.ui.search'))
+                                ->extraAttributes(['data-fin-codex-help-tab' => 'search'])
+                                ->schema($this->searchComponents()),
+                        ]),
+                ]),
+        ];
+    }
+
+    /**
+     * Puts the query back after a hit has been opened and left.
+     *
+     * Every link in the rail is a real anchor, so opening a hit re-mounts the
+     * page and the typed query would otherwise be gone. Kept in sessionStorage
+     * for the visit only: wire:navigate stays in the same browser tab, so the
+     * value survives the re-mount, and closing the tab drops it — the query is
+     * never persisted beyond the visit.
+     *
+     * wire:ignore keeps Livewire from morphing the element, so x-init runs once
+     * per mount rather than on every update.
+     */
+    private function queryRestoreComponent(): Html
+    {
+        return Html::make(new HtmlString(
+            '<div wire:ignore x-data x-init="const q = sessionStorage.getItem(\'fin-codex-help-q\');'
+            .' if (q) { $wire.set(\'query\', q) }" hidden></div>',
+        ));
+    }
+
+    /**
+     * The Contents tab: the whole tree the viewer may read, a collapsible
+     * section per folder group and a link per article.
+     *
+     * @param  list<TreeNode>  $nodes
+     *
+     * @return list<Component>
+     */
+    private function treeComponents(array $nodes, int $depth): array
+    {
+        $components = [];
+
+        foreach ($nodes as $node) {
+            if ($node->isGroup()) {
+                $components[] = Section::make($node->label)
+                    ->compact()
+                    ->collapsible()
+                    ->extraAttributes(['data-fin-codex-help-node' => $node->slug])
+                    ->schema($this->treeComponents($node->children, $depth + 1));
+
+                continue;
+            }
+
+            $link = Actions::make([$this->linkTo($node->slug, $node->label)]);
+
+            $components[] = $node->children === []
+                ? $link
+                : Group::make([$link, ...$this->treeComponents($node->children, $depth + 1)]);
+        }
+
+        return $components;
+    }
+
+    /**
+     * The Search tab: the core's hits, its rate-limit line or its no-results
+     * line, in the rail so the article stays on screen beside them.
+     *
+     * @return list<Component>
+     */
+    private function searchComponents(): array
+    {
+        if (! $this->hasSearchQuery()) {
+            return [];
+        }
+
+        $result = $this->searchResult();
+
+        if ($result->rateLimited) {
+            return [Text::make(__('lin-codex::lin-codex.ui.rate_limited', ['seconds' => $result->retryAfterSeconds]))->color('warning')];
+        }
+
+        if ($result->hits === []) {
+            return [Text::make(__('lin-codex::lin-codex.ui.no_results'))->color('gray')];
+        }
+
+        return array_map(fn (SearchHit $hit): Group => Group::make([
+            Actions::make([
+                $this->linkTo($hit->slug, $hit->title)
+                    ->extraAttributes(['data-fin-codex-help-hit' => $hit->slug], merge: true),
+            ]),
+        ]), $result->hits);
     }
 
     /**

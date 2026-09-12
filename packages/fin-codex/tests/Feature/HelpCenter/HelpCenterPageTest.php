@@ -155,12 +155,15 @@ it('shows the static Help heading while the browser tab follows the article', fu
         ->and($missing->getTitle())->toBe($help);
 });
 
-it('renders the three-column grid with an empty rail for now', function (): void {
+it('renders the three-column grid, the rail included', function (): void {
     test()->usesPanel('admin', finCodexHelpCenterUser());
 
+    // The rail's own contents are ContentsRailTest's and SearchTabTest's; this
+    // row only pins the grid the three columns live in.
     Livewire::test(HelpCenter::class)
         ->assertOk()
         ->assertSee('fin-codex-help__rail', escape: false)
+        ->assertSee('data-fin-codex-help-rail', escape: false)
         ->assertSee('fin-codex-help__article', escape: false);
 });
 
