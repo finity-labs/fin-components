@@ -8,6 +8,9 @@ use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Scope\ContextPanels;
 use FinityLabs\FinCodex\Tests\Fixtures\Policies\ViewAllPanelsArticlePolicy;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
+use FinityLabs\LinCodex\Auth\ArticleGate;
+use FinityLabs\LinCodex\Auth\Viewer;
+use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Models\Article;
 use Illuminate\Support\Facades\Gate;
@@ -142,6 +145,22 @@ function finCodexHelpFilterRailHtml(string $html): string
     return $end === false ? substr($html, $start) : substr($html, $start, $end - $start);
 }
 
+/**
+ * The slugs the core admits for one viewer, sorted: the source's map through
+ * ArticleGate::filter(), which is every read path's shared answer and therefore
+ * what a leaked preview would show up in.
+ *
+ * @return list<string>
+ */
+function finCodexHelpFilterSeen(Viewer $viewer): array
+{
+    $seen = array_keys(app(ArticleGate::class)->filter(app(ContentSource::class)->all(), $viewer));
+
+    sort($seen);
+
+    return $seen;
+}
+
 /** The middle column of a rendered page, between its own class and the headings column's. */
 function finCodexHelpFilterArticleHtml(string $html): string
 {
@@ -253,4 +272,111 @@ it('resets to the current panel on the next visit, persisting nothing', function
     // A second visit in the same session: a super admin must never be quietly
     // looking at another panel's help a week later.
     Livewire::test(HelpCenter::class)->assertSet('panelFilter', 'admin');
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * What the filter actually scopes: the tree and the search, nothing else.
+ * -----------------------------------------------------------------------
+ */
+
+it('moves the contents tree to the panel the filter names', function (): void {
+    finCodexHelpFilterSeed();
+
+    $page = finCodexHelpFilterPage();
+    $onArrival = finCodexHelpFilterRailHtml($page->html());
+
+    // On arrival: admin's own rule, which is what a reader standing in admin
+    // sees — not the everything the grant would otherwise give.
+    expect($onArrival)->toContain('data-fin-codex-help-node="admin-guide"')
+        ->toContain('data-fin-codex-help-node="intro"')
+        ->toContain('data-fin-codex-help-node="shop-guide"')
+        ->not->toContain('data-fin-codex-help-node="staff-guide"');
+
+    $onStaff = finCodexHelpFilterRailHtml($page->set('panelFilter', 'staff')->html());
+
+    expect($onStaff)->toContain('data-fin-codex-help-node="staff-guide"')
+        ->toContain('data-fin-codex-help-node="intro"')
+        ->toContain('data-fin-codex-help-node="shop-guide"')
+        ->not->toContain('data-fin-codex-help-node="admin-guide"');
+});
+
+it('gathers what no panel claims under outside panels, the general articles included', function (): void {
+    finCodexHelpFilterSeed();
+
+    $rail = finCodexHelpFilterRailHtml(
+        finCodexHelpFilterPage()->set('panelFilter', ContextPanels::OUTSIDE_PANELS)->html(),
+    );
+
+    // In: the plain Laravel route no panel serves, and intro, which carries no
+    // context at all and is read from everywhere. Out: both pinned articles.
+    expect($rail)->toContain('data-fin-codex-help-node="shop-guide"')
+        ->toContain('data-fin-codex-help-node="intro"')
+        ->not->toContain('data-fin-codex-help-node="admin-guide"');
+
+    expect($rail)->not->toContain('data-fin-codex-help-node="staff-guide"');
+});
+
+it('shows everything the grant already gives under all panels', function (): void {
+    finCodexHelpFilterSeed();
+
+    $rail = finCodexHelpFilterRailHtml(
+        finCodexHelpFilterPage()->set('panelFilter', HelpCenter::ALL_PANELS)->html(),
+    );
+
+    // No preview at all for this option: the normal rule, which for this viewer
+    // is already every panel's help.
+    expect($rail)->toContain('data-fin-codex-help-node="admin-guide"')
+        ->toContain('data-fin-codex-help-node="staff-guide"')
+        ->toContain('data-fin-codex-help-node="intro"')
+        ->toContain('data-fin-codex-help-node="shop-guide"');
+});
+
+it('moves the search hits with the filter too', function (): void {
+    finCodexHelpFilterSeed();
+
+    $page = finCodexHelpFilterPage()->set('query', 'documents');
+    $onArrival = finCodexHelpFilterRailHtml($page->html());
+
+    expect($onArrival)->toContain('data-fin-codex-help-hit="admin-guide"')
+        ->not->toContain('data-fin-codex-help-hit="staff-guide"');
+
+    $onStaff = finCodexHelpFilterRailHtml($page->set('panelFilter', 'staff')->html());
+
+    // The query is untouched; only the scope it runs in moved.
+    expect($onStaff)->toContain('data-fin-codex-help-hit="staff-guide"')
+        ->not->toContain('data-fin-codex-help-hit="admin-guide"');
+});
+
+it('leaves the article already open readable when the filter moves away from it', function (): void {
+    finCodexHelpFilterSeed();
+
+    $page = finCodexHelpFilterPage('admin-guide')->set('panelFilter', 'staff');
+    $html = $page->html();
+
+    // The reader holds the grant and may read it anyway, so the filter must not
+    // yank the page out from under them — while the rail proves the filter
+    // really did move.
+    expect(finCodexHelpFilterArticleHtml($html))->toContain('Admin guide')
+        ->toContain('Everything the admin-guide screen documents.')
+        ->and(finCodexHelpFilterRailHtml($html))->not->toContain('data-fin-codex-help-node="admin-guide"');
+});
+
+/*
+ * The no-leak row, which is the easiest of these to write wrong: it must NOT
+ * call forgetHelpMemo() after the render. That helper drops the PanelScopeGate
+ * singleton, and a fresh gate has no preview to leak, so the row would pass over
+ * a preview() that never restored anything.
+ */
+it('leaves the gate answering by the normal rule once the page has rendered', function (): void {
+    finCodexHelpFilterSeed();
+
+    $user = finCodexHelpFilterUser();
+    finCodexHelpFilterPage()->set('panelFilter', 'staff');
+
+    // The viewer holds the grant, so the normal rule is "everything". A leaked
+    // staff preview would take admin-guide away and add staff-guide, which is
+    // what the next drawer, hint or global search in this process would get.
+    expect(finCodexHelpFilterSeen(Viewer::authenticated($user, 'web')))
+        ->toBe(['admin-guide', 'intro', 'shop-guide', 'staff-guide']);
 });
