@@ -34,6 +34,7 @@ use FinityLabs\LinCodex\Reading\ArticleReader;
 use FinityLabs\LinCodex\Reading\ReadArticle;
 use FinityLabs\LinCodex\Reading\TreeBuilder;
 use FinityLabs\LinCodex\Search\SearchHit;
+use FinityLabs\LinCodex\Search\SearchResult;
 use FinityLabs\LinCodex\View\PageHelpResolver;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
@@ -106,6 +107,13 @@ class HelpCenter extends Page
 
     /** @var list<TreeNode>|null */
     private ?array $treeMemo = null;
+
+    /**
+     * One search result per query, for this request only.
+     *
+     * @var array<string, SearchResult>
+     */
+    private array $searchMemo = [];
 
     /**
      * The landing and every article on one route.
@@ -457,17 +465,23 @@ class HelpCenter extends Page
 
     /**
      * The Search tab: the core's hits, its rate-limit line or its no-results
-     * line, in the rail so the article stays on screen beside them.
+     * line.
+     *
+     * The hits stay in the rail rather than taking the middle column, so the
+     * article a reader is on is still there beside them and a wrong guess costs
+     * nothing. The rail is narrow and a hit carries three pieces of text, so the
+     * block is kept generous: the title is the link, the section path is a small
+     * grey line above the snippet, and the snippet reads at normal size.
      *
      * @return list<Component>
      */
     private function searchComponents(): array
     {
-        if (! $this->hasSearchQuery()) {
+        $result = $this->searchResultMemo();
+
+        if ($result === null) {
             return [];
         }
-
-        $result = $this->searchResult();
 
         if ($result->rateLimited) {
             return [Text::make(__('lin-codex::lin-codex.ui.rate_limited', ['seconds' => $result->retryAfterSeconds]))->color('warning')];
@@ -482,7 +496,41 @@ class HelpCenter extends Page
                 $this->linkTo($hit->slug, $hit->title)
                     ->extraAttributes(['data-fin-codex-help-hit' => $hit->slug], merge: true),
             ]),
+            Text::make(implode(' › ', $hit->sectionPath))
+                ->size(TextSize::ExtraSmall)
+                ->color('gray')
+                ->hidden($hit->sectionPath === []),
+            // SnippetBuilder's output: everything escaped already, with <mark>
+            // around the matched prefixes and nothing else. Escaping it again
+            // would show the reader the tag, and adding marks of our own would
+            // disagree with what the JSON API and the drawer show for the same
+            // search.
+            Text::make(new HtmlString($hit->snippet))->size(TextSize::Small),
         ]), $result->hits);
+    }
+
+    /**
+     * The current query's result, asked of the core at most once per render, or
+     * null while there is nothing to search for.
+     *
+     * The memo is what keeps the limiter honest. Every Searcher::search() call
+     * spends a token, and Filament builds the content schema once while it is
+     * handling the query field's update and again at render — so two tokens a
+     * keystroke, which turns a working search into the "too many searches" line
+     * for exactly the fast typist the debounce is there to serve. Keyed on the
+     * trimmed query, the way the drawer keys its own view data on its state.
+     *
+     * Fifty is asked for and the core clamps it to lin-codex.search.max_limit;
+     * clamping it here as well would put the same rule in two places and make a
+     * host's raised cap a lie.
+     */
+    protected function searchResultMemo(): ?SearchResult
+    {
+        if (! $this->hasSearchQuery()) {
+            return null;
+        }
+
+        return $this->searchMemo[trim($this->query)] ??= $this->searchResult(50);
     }
 
     /**

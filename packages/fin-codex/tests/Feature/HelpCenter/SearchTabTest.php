@@ -201,7 +201,7 @@ it('lists a hit in the rail with its title, its section path and the core snippe
     expect($html)->toContain('data-fin-codex-help-hit="users/roles"')
         ->toContain('data-fin-codex-help-hit="users/roles/admin"')
         // Root-first, so a reader knows which part of the library a hit is in.
-        ->toContain('Users guide &rsaquo; Roles')
+        ->toContain('Users guide › Roles')
         // SnippetBuilder's output: everything escaped, <mark> and nothing else.
         // Escaping it again would show the reader the tag.
         ->toContain('<mark>roles</mark>')
