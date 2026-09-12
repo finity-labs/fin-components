@@ -3,6 +3,7 @@
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Filament\PanelRegistry;
+use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Tests\Fixtures\Policies\DenyAllArticlePolicy;
@@ -225,11 +226,16 @@ it('shows the empty state and a link into the editor when nothing is written yet
 });
 
 it('drops the editor link for a viewer who may not create articles', function (): void {
+    test()->usesPanel('admin', finCodexHelpColumnUser());
+
+    // After the panel boot, never before: booting the plugin re-registers the
+    // shipped policy for the panel, which would overwrite this one.
     Gate::policy(Article::class, DenyAllArticlePolicy::class);
+    forgetHelpMemo();
 
-    $html = finCodexHelpColumnPage()->html();
-
-    expect($html)->toContain(__('fin-codex::fin-codex.help_center.empty'))
+    expect(ArticleAbility::allows('create'))->toBeFalse()
+        ->and(Livewire::test(HelpCenter::class)->html())
+        ->toContain(__('fin-codex::fin-codex.help_center.empty'))
         ->not->toContain(__('fin-codex::fin-codex.help_center.write_article'));
 });
 

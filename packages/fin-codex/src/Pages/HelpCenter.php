@@ -8,11 +8,20 @@ use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Filament\Panel;
+use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Html;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Text;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
 use Filament\Support\Enums\Width;
+use Filament\Support\Icons\Heroicon;
+use FinityLabs\FinCodex\Auth\ArticleAbility;
+use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinSupport\Pages\Concerns\HasPageShieldSupport;
 use FinityLabs\LinCodex\Data\TreeNode;
 use FinityLabs\LinCodex\Livewire\Concerns\CapturesPageHelp;
@@ -22,6 +31,7 @@ use FinityLabs\LinCodex\Reading\ReadArticle;
 use FinityLabs\LinCodex\Reading\TreeBuilder;
 use FinityLabs\LinCodex\View\PageHelpResolver;
 use Illuminate\Contracts\Support\Htmlable;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 /**
@@ -180,15 +190,178 @@ class HelpCenter extends Page
     }
 
     /**
-     * The middle column: breadcrumbs, the title, the fallback notice, the body
-     * and the related articles — or the not-found, empty and landing states.
-     * Filled by task 2 of this plan.
+     * The middle column: the article, or one of the three states it can be in.
+     *
+     * The states are checked in this order and the order is the decision. A set
+     * slug that finds nothing is a not-found even when nothing at all is
+     * readable, because the reader asked for something specific; an empty tree
+     * then wins over the landing, because "nothing has been written yet" is more
+     * use than "pick a topic" when there are no topics.
      *
      * @return list<Component>
      */
     private function articleComponents(): array
     {
-        return [];
+        $read = $this->read();
+
+        if ($read === null) {
+            return match (true) {
+                $this->codexSlug !== null => $this->notFoundComponents(),
+                $this->tree() === [] => $this->emptyComponents(),
+                default => $this->landingComponents(),
+            };
+        }
+
+        $components = [];
+
+        if ($read->breadcrumbs !== []) {
+            $components[] = Actions::make(array_map(
+                fn (array $crumb): Action => $this->linkTo($crumb['slug'], $crumb['title'])->size('sm')->color('gray'),
+                $read->breadcrumbs,
+            ));
+        }
+
+        $components[] = Text::make($read->translation->title)
+            ->weight(FontWeight::Bold)
+            ->size(TextSize::Large);
+
+        $notice = $this->fallbackNoticeFor($read);
+
+        if (is_string($notice)) {
+            // The drawer's treatment: a small warning-coloured line between the
+            // title and the body, not a bordered callout that takes room from
+            // the article.
+            $components[] = Text::make($notice)->color('warning')->size(TextSize::Small);
+        }
+
+        $components[] = $this->bodyComponent($read);
+
+        if ($read->related !== []) {
+            // At the bottom, where a reader meets them after reading, rather
+            // than competing with the headings rail for the right column.
+            $components[] = Section::make(__('lin-codex::lin-codex.ui.related'))
+                ->compact()
+                ->schema([Actions::make(array_map(
+                    fn (array $entry): Action => $this->linkTo($entry['slug'], $entry['title']),
+                    $read->related,
+                ))]);
+        }
+
+        return $components;
+    }
+
+    /**
+     * The rendered body, its style scope and its lightbox, in one component.
+     *
+     * The codex-root wrapper is not optional. The core stylesheet defines every
+     * token the body rules consume on .codex-root and .codex-help-button only,
+     * while the body rules themselves are unscoped — and a Filament page carries
+     * neither class anywhere. Without this wrapper callouts, steps, figures,
+     * code blocks and tables render with no colours, borders or spacing, and the
+     * panel's dark mode does nothing to them. fin-codex's own token remap in the
+     * panel head view is keyed on the same two selectors.
+     *
+     * The lightbox is the core's markup, the core's classes and the renderer's
+     * own marker attribute on every image, with a small inline Alpine object of
+     * this page's own. The drawer's Alpine component cannot be reused: it is
+     * built entirely around the drawer's open and close state and watches it as
+     * it initialises, and its partial has to live inside a script block in a
+     * component's own Blade view, which this page deliberately does not have.
+     *
+     * Downloads need nothing here: the core renderer already wrote them into the
+     * body HTML.
+     */
+    private function bodyComponent(ReadArticle $read): Html
+    {
+        $closeLabel = e((string) __('lin-codex::lin-codex.ui.lightbox_close'));
+
+        return Html::make(new HtmlString(
+            '<div class="codex-root" x-data="{ lightbox: null, lightboxAlt: \'\' }"'
+            .' x-on:click="const i = $event.target.closest(\'img[data-codex-lightbox]\'); if (i) { lightbox = i.currentSrc || i.src; lightboxAlt = i.alt || \'\' }"'
+            .' x-on:keydown.escape.window="lightbox = null">'
+            .'<div class="codex-article__body" lang="'.e($read->locale).'">'.$read->rendered->html.'</div>'
+            .'<template x-if="lightbox !== null">'
+            .'<div class="codex-lightbox" role="dialog" aria-label="'.$closeLabel.'" x-on:click="lightbox = null">'
+            .'<img class="codex-lightbox__image" x-bind:src="lightbox" x-bind:alt="lightboxAlt" alt="">'
+            .'<button type="button" class="codex-lightbox__close" aria-label="'.$closeLabel.'" x-on:click="lightbox = null"></button>'
+            .'</div></template></div>',
+        ));
+    }
+
+    /**
+     * A slug that is missing, hidden, unpublished or belongs to another panel —
+     * all of which look alike on purpose.
+     *
+     * The response stays 200: the page exists and works, only the requested
+     * article is unavailable, and a 200 keeps the rail and the search usable
+     * beside it while telling a probe nothing about whether the article exists.
+     *
+     * @return list<Component>
+     */
+    private function notFoundComponents(): array
+    {
+        return [Text::make(__('lin-codex::lin-codex.ui.not_found'))->color('gray')];
+    }
+
+    /**
+     * Bare {panel}/help: the core's invitation and the top level of the tree.
+     *
+     * The rail carries the whole tree, but the middle is the largest area on
+     * screen and one grey sentence wastes the first thing a reader sees. A node
+     * that is a folder group has no article to open, so it is named rather than
+     * linked.
+     *
+     * @return list<Component>
+     */
+    private function landingComponents(): array
+    {
+        $components = [Text::make(__('lin-codex::lin-codex.ui.pick_a_topic'))->color('gray')];
+
+        foreach ($this->tree() as $node) {
+            $components[] = $node->isGroup()
+                ? Text::make($node->label)->weight(FontWeight::Medium)
+                : Actions::make([$this->linkTo($node->slug, $node->label)]);
+        }
+
+        return $components;
+    }
+
+    /**
+     * Nothing readable at all: a fresh install, or a viewer the scoping hides
+     * everything from.
+     *
+     * The editor link is gated twice and both halves are needed. The ability is
+     * the obvious one. The second is that the article resource is actually
+     * registered on THIS panel: this page lives on every panel, while the
+     * resource only goes on the panels that author, so building the create URL
+     * on a reading-only panel would raise a missing-route error. It is a link
+     * with a URL rather than a redirecting action, so nothing here touches
+     * Livewire's back-button-cache flag.
+     *
+     * @return list<Component>
+     */
+    private function emptyComponents(): array
+    {
+        $components = [
+            Text::make(__('fin-codex::fin-codex.help_center.empty'))
+                ->weight(FontWeight::Bold)
+                ->size(TextSize::Large),
+            Text::make(__('fin-codex::fin-codex.help_center.empty_description'))->color('gray'),
+        ];
+
+        $resource = FinCodexPlugin::articleResourceClass();
+
+        if (ArticleAbility::allows('create') && in_array($resource, Filament::getCurrentPanel()?->getResources() ?? [], true)) {
+            $components[] = Actions::make([
+                Action::make('write-first-article')
+                    ->link()
+                    ->icon(Heroicon::OutlinedPencilSquare)
+                    ->label(__('fin-codex::fin-codex.help_center.write_article'))
+                    ->url($resource::getUrl('create')),
+            ]);
+        }
+
+        return $components;
     }
 
     /**
