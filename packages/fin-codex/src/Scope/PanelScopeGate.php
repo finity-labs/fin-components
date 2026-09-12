@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex\Scope;
 
+use Closure;
 use Filament\Facades\Filament;
 use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\LinCodex\Auth\Viewer;
@@ -98,6 +99,9 @@ final class PanelScopeGate
     /** @var array<string, array<string, bool>> panel id => slug => verdict */
     private array $maps = [];
 
+    /** The panel to answer about instead of the current one, null for the normal rule. */
+    private ?string $previewPanelId = null;
+
     public function __construct(
         private readonly Container $app,
         private readonly ContextPanels $panels,
@@ -119,6 +123,40 @@ final class PanelScopeGate
         return $this->innerHook;
     }
 
+    /**
+     * Answer every read inside the callback as if the reader were standing in
+     * $panelId, whatever grant would otherwise lift the panel rule for them.
+     * Null restores the normal rule for the duration.
+     *
+     * The Help Center's panel filter is the asker: it offers every panel as an
+     * option to a viewer who reads them all, and "what would a reader in the
+     * staff panel see" is a question only this class can answer without a
+     * second copy of the rule growing beside it.
+     *
+     * The previous value is restored rather than cleared, so a nested call
+     * hands the outer one its panel back; the restore is in a finally because
+     * this object is a singleton that outlives a request under Testbench and
+     * Octane, and a preview left behind would hand the next drawer, hint or
+     * global search another panel's articles.
+     *
+     * @template TReturn
+     *
+     * @param  Closure(): TReturn  $callback
+     *
+     * @return TReturn
+     */
+    public function preview(?string $panelId, Closure $callback): mixed
+    {
+        $previous = $this->previewPanelId;
+        $this->previewPanelId = $panelId;
+
+        try {
+            return $callback();
+        } finally {
+            $this->previewPanelId = $previous;
+        }
+    }
+
     public function __invoke(Viewer $viewer, ArticleData $article): bool
     {
         if (! $this->allowedByHostHook($viewer, $article)) {
@@ -127,11 +165,24 @@ final class PanelScopeGate
 
         $panelId = $this->currentPanelId();
 
-        if ($panelId === null) {
+        if ($panelId === null && $this->previewPanelId === null) {
             return true;
         }
 
         $this->rememberRequest();
+
+        // A preview is asked about a panel of its own and is answered before
+        // the grant that lifts the rule: the viewer it is asked for is exactly
+        // the one that grant would otherwise answer "everything" for.
+        if ($this->previewPanelId !== null) {
+            $map = $this->maps[$this->previewPanelId] ??= $this->build($this->previewPanelId);
+
+            return $map[$article->slug] ?? true;
+        }
+
+        if ($panelId === null) {
+            return true;
+        }
 
         if ($this->viewsAllPanels($viewer)) {
             return true;
