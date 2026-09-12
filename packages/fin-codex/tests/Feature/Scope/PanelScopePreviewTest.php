@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Filament\Pages\Dashboard;
+use FinityLabs\FinCodex\Scope\ContextPanels;
 use FinityLabs\FinCodex\Scope\PanelScopeGate;
 use FinityLabs\FinCodex\Tests\Fixtures\Policies\ViewAllPanelsArticlePolicy;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
@@ -246,4 +247,85 @@ it('changes nothing for a viewer already scoped to the panel being previewed', f
     expect(finCodexScopePreviewSeen($viewer))->toBe(finCodexScopePreviewOnAdmin())
         ->and(finCodexScopePreviewGate()->preview('admin', fn (): array => finCodexScopePreviewSeen($viewer)))
         ->toBe(finCodexScopePreviewOnAdmin());
+});
+
+/*
+ * The outside-panels bucket, which is a panel id only in the sense that the
+ * filter carries it as one. The decision of 2026-09-12: an article is outside
+ * when at least one of its contexts resolves into no panel, mirroring the
+ * own-panel rule one for one rather than demanding that every context be
+ * outside. The mirror image of these rows, under the normal rule, is in
+ * PanelScopeGateTest — a panel-less context does not restrict there, so the
+ * same fixtures come out of the two files with opposite meanings on purpose.
+ */
+it('gathers what no panel claims, the general articles included', function (): void {
+    finCodexScopePreviewSeed();
+    finCodexScopePreviewArticle('shop-url', ContextType::Url, '/shop/checkout');
+    finCodexScopePreviewArticle('admin-url', ContextType::Url, '/admin/reports');
+    finCodexScopePreviewArticle('any-route', ContextType::Route, 'filament.admin.pages.dashboard');
+    finCodexScopePreviewInstall();
+    $user = finCodexScopePreviewUser();
+    $this->usesPanel('admin', $user);
+
+    Gate::policy(Article::class, ViewAllPanelsArticlePolicy::class);
+
+    $viewer = Viewer::authenticated($user, 'web');
+
+    // In: a plain Laravel route, a url under no panel's path, a class no panel
+    // registers — and intro, which carries no contexts at all and is read from
+    // everywhere, this bucket included. Out: the three pinned articles, and the
+    // panel-less url and route whose keys do resolve into a panel. The bucket
+    // asks where a context lands, which is a different question from the one
+    // the named-panel rule asks about the very same articles.
+    expect(finCodexScopePreviewGate()->preview(ContextPanels::OUTSIDE_PANELS, fn (): array => finCodexScopePreviewSeen($viewer)))
+        ->toBe(['intro', 'plain-page', 'shop-url', 'unknown-class']);
+});
+
+it('takes one context landing outside as enough, beside a panel\'s own', function (): void {
+    Article::factory()->public()->published()->withTranslation('en', ['title' => 'Mixed', 'body' => 'Mixed body.'])
+        ->withContext(ContextType::PageClass, Dashboard::class, 'admin')
+        ->withContext(ContextType::Route, 'shop.index')
+        ->create(['slug' => 'mixed']);
+    finCodexScopePreviewInstall();
+    $user = finCodexScopePreviewUser();
+    $this->usesPanel('admin', $user);
+
+    $viewer = Viewer::authenticated($user, 'web');
+
+    // The article really does document both, so it answers to both options.
+    expect(finCodexScopePreviewGate()->preview(ContextPanels::OUTSIDE_PANELS, fn (): array => finCodexScopePreviewSeen($viewer)))
+        ->toBe(['mixed'])
+        ->and(finCodexScopePreviewGate()->preview('admin', fn (): array => finCodexScopePreviewSeen($viewer)))
+        ->toBe(['mixed']);
+});
+
+it('leaves a pinned article out of it whatever its key would resolve into', function (): void {
+    finCodexScopePreviewArticle('plain-page', ContextType::Route, 'shop.index');
+    finCodexScopePreviewArticle('pinned-shop', ContextType::Route, 'shop.index', 'admin');
+    finCodexScopePreviewInstall();
+    $user = finCodexScopePreviewUser();
+    $this->usesPanel('admin', $user);
+
+    $viewer = Viewer::authenticated($user, 'web');
+
+    // One key, two articles: the prefix is what decides, because a context that
+    // names a panel resolves into that panel and never into nothing.
+    expect(finCodexScopePreviewGate()->preview(ContextPanels::OUTSIDE_PANELS, fn (): array => finCodexScopePreviewSeen($viewer)))
+        ->toBe(['plain-page']);
+});
+
+it('leaves out an article bound to a class some panel registers', function (): void {
+    finCodexScopePreviewArticle('plain-page', ContextType::Route, 'shop.index');
+    finCodexScopePreviewArticle('shared-page', ContextType::PageClass, Dashboard::class);
+    finCodexScopePreviewInstall();
+    $user = finCodexScopePreviewUser();
+    $this->usesPanel('admin', $user);
+
+    $viewer = Viewer::authenticated($user, 'web');
+
+    // The forClass() expectation fails loudly if the fixture panels ever stop
+    // registering the dashboard, which would leave the row proving nothing.
+    expect(app(ContextPanels::class)->forClass(Dashboard::class))->not->toBe([])
+        ->and(finCodexScopePreviewGate()->preview(ContextPanels::OUTSIDE_PANELS, fn (): array => finCodexScopePreviewSeen($viewer)))
+        ->toBe(['plain-page']);
 });
