@@ -15,6 +15,7 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Html;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
+use Filament\Schemas\Components\UnorderedList;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
@@ -365,14 +366,34 @@ class HelpCenter extends Page
     }
 
     /**
-     * The right column: "On this page", one entry per heading the renderer
-     * anchored. Filled by task 3 of this plan.
+     * The right column: "On this page", one entry per heading of the article.
+     *
+     * Plain anchors on purpose: the browser jumps and puts the heading id in the
+     * hash for free, no JavaScript of ours, and a heading link can be copied
+     * out. The table of contents is the renderer's own — second and third level
+     * only, in document order, with the ids it already wrote into the body — so
+     * nothing here parses the HTML for them.
+     *
+     * An empty list here is what hides the whole column: see content().
      *
      * @return list<Component>
      */
     private function headingsComponents(): array
     {
-        return [];
+        $toc = $this->read()?->rendered->toc ?? [];
+
+        if ($toc === []) {
+            return [];
+        }
+
+        return [
+            Section::make(__('lin-codex::lin-codex.ui.on_this_page'))
+                ->compact()
+                ->schema([UnorderedList::make(array_map(
+                    static fn (array $entry): Text => Text::make(new HtmlString('<a href="#'.e($entry['id']).'">'.e($entry['text']).'</a>'))->size(TextSize::Small),
+                    $toc,
+                ))]),
+        ];
     }
 
     /**
