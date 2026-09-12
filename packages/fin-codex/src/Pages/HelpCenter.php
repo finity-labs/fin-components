@@ -38,6 +38,7 @@ use FinityLabs\LinCodex\View\PageHelpResolver;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Js;
 use Illuminate\Support\Str;
 
 /**
@@ -259,7 +260,10 @@ class HelpCenter extends Page
                         ->tabs([
                             'contents' => Tab::make(__('fin-codex::fin-codex.help_center.contents'))
                                 ->extraAttributes(['data-fin-codex-help-tab' => 'contents'])
-                                ->schema($this->treeComponents($this->tree(), 0)),
+                                ->schema([
+                                    ...$this->treeComponents($this->tree(), 0),
+                                    ...$this->treeArrivalComponents(),
+                                ]),
                             'search' => Tab::make(__('lin-codex::lin-codex.ui.search'))
                                 ->extraAttributes(['data-fin-codex-help-tab' => 'search'])
                                 ->schema($this->searchComponents()),
@@ -290,7 +294,14 @@ class HelpCenter extends Page
 
     /**
      * The Contents tab: the whole tree the viewer may read, a collapsible
-     * section per folder group and a link per article.
+     * section per folder group and a link per article, an article's own children
+     * nested beneath it.
+     *
+     * The depth only picks the FIRST-VISIT open state: the top level comes up
+     * expanded so real article titles are there to read at once, and anything
+     * deeper comes up closed so a big library does not arrive as a wall. On
+     * every later visit the browser's own remembered state wins — see
+     * sectionId() and treeArrivalComponents().
      *
      * @param  list<TreeNode>  $nodes
      *
@@ -303,22 +314,145 @@ class HelpCenter extends Page
         foreach ($nodes as $node) {
             if ($node->isGroup()) {
                 $components[] = Section::make($node->label)
+                    ->id($this->sectionId($node->slug))
                     ->compact()
                     ->collapsible()
+                    ->persistCollapsed()
+                    ->collapsed($depth > 0)
                     ->extraAttributes(['data-fin-codex-help-node' => $node->slug])
                     ->schema($this->treeComponents($node->children, $depth + 1));
 
                 continue;
             }
 
-            $link = Actions::make([$this->linkTo($node->slug, $node->label)]);
+            $link = $this->linkTo($node->slug, $node->label);
+
+            if ($node->slug === $this->codexSlug) {
+                $link = $link
+                    ->color('primary')
+                    ->extraAttributes(['data-fin-codex-help-active' => 'true'], merge: true);
+            }
 
             $components[] = $node->children === []
-                ? $link
-                : Group::make([$link, ...$this->treeComponents($node->children, $depth + 1)]);
+                ? Actions::make([$link])
+                : Group::make([
+                    Actions::make([$link]),
+                    Group::make($this->treeComponents($node->children, $depth + 1))
+                        ->extraAttributes(['class' => 'fin-codex-help__children']),
+                ]);
         }
 
         return $components;
+    }
+
+    /**
+     * The last thing in the Contents tab: open the ancestors of the article the
+     * reader arrived at, and put its entry on screen.
+     *
+     * Both halves have to run after the tree, because Alpine initialises in
+     * document order — a dispatcher placed before the sections would fire into
+     * the void, and a query for the active entry would find nothing.
+     *
+     * The force-open is Filament's own escape hatch rather than a server-side
+     * collapsed(false), which could not win: with persistCollapsed() the
+     * rendered value is only $persist's initial, so on any browser that has been
+     * here before the stored value takes over. Every collapsible Section already
+     * listens for an expand-section window event carrying its id.
+     *
+     * The side effect is deliberate: that listener assigns to the persisted
+     * value, so an ancestor forced open here stays remembered as open. The
+     * ancestors of where the reader is get opened; every other group keeps
+     * exactly what the reader left it as.
+     *
+     * @return list<Component>
+     */
+    private function treeArrivalComponents(): array
+    {
+        $ancestors = $this->ancestorSectionIds();
+
+        if ($ancestors === []) {
+            return [];
+        }
+
+        return [
+            Html::make(new HtmlString(
+                '<div data-fin-codex-help-expand="'.e(implode(' ', $ancestors)).'" x-data x-init="$nextTick(() => { '
+                .Js::from($ancestors).'.forEach(id => window.dispatchEvent(new CustomEvent(\'expand-section\', { detail: { id } })));'
+                .' document.querySelector(\'[data-fin-codex-help-active]\')?.scrollIntoView({ block: \'nearest\' }); })" hidden></div>',
+            )),
+        ];
+    }
+
+    /**
+     * The section ids of the current article's ancestors that are folder groups,
+     * outermost first.
+     *
+     * Only groups qualify: an ancestor that is an article is a link, which has
+     * nothing to open. Empty on the landing, and empty for an article whose
+     * ancestors are all articles, in which case nothing is rendered at all
+     * rather than an inert block.
+     *
+     * @return list<string>
+     */
+    private function ancestorSectionIds(): array
+    {
+        if (blank($this->codexSlug)) {
+            return [];
+        }
+
+        $groups = $this->groupSlugs($this->tree());
+        $segments = explode('/', $this->codexSlug);
+        array_pop($segments);
+
+        $ids = [];
+        $path = '';
+
+        foreach ($segments as $segment) {
+            $path = $path === '' ? $segment : $path.'/'.$segment;
+
+            if (in_array($path, $groups, true)) {
+                $ids[] = $this->sectionId($path);
+            }
+        }
+
+        return $ids;
+    }
+
+    /**
+     * Every folder group in the tree, at any depth.
+     *
+     * @param  list<TreeNode>  $nodes
+     *
+     * @return list<string>
+     */
+    private function groupSlugs(array $nodes): array
+    {
+        $slugs = [];
+
+        foreach ($nodes as $node) {
+            if ($node->isGroup()) {
+                $slugs[] = $node->slug;
+            }
+
+            $slugs = [...$slugs, ...$this->groupSlugs($node->children)];
+        }
+
+        return $slugs;
+    }
+
+    /**
+     * The DOM id of one tree group's section — and, at the same time, the key its
+     * open state is remembered under: Section::id() feeds both, so an id that
+     * moved between renders, between panels or across the re-mount every article
+     * link causes would silently lose what the reader arranged.
+     *
+     * Derived from the node slug and nothing else, for exactly that reason, and
+     * put through Str::slug() because Filament strips a handful of characters out
+     * of a custom id and a stripped id would no longer match the key.
+     */
+    private function sectionId(string $slug): string
+    {
+        return 'fin-codex-help-'.Str::slug(str_replace('/', '-', $slug));
     }
 
     /**
