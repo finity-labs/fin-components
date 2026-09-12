@@ -16,6 +16,16 @@ return [
     'hint' => [
         'open' => 'Open help',
     ],
+    'help_center' => [
+        'title' => 'Help',
+        'rail_heading' => 'Browse help',
+        'contents' => 'Contents',
+        'panel_filter' => 'Panel',
+        'all_panels' => 'All panels',
+        'empty' => 'No help articles yet',
+        'empty_description' => 'Nothing has been written for this panel yet.',
+        'write_article' => 'Write the first article',
+    ],
     'editor' => [
         'article' => 'Article',
         'articles' => 'Articles',

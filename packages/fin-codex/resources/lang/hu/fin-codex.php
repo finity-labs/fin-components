@@ -16,6 +16,16 @@ return [
     'hint' => [
         'open' => 'Súgó megnyitása',
     ],
+    'help_center' => [
+        'title' => 'Súgó',
+        'rail_heading' => 'Súgó böngészése',
+        'contents' => 'Tartalom',
+        'panel_filter' => 'Panel',
+        'all_panels' => 'Összes panel',
+        'empty' => 'Még nincsenek súgócikkek',
+        'empty_description' => 'Ehhez a panelhez még nem készült tartalom.',
+        'write_article' => 'Első cikk megírása',
+    ],
     'editor' => [
         'article' => 'Cikk',
         'articles' => 'Cikkek',
