@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex\Pages;
 
+use Closure;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
@@ -28,6 +29,7 @@ use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinCodex\Auth\ArticleAbility;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\FinCodexPlugin;
+use FinityLabs\FinCodex\Scope\PanelScopeGate;
 use FinityLabs\FinSupport\Pages\Concerns\HasPageShieldSupport;
 use FinityLabs\LinCodex\Data\TreeNode;
 use FinityLabs\LinCodex\Livewire\Concerns\CapturesPageHelp;
@@ -325,6 +327,35 @@ class HelpCenter extends Page
     }
 
     /**
+     * Run the callback as a reader standing in the panel the filter names.
+     *
+     * Only the tree and the search go through here, and the article already open
+     * deliberately does not: the viewer holds the grant and may read it anyway,
+     * so the filter must not yank a page out from under them.
+     *
+     * The answer comes from the panel scope gate itself rather than from a second
+     * copy of the rule beside it, so what the filter shows and what that panel
+     * really shows cannot drift apart. Null and "every panel at once" ask nothing
+     * of it: the normal rule is already the answer for both.
+     *
+     * @template TReturn
+     *
+     * @param  Closure(): TReturn  $callback
+     *
+     * @return TReturn
+     */
+    private function scoped(Closure $callback): mixed
+    {
+        $filter = $this->panelFilter;
+
+        if ($filter === null || $filter === self::ALL_PANELS) {
+            return $callback();
+        }
+
+        return app(PanelScopeGate::class)->preview($filter, $callback);
+    }
+
+    /**
      * The filter's options: every panel the coverage report knows, its outside
      * bucket when it has one, and this page's own "every panel at once".
      *
@@ -593,7 +624,7 @@ class HelpCenter extends Page
             return null;
         }
 
-        return $this->searchMemo[trim($this->query)] ??= $this->searchResult(50);
+        return $this->searchMemo[trim($this->query)] ??= $this->scoped(fn (): SearchResult => $this->searchResult(50));
     }
 
     /**
@@ -830,7 +861,7 @@ class HelpCenter extends Page
      */
     protected function tree(): array
     {
-        return $this->treeMemo ??= app(TreeBuilder::class)->build($this->viewer(), $this->locale);
+        return $this->treeMemo ??= $this->scoped(fn (): array => app(TreeBuilder::class)->build($this->viewer(), $this->locale));
     }
 
     /**
