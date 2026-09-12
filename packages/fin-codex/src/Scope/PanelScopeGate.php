@@ -51,7 +51,14 @@ use InvalidArgumentException;
  * Filing a screen under a panel is a different question, and a screen that
  * belongs to no panel at all still has a bucket of its own: ContextPanels keeps
  * both, for the coverage report and the Help Center's panel filter. Nothing
- * moved there; the gate simply stopped asking it about a panel-less context.
+ * moved there; the five rules above simply stopped asking it about a panel-less
+ * context.
+ *
+ * Beside the five rules there is one question the rules cannot answer: what a
+ * reader standing in some other panel would see. The Help Center's panel filter
+ * asks it of a viewer whose grant lifts the whole scope, so preview() answers it
+ * here rather than letting a second copy of the rules grow next to this class,
+ * and the outside-panels bucket becomes an option a reader can be previewed in.
  *
  * A section that *does* carry contexts is scoped exactly like an article, and
  * the core's ancestor rule then takes its whole subtree with it, general
@@ -325,13 +332,32 @@ final class PanelScopeGate
      * different explicit panel. Resolving one of those still goes through
      * ContextPanels, so the three consumers that share the class never grow a
      * second reading of a panel prefix between them. "Which panel does this
-     * screen file under" stays that class's question, and the bucket for a
-     * screen belonging to none of them stays with it, unused here.
+     * screen file under" stays that class's question.
+     *
+     * The outside-panels bucket is the one answer that is not a panel at all,
+     * and it is the same rule turned around: an article is outside when at
+     * least one of its contexts lands in no panel, so an article documenting a
+     * storefront page and an admin resource at once honestly answers to both
+     * options. A context naming a panel of its own always resolves into that
+     * panel, so a pinned article is never outside; a general article is,
+     * because it is read from everywhere and belongs under every option. This
+     * branch is only ever reached through a preview, since the constant cannot
+     * be a registered panel id.
      */
     private function belongsTo(ArticleData $article, string $panelId): bool
     {
         if ($article->contexts === []) {
             return true;
+        }
+
+        if ($panelId === ContextPanels::OUTSIDE_PANELS) {
+            foreach ($article->contexts as $context) {
+                if ($this->panels->forContext($context) === []) {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         foreach ($article->contexts as $context) {
