@@ -3,6 +3,7 @@
 use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Models\Article;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Js;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -77,7 +78,7 @@ function finCodexHelpSearchPage(?string $slug = null): Testable
  */
 function finCodexHelpSearchRenderedTab(string $html): ?string
 {
-    return preg_match('/role="tabpanel"[^>]*data-fin-codex-help-tab="([a-z]+)"/', $html, $matches) === 1
+    return preg_match('/data-fin-codex-help-tab="([a-z]+)"[^>]*role="tabpanel"/', $html, $matches) === 1
         ? $matches[1]
         : null;
 }
@@ -178,4 +179,117 @@ it('renders the tab the query moved to in that very request', function (): void 
     $page->set('query', '');
 
     expect(finCodexHelpSearchRenderedTab($page->html()))->toBe('contents');
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * The hits.
+ * -----------------------------------------------------------------------
+ */
+
+it('lists a hit in the rail with its title, its section path and the core snippet', function (): void {
+    finCodexHelpSearchSeed();
+
+    Article::factory()->public()->published()
+        ->withTranslation('en', ['title' => 'Admin roles', 'body' => 'The admin role.'])
+        ->create(['slug' => 'users/roles/admin']);
+
+    forgetHelpMemo();
+
+    $html = finCodexHelpSearchPage()->set('query', 'roles')->html();
+
+    expect($html)->toContain('data-fin-codex-help-hit="users/roles"')
+        ->toContain('data-fin-codex-help-hit="users/roles/admin"')
+        // Root-first, so a reader knows which part of the library a hit is in.
+        ->toContain('Users guide &rsaquo; Roles')
+        // SnippetBuilder's output: everything escaped, <mark> and nothing else.
+        // Escaping it again would show the reader the tag.
+        ->toContain('<mark>roles</mark>')
+        ->not->toContain('&lt;mark&gt;');
+});
+
+it('links every hit as a real anchor into the help center', function (): void {
+    finCodexHelpSearchSeed();
+
+    $html = finCodexHelpSearchPage()->set('query', 'roles')->html();
+
+    expect($html)->toContain('href="'.HelpCenter::getUrl([HelpCenter::SLUG_PARAMETER => 'users/roles']).'"')
+        ->not->toContain("mountAction('open-");
+});
+
+it('shows the core no-results line for a query that matches nothing', function (): void {
+    finCodexHelpSearchSeed();
+
+    $page = finCodexHelpSearchPage()->set('query', 'kangaroo');
+
+    expect($page->html())->toContain(__('lin-codex::lin-codex.ui.no_results'))
+        ->and(finCodexHelpSearchRenderedTab($page->html()))->toBe('search');
+});
+
+it('shows the core rate-limit line with the seconds to wait', function (): void {
+    finCodexHelpSearchSeed();
+
+    // A tier of zero refuses every search up front, which is the core's own way
+    // of expressing a spent limiter.
+    config()->set('lin-codex.search.rate_limit.user', 0);
+
+    expect(finCodexHelpSearchPage()->set('query', 'roles')->html())
+        ->toContain((string) __('lin-codex::lin-codex.ui.rate_limited', ['seconds' => 60]))
+        ->not->toContain('data-fin-codex-help-hit');
+});
+
+it('asks for fifty hits and lets the core clamp them', function (): void {
+    foreach (range(1, 5) as $index) {
+        Article::factory()->public()->published()
+            ->withTranslation('en', ['title' => 'Roles '.$index, 'body' => 'About roles.'])
+            ->create(['slug' => 'roles-'.$index]);
+    }
+
+    forgetHelpMemo();
+
+    // The default limit is deliberately below the corpus and the cap
+    // deliberately below fifty, so the count can only be the CORE's clamp: one
+    // hit would mean the page took the default and five would mean it ignored
+    // the cap.
+    config()->set('lin-codex.search.limit', 1);
+    config()->set('lin-codex.search.max_limit', 3);
+
+    $html = finCodexHelpSearchPage()->set('query', 'roles')->html();
+
+    expect(substr_count($html, 'data-fin-codex-help-hit='))->toBe(3);
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * The limiter, spent once per render.
+ * -----------------------------------------------------------------------
+ */
+
+it('spends one limiter token per keystroke, though Filament builds the schema twice', function (): void {
+    finCodexHelpSearchSeed();
+
+    $user = finCodexHelpSearchUser();
+    $key = 'codex-search:user:'.$user->getKey();
+
+    finCodexHelpSearchPage()->set('query', 'roles');
+
+    // Filament builds content() once while it handles the field update and
+    // again at render, and every Searcher::search() call spends a token. Two
+    // per keystroke turns a working search into "Too many searches" for a fast
+    // typist, so the result is memoised on the trimmed query.
+    expect(RateLimiter::attempts($key))->toBe(1);
+});
+
+it('never reaches the searcher below the minimum length', function (): void {
+    finCodexHelpSearchSeed();
+
+    $user = finCodexHelpSearchUser();
+    $key = 'codex-search:user:'.$user->getKey();
+
+    // Even with the tab forced over, one character costs the reader nothing and
+    // renders no panel at all.
+    $page = finCodexHelpSearchPage()->set('query', 'r')->set('tab', 'search');
+
+    expect(RateLimiter::attempts($key))->toBe(0)
+        ->and(finCodexHelpSearchRenderedTab($page->html()))->toBeNull();
 });
