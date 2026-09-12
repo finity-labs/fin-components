@@ -253,3 +253,29 @@ it('drops the editor link on a panel that only reads help, and does not throw', 
         ->and($html)->toContain(__('fin-codex::fin-codex.help_center.empty'))
         ->not->toContain(__('fin-codex::fin-codex.help_center.write_article'));
 });
+
+/*
+ * -----------------------------------------------------------------------
+ * The "On this page" rail (CENTER-05).
+ * -----------------------------------------------------------------------
+ */
+
+it('lists the article headings in the right column, anchored to the ids the renderer wrote', function (): void {
+    finCodexHelpColumnSeed();
+
+    $html = finCodexHelpColumnPage('account/signing-in')->html();
+
+    expect($html)->toContain('fin-codex-help__toc')
+        ->toContain(__('lin-codex::lin-codex.ui.on_this_page'))
+        ->toContain('href="#passwords"')
+        ->toContain('href="#resetting"')
+        ->toContain('id="passwords"');
+});
+
+it('drops the whole headings column for an article without headings, the landing and the not-found state', function (): void {
+    finCodexHelpColumnSeed();
+
+    expect(finCodexHelpColumnPage('account')->html())->not->toContain('fin-codex-help__toc')
+        ->and(finCodexHelpColumnPage()->html())->not->toContain('fin-codex-help__toc')
+        ->and(finCodexHelpColumnPage('nothing/here')->html())->not->toContain('fin-codex-help__toc');
+});
