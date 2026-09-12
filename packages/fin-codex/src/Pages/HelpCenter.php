@@ -6,6 +6,7 @@ namespace FinityLabs\FinCodex\Pages;
 
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Pages\Page;
 use Filament\Panel;
@@ -25,11 +26,13 @@ use Filament\Support\Enums\TextSize;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinCodex\Auth\ArticleAbility;
+use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinSupport\Pages\Concerns\HasPageShieldSupport;
 use FinityLabs\LinCodex\Data\TreeNode;
 use FinityLabs\LinCodex\Livewire\Concerns\CapturesPageHelp;
 use FinityLabs\LinCodex\Livewire\Concerns\SearchesArticles;
+use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Reading\ArticleReader;
 use FinityLabs\LinCodex\Reading\ReadArticle;
 use FinityLabs\LinCodex\Reading\TreeBuilder;
@@ -88,6 +91,13 @@ class HelpCenter extends Page
      */
     public const SLUG_PARAMETER = 'codexSlug';
 
+    /**
+     * The panel filter's value for "every panel at once", distinct from a panel
+     * id and from null: null is the state of a page nobody has filtered, and a
+     * panel id names one panel, so the third answer needs a value of its own.
+     */
+    public const ALL_PANELS = '__all';
+
     /** Three columns need the room; the article text is not capped to a reading measure. */
     protected Width|string|null $maxContentWidth = Width::Full;
 
@@ -145,6 +155,11 @@ class HelpCenter extends Page
 
         $this->capturePageHelp($resolver, static::class, $panel?->getId(), null, $panel?->getAuthGuard());
         $this->codexSlug = blank($codexSlug) ? null : $codexSlug;
+
+        // The filter starts where the reader is standing, and it is reset on
+        // every visit rather than persisted: a viewer who reads every panel must
+        // never be quietly looking at another panel's help a week later.
+        $this->panelFilter = $panel?->getId();
     }
 
     /** The browser tab follows the article, so open tabs and bookmarks stay legible. */
@@ -246,9 +261,18 @@ class HelpCenter extends Page
                 ->persistCollapsed()
                 ->extraAttributes(['data-fin-codex-help-rail' => 'true'])
                 ->schema([
-                    // Plan 15-05 puts SCOPE-04's panel filter Select here, above
-                    // the search field and the strip, so it reads as the scope
-                    // everything below it runs in.
+                    // At the top of the rail, so it reads as the scope
+                    // everything below it runs in. A select rather than a row of
+                    // buttons, because a host may carry more panels than a row
+                    // can hold.
+                    Select::make('panelFilter')
+                        ->label(__('fin-codex::fin-codex.help_center.panel_filter'))
+                        ->options($this->panelFilterOptions())
+                        ->selectablePlaceholder(false)
+                        ->native(false)
+                        ->live()
+                        ->extraAttributes(['data-fin-codex-help-panel-filter' => 'true'])
+                        ->hidden(! $this->showsPanelFilter()),
                     TextInput::make('query')
                         ->hiddenLabel()
                         ->type('search')
@@ -278,6 +302,45 @@ class HelpCenter extends Page
                         ]),
                 ]),
         ];
+    }
+
+    /**
+     * Whether this viewer gets the panel filter at all: only one a host policy
+     * lets read every panel's help.
+     *
+     * Nobody else is even told the option exists, because for anybody else the
+     * filter could only ever show them less than they already see — the panel
+     * rule is the scope they are in, not a view they may change.
+     *
+     * The user is passed explicitly. The two-argument form of the ability asks
+     * the Gate's default guard resolver, which is not the guard that answered for
+     * a panel like the staff fixture; the panel scope gate passes the user for
+     * exactly the same reason.
+     */
+    protected function showsPanelFilter(): bool
+    {
+        $user = $this->viewer()->user;
+
+        return $user !== null && ArticleAbility::allows('viewAllPanels', Article::class, $user);
+    }
+
+    /**
+     * The filter's options: every panel the coverage report knows, its outside
+     * bucket when it has one, and this page's own "every panel at once".
+     *
+     * The panel list comes from the coverage report rather than from the panel
+     * registry, so the filter and the coverage page share one answer about which
+     * panel a screen files under and the two screens cannot disagree. The panel
+     * ids come back raw and untranslated, which is deliberate and shared: a
+     * nicer label belongs in panelOptions(), where both screens would move
+     * together.
+     *
+     * @return array<string, string>
+     */
+    protected function panelFilterOptions(): array
+    {
+        return app(CoverageReport::class)->panelOptions()
+            + [self::ALL_PANELS => (string) __('fin-codex::fin-codex.help_center.all_panels')];
     }
 
     /**
