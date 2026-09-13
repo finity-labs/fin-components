@@ -221,6 +221,11 @@ class InstallCommand extends Command
      */
     protected function switchPublicHelpCenterOff(): void
     {
+        // Reset first, the way registerInPanel() resets $panelId: Symfony keeps
+        // one command instance per application, so a second run in the same
+        // process would otherwise inherit the first run's answer.
+        $this->publicHelpCenterSwitched = false;
+
         $path = $this->coreConfigPath();
 
         if (! file_exists($path)) {
