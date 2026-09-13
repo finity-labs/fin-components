@@ -12,7 +12,9 @@ In-app help for Filament panels. Codex puts a help drawer in the topbar, shows a
 ## Features
 
 - **Help drawer** on every panel page, opened from the topbar button, a keyboard shortcut, a `?codex=slug` link or a `codex:open` browser event.
+- **Help center page** at `{panel}/help` — the whole library inside the panel, with a contents tree, search and the article's own headings, placed in the user menu or the navigation.
 - **Contextual help** — the drawer opens on the articles attached to the current resource or page. Attach them from the editor, or declare them in code with `HasHelp`.
+- **Panel scoping** — each panel reads its own articles plus the ones bound to no panel, and a `viewAllPanels` grant lets staff read every panel's.
 - **Field hints** — a question-mark button next to a form field that opens the article at a specific heading.
 - **Guest support.** The login, registration and password-reset pages get their own "Need help?" link and the same drawer.
 - **Article editor** with Markdown, language tabs, image uploads, a preview, and an HTML → Markdown conversion for imported content.
@@ -260,6 +262,66 @@ The hint is invisible when there is nothing to open. If the slug doesn't exist, 
 The button is a real link. Its `href` is the help-center URL for the article, and the Alpine handler only cancels the navigation when a drawer is present on the page. On a page without one — or with JavaScript off — the click goes to the help center in the same tab.
 
 **On an SPA panel**, Codex appends the help-center route pattern to Filament's SPA exceptions when the plugin boots. Without that, Livewire's navigate listener starts on `mousedown` and wins the race against the Alpine intercept, so the click would leave the panel even with a drawer open. A custom `lin-codex.routes.help_center` prefix is honoured, and chaining `->spaUrlExceptions([...])` after `->plugin()` keeps working — the plugin appends rather than replaces.
+
+## The help center
+
+The help center is the whole library as a page of its own, at `{panel}/help` and `{panel}/help/{slug}` — inside the panel, behind its auth and its guard. It is built out of Filament's own components and follows the panel's colours and its light and dark mode, so there is nothing to publish and nothing to theme. Every panel carrying the plugin has one, `->authoring(false)` included: this is the surface that reads help, not a fourth screen that writes it.
+
+Three columns. On the left, **Browse help**: a search field above a **Contents** / **Search** tab strip. Contents is the tree of everything this reader may open, grouped by section, and it remembers which sections you left folded. Typing moves you to Search, and the hits stay in that column, so the article you were reading is still beside them and a wrong guess costs nothing. The middle column holds the article, with breadcrumbs above the title that open each section it sits in. On the right, **On this page** lists the article's own headings and jumps to them — an article without headings has no such column and the text takes the room instead. On a narrow screen the left rail folds away, also remembered, and the article comes first.
+
+Every help link Codex renders inside a panel arrives here: the drawer's footer, the field hints' `href`, the global-search results. Each points at its own panel's copy.
+
+The core's public `/help` is switched off on a fin-codex install, so this is where help lives now. If you are upgrading, read [The public help center is off](#the-public-help-center-is-off).
+
+`->helpCenterPage(MyHelpCenter::class)` swaps in your own subclass of `FinityLabs\FinCodex\Pages\HelpCenter`, the way the editor and the two admin pages are swapped. Every link above resolves through the class the panel actually registered, so a subclass is what gets linked to.
+
+### Placement
+
+Where a panel advertises the page is a per-panel choice:
+
+```php
+use FinityLabs\FinCodex\Enums\HelpCenterPlacement;
+
+FinCodexPlugin::make()
+    ->helpCenterPlacement(HelpCenterPlacement::Both)
+    ->helpCenterNavigationGroup('Support')
+    ->helpCenterNavigationSort(20)
+    ->helpCenterNavigationLabel('Manual')
+    ->helpCenterNavigationIcon('heroicon-o-academic-cap')
+```
+
+`UserMenu`, the default, puts a **Help center** entry at the top of the user menu. `Navigation` files an item in the panel's navigation instead, `Both` does both, and `None` neither. The page is registered and reachable under all four: `{panel}/help` answers, and the drawer's footer link, the field hints, the global-search rows and a bookmark all still open it.
+
+Three things follow from that:
+
+- **`None` withholds the two menu entries and nothing else.** It is how you say "reachable, but not advertised" — a panel whose readers arrive from the drawer and the hints — not how you switch the page off. Nothing switches it off.
+- **A panel with `->userMenu(false)` renders no user-menu entry whatever the placement says**, because there is no menu to render it in. Name `Navigation` or `Both` on such a panel.
+- **The user-menu entry's wording and icon are fixed.** The four `helpCenterNavigation*()` options name the navigation item only. To word the menu differently, register an entry of your own there and set the placement to `Navigation` or `None`.
+
+Both entries are hidden from a viewer who may not open the page.
+
+Those four options are the help center's alone. `navigationGroup()` and `navigationSort()` keep meaning what they always meant — the article resource, Help settings and Help coverage — and the help center stays out of that arithmetic on purpose: no group and sort `1000` by default, so it sits at the foot of the navigation rather than inside the Help group, which holds the screens that write help.
+
+## Panel scoping
+
+Since 0.5.0 a reader inside a panel sees the general articles plus that panel's own, and nothing else. An article belonging only to some other panel is hidden everywhere the core reads: the help center, the drawer's Contents tab and its search, the field hints and global search. A section left holding nothing goes with them.
+
+This is the change most likely to surprise you on an upgrade. An article written for `admin` and read from `staff` used to be there and is not any more.
+
+What puts an article in a panel is its contexts, and there are four cases:
+
+- **No contexts at all is general.** The article is read in every panel.
+- **A context that names a panel binds the article to it**, and an article with contexts in two panels is read in both. The editor's panel select writes that name, a `HasHelp` declaration writes it for the panel it declares in, and in front matter it is the prefix: `admin:class:App\Filament\Resources\UserResource`.
+- **A context that names no panel restricts nobody.** `*` in the editor's select, no prefix in front matter — one of those is enough for the article to be read from every panel, whatever its key points at. An article whose only context is a plain Laravel route is therefore read in every panel rather than in none.
+- **An article is hidden only when every one of its contexts names a different explicit panel.**
+
+A section with no body of its own follows its children: it is shown while one descendant survives the scoping and disappears when none does. A section that carries a body is scoped like any other article, and the core's ancestor rule then takes the whole subtree with it — so keep an article that should be read everywhere out of a panel-bound section.
+
+Published state and visibility are settled before any of this and stay lin-codex's. Panel scoping can only hide.
+
+**Outside a panel nothing is scoped.** The JSON API, a queued render and your own routes are not panel requests, so they answer as they always did, under the core's visibility rules and nothing more.
+
+**`viewAllPanels` lifts the rule for one reader.** With it they read every panel's help from wherever they are standing, and the help center grows a **Panel** select at the top of its left rail that answers "what would a reader in the staff panel see" — the one control most readers never meet. It is off by default, and it is the ninth row in [the abilities table](#the-abilities): it has no fallback, so a policy that does not define it says no. The shipped policy answers it from the permission Filament Shield generated for the ability — `fin-codex:install` writes it into the Shield config with the other eight, and an admin ticks it on a role. Without Shield, define `viewAllPanels()` on your own policy. A `Gate::before` callback, Shield's super admin among them, still runs before either.
 
 ## Locale and theme
 
