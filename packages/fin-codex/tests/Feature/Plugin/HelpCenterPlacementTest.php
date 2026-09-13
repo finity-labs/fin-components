@@ -1,8 +1,14 @@
 <?php
 
+use Filament\Actions\Action;
+use Filament\Facades\Filament;
+use Filament\Panel;
 use Filament\Support\Icons\Heroicon;
 use FinityLabs\FinCodex\Enums\HelpCenterPlacement;
 use FinityLabs\FinCodex\FinCodexPlugin;
+use FinityLabs\FinCodex\Pages\HelpCenter;
+use FinityLabs\FinCodex\Tests\Fixtures\User;
+use Illuminate\Support\Facades\Gate;
 
 /*
  * PLACE-01: where a panel's Help Center is reachable from.
@@ -146,4 +152,213 @@ it('translates the navigation label in all three locales', function (): void {
     expect(__($key, [], 'en'))->toBe('Help center')
         ->and(__($key, [], 'de'))->toBe('Hilfecenter')
         ->and(__($key, [], 'hu'))->toBe('Súgóközpont');
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * The two entries.
+ * -----------------------------------------------------------------------
+ */
+
+/** A fixture user signed in on the given panel guard. */
+function finCodexPlacementUser(string $guard = 'web', string $email = 'placement@example.com'): User
+{
+    $user = User::create(['name' => 'Placement Reader', 'email' => $email]);
+
+    test()->actingAs($user, $guard);
+
+    return $user;
+}
+
+/**
+ * A panel of its own carrying one configured plugin instance, set current and
+ * serving.
+ *
+ * Built outside the fixture registry, the way HelpCenterPageTest builds its
+ * own: Panel::plugin() calls the plugin's register() there and then, which is
+ * the subject here, and a panel the registry knows would move what every
+ * all-panels test counts. Its routes are never registered, so it can answer
+ * what the panel holds but never what a URL does — the rows that need a live
+ * route use a fixture panel.
+ */
+function finCodexPlacementPanel(FinCodexPlugin $plugin, string $id): Panel
+{
+    $panel = Panel::make()->id($id)->path($id)->plugin($plugin);
+
+    Filament::setCurrentPanel($panel);
+    Filament::setServingStatus();
+
+    return $panel;
+}
+
+/** The plugin instance a fixture panel registered, typed for the assertions below. */
+function finCodexPlacementPluginOf(string $panel): FinCodexPlugin
+{
+    $plugin = Filament::getPanel($panel)->getPlugin('fin-codex');
+
+    expect($plugin)->toBeInstanceOf(FinCodexPlugin::class);
+
+    /** @var FinCodexPlugin $plugin */
+    return $plugin;
+}
+
+/**
+ * Every Help Center entry the panel is holding, visible or not.
+ *
+ * Read off the raw property by reflection rather than through
+ * getUserMenuItemGroups(), for two reasons. That accessor synthesises the
+ * profile and logout items, which resolve panel routes a panel built inside a
+ * test body does not have; and it keys every item by its name, so a second
+ * registration would be folded silently into the first and a count taken from
+ * there could never go red.
+ *
+ * @return list<Action>
+ */
+function finCodexPlacementEntries(Panel $panel): array
+{
+    $groups = (new ReflectionProperty($panel, 'userMenuItemGroups'))->getValue($panel);
+
+    $entries = [];
+
+    foreach ($groups as $group) {
+        foreach ($group as $item) {
+            if ($item instanceof Action && $item->getName() === 'fin-codex-help-center') {
+                $entries[] = $item;
+            }
+        }
+    }
+
+    return $entries;
+}
+
+/** The Help Center's user-menu entry as the panel holds it, visible or not. */
+function finCodexPlacementEntry(Panel $panel): ?Action
+{
+    return finCodexPlacementEntries($panel)[0] ?? null;
+}
+
+it('puts one entry in the user menu and no item in the navigation by default', function (): void {
+    $panel = test()->usesPanel('portal', finCodexPlacementUser());
+
+    $entry = finCodexPlacementEntry($panel);
+
+    expect($entry)->not->toBeNull()
+        ->and($entry->isVisible())->toBeTrue()
+        ->and($entry->getLabel())->toBe('Help center')
+        ->and($entry->getUrl())->toBe('http://localhost/portal/help')
+        ->and(array_keys(Filament::getPanel('portal')->getUserMenuItems()))->toContain('fin-codex-help-center')
+        ->and(HelpCenter::shouldRegisterNavigation())->toBeFalse();
+});
+
+it('answers each surface from the placement and keeps the page in all four', function (HelpCenterPlacement $placement, bool $inUserMenu, bool $inNavigation): void {
+    finCodexPlacementUser();
+
+    $panel = finCodexPlacementPanel(
+        FinCodexPlugin::make()->helpCenterPlacement($placement),
+        'placement-'.str_replace('_', '-', $placement->value),
+    );
+
+    expect(finCodexPlacementEntry($panel)?->isVisible())->toBe($inUserMenu)
+        ->and(HelpCenter::shouldRegisterNavigation())->toBe($inNavigation)
+        ->and(array_values($panel->getPages()))->toContain(HelpCenter::class);
+})->with([
+    'user menu (the default)' => [HelpCenterPlacement::UserMenu, true, false],
+    'navigation' => [HelpCenterPlacement::Navigation, false, true],
+    'both' => [HelpCenterPlacement::Both, true, true],
+    'none' => [HelpCenterPlacement::None, false, false],
+]);
+
+it('withholds both entries from a viewer the page gate refuses', function (): void {
+    // The same refusal mechanism PageShieldTest uses for the settings and
+    // coverage pages. Filament already hides the navigation item for a viewer
+    // who may not open the page; the user-menu entry only does because the
+    // Action asks the page class itself.
+    Gate::define('page_HelpCenter', fn (): bool => false);
+
+    finCodexPlacementUser();
+
+    $panel = finCodexPlacementPanel(FinCodexPlugin::make()->helpCenterPlacement(HelpCenterPlacement::Both), 'refused');
+
+    expect(HelpCenter::canAccess())->toBeFalse()
+        ->and(finCodexPlacementEntry($panel)?->isVisible())->toBeFalse()
+        ->and(HelpCenter::shouldRegisterNavigation())->toBeFalse();
+});
+
+it('reads the navigation item\'s group, sort, label and icon from the plugin', function (): void {
+    finCodexPlacementUser();
+
+    finCodexPlacementPanel(
+        FinCodexPlugin::make()
+            ->helpCenterPlacement(HelpCenterPlacement::Navigation)
+            ->helpCenterNavigationGroup('Reading')
+            ->helpCenterNavigationSort(10)
+            ->helpCenterNavigationLabel('Manual')
+            ->helpCenterNavigationIcon(Heroicon::OutlinedAcademicCap)
+            // The three authoring screens' own options, which the Help Center
+            // must go on ignoring.
+            ->navigationGroup('Support')
+            ->navigationSort(5),
+        'configured',
+    );
+
+    expect(HelpCenter::getNavigationGroup())->toBe('Reading')
+        ->and(HelpCenter::getNavigationSort())->toBe(10)
+        ->and(HelpCenter::getNavigationLabel())->toBe('Manual')
+        ->and(HelpCenter::getNavigationIcon())->toBe(Heroicon::OutlinedAcademicCap);
+});
+
+it('leaves the page registered and answering under None', function (): void {
+    // The roadmap's own criterion: None withholds the two menu entries and
+    // nothing else. Driven on a fixture panel rather than a built one because
+    // only a fixture panel has live routes, and the point of the row is that
+    // the URL still answers.
+    $panel = test()->usesPanel('portal', finCodexPlacementUser());
+
+    finCodexPlacementPluginOf('portal')->helpCenterPlacement(HelpCenterPlacement::None);
+
+    expect(finCodexPlacementEntry($panel)?->isVisible())->toBeFalse()
+        ->and(array_keys($panel->getUserMenuItems()))->not->toContain('fin-codex-help-center')
+        ->and(HelpCenter::shouldRegisterNavigation())->toBeFalse()
+        ->and(array_values($panel->getPages()))->toContain(HelpCenter::class);
+
+    $this->get(route('filament.portal.pages.help'))->assertOk();
+});
+
+it('sorts the entry directly after Profile on a panel with no profile page', function (): void {
+    // Correction 3's regression guard. At sort -2 our entry becomes the FIRST
+    // item of the block Filament groups on a negative sort, and because it
+    // carries a URL the dropdown stops treating the viewer's name as its
+    // header on every panel without a profile page. Staff is such a panel.
+    test()->usesPanel('staff', finCodexPlacementUser('staff', 'staff-placement@example.com'));
+
+    expect(array_keys(Filament::getPanel('staff')->getUserMenuItems()))
+        ->toBe(['profile', 'fin-codex-help-center', 'logout']);
+});
+
+it('does not accumulate the user-menu entry across boots', function (): void {
+    // Registration lives in register(), which runs once when the provider
+    // builds the panel; boot() runs on every request and would multiply the
+    // entry on a long-lived worker.
+    test()->usesPanel('portal', finCodexPlacementUser());
+
+    Filament::getPanel('portal')->boot();
+    Filament::getPanel('portal')->boot();
+
+    expect(count(finCodexPlacementEntries(Filament::getPanel('portal'))))->toBe(1);
+});
+
+it('renders no entry on a panel with no user menu and leaves the page reachable', function (): void {
+    // Filament returns early before it reads the item list, so the placement
+    // never gets a say — the same promise None makes, arrived at from the
+    // host's side.
+    Filament::getPanel('portal')->userMenu(false);
+
+    $user = finCodexPlacementUser();
+
+    $html = $this->actingAs($user, 'web')->get('/portal')->assertOk()->getContent();
+
+    expect($html)->not->toContain('fi-user-menu')
+        ->not->toContain('Help center');
+
+    $this->get(route('filament.portal.pages.help'))->assertOk();
 });
