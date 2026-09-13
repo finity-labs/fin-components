@@ -603,6 +603,18 @@ php artisan codex:uninstall
 
 ## Upgrading
 
+### The public help center is off
+
+Since 0.5.0 `fin-codex:install` sets `lin-codex.routes.help_center` to `null`, and the core registers neither public help-center route when it is. `/help` and `/help/{slug}` answer 404. Help lives at `{panel}/help` instead, inside the panel and behind its login.
+
+Installed before 0.5.0? Re-run `php artisan fin-codex:install`. Every step of that command is safe to repeat and the switch is the one that is new. If you set a prefix of your own, the command prints it and asks before overwriting it — say no and both help centers keep answering.
+
+Run `php artisan route:clear` afterwards if you cache routes.
+
+**If you published the views**, check them. Your copies of `panel/button.blade.php` and `panel/guest-link.blade.php` still resolve the core's help-center route by name, and that route is now gone, so they throw. Re-publish them with `php artisan vendor:publish --tag=fin-codex-views --force`, or port the change by hand.
+
+One thing the switch does not change: outside a panel — the JSON API, a queued render — the core still builds root-relative `/{slug}` links. That is lin-codex's documented contract, and reading those links needs the public page back on.
+
 ### UUID or ULID user models
 
 Since 0.4.1 the editor stores the panel user's key as the host model hands it over, so an app whose user model uses `HasUuids` or `HasUlids` gets the real author on an article, a revision and a media row. Until then the id was narrowed to `?int` on the way in and every one of those was recorded as nobody.
@@ -615,11 +627,12 @@ Host code that calls the editor's write path directly (`Editor\ArticleWriter`, `
 
 Nothing here is speculative — these are the things this release knows it doesn't do, or hasn't checked.
 
-**Three behaviours are proven by contract in the test suite but have never been clicked in a real browser.** This package has no browser runner, and the harness cannot render the surfaces involved:
+**Four behaviours are proven by contract in the test suite but have never been clicked in a real browser.** This package has no browser runner, and the harness cannot render the surfaces involved:
 
 1. **Global search's "Open here".** The result action dispatches the drawer-open event, but Filament's own result anchors carry an Alpine `close()` that ours does not, so the search dropdown may stay open behind the drawer. The harness renders no search field at all on any fixture panel, which is limitation 1 in the [Global search](#global-search) section biting the tests too.
 2. **The field hint's drawer open.** The rendered handler string, the absent `wire:navigate` and the SPA exception list are all asserted; the click itself is not.
 3. **The `?codex=slug#heading` deep link.** The drawer scrolls to a heading after the article renders, which is Alpine behaviour with no server round trip and nothing to assert against.
+4. **Help links on a tenanted panel.** A middleware that runs after Filament has identified the tenant rewrites the help-center prefix, so the links carry the tenant segment. The registration point and the rewrite are both asserted; no tenanted panel has ever been rendered in this harness.
 
 Also worth knowing:
 
