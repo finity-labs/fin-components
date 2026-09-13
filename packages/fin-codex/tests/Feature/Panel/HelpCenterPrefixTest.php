@@ -1,10 +1,14 @@
 <?php
 
 use Filament\Facades\Filament;
+use Filament\Http\Middleware\IdentifyTenant;
 use Filament\Support\View\ViewManager;
 use FinityLabs\FinCodex\FinCodexPlugin;
+use FinityLabs\FinCodex\Panel\RefreshHelpCenterPrefix;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Rendering\ArticlePath;
+use Illuminate\Http\Request;
+use Livewire\Livewire;
 
 /*
  * PLACE-02: inside a panel, every help link fin-codex or the core renderer
@@ -132,4 +136,69 @@ it('writes the same value and one exception across repeated boots', function ():
     expect(config('lin-codex.routes.help_center'))->toBe('/admin/help')
         ->and(array_count_values(finCodexHelpCenterPrefixExceptions($view))['/admin/help/*'] ?? 0)->toBe(1)
         ->and(finCodexHelpCenterPrefixExceptions($view))->toBe($before);
+});
+
+/*
+ * -----------------------------------------------------------------------
+ * The second write site.
+ * -----------------------------------------------------------------------
+ *
+ * Filament sets the panel up and boots its plugins before it identifies the
+ * tenant, so the boot-time write above cannot know the tenant segment and is
+ * skipped entirely on a tenanted panel. Panel\RefreshHelpCenterPrefix repeats
+ * the write from inside the tenant route group, where the tenant is set.
+ *
+ * This package has no tenanted fixture panel and Phase 16 builds none. What is
+ * proven here is the property tenancy actually needs from the middleware — that
+ * it writes from whatever panel is current WHEN IT RUNS, not from the panel that
+ * booted — using the second fixture panel as the stand-in, plus the two contract
+ * rows that pin where the class is registered. Nothing below renders a tenanted
+ * panel and nothing below claims to.
+ */
+
+it('rewrites the prefix from whatever panel is current when it runs', function (): void {
+    // The manager's own SPA flag comes from the panel that boots, so admin
+    // carries it here; the staff flag is what the middleware's own run reads.
+    Filament::getPanel('admin')->spa();
+    Filament::getPanel('staff')->spa();
+    $this->usesPanel('admin', finCodexHelpCenterPrefixUser());
+
+    Filament::setCurrentPanel(Filament::getPanel('staff'));
+
+    $returned = app(RefreshHelpCenterPrefix::class)->handle(
+        Request::create('/staff'),
+        fn (Request $request): string => 'next',
+    );
+
+    expect($returned)->toBe('next')
+        ->and(config('lin-codex.routes.help_center'))->toBe('/staff/help')
+        ->and(finCodexHelpCenterPrefixExceptions(app(ViewManager::class)))
+        ->toContain('/admin/help/*')
+        ->toContain('/staff/help/*');
+});
+
+it('writes nothing and still passes the request on outside a fin-codex panel', function (?string $current): void {
+    $this->usesPanel('admin', finCodexHelpCenterPrefixUser());
+
+    Filament::setCurrentPanel($current === null ? null : Filament::getPanel($current));
+
+    $returned = app(RefreshHelpCenterPrefix::class)->handle(
+        Request::create('/'),
+        fn (Request $request): string => 'next',
+    );
+
+    expect($returned)->toBe('next')
+        ->and(config('lin-codex.routes.help_center'))->toBe('/admin/help');
+})->with([
+    'no current panel' => [null],
+    'a panel without the plugin' => ['plain'],
+]);
+
+it('registers the refresh after IdentifyTenant in the tenant middleware', function (string $panel): void {
+    expect(Filament::getPanel($panel)->getTenantMiddleware())
+        ->toBe([IdentifyTenant::class, RefreshHelpCenterPrefix::class]);
+})->with(['admin', 'staff', 'portal']);
+
+it('keeps the refresh in the list Livewire replays on an update', function (): void {
+    expect(Livewire::getPersistentMiddleware())->toContain(RefreshHelpCenterPrefix::class);
 });
