@@ -4,6 +4,7 @@ use FinityLabs\FinCodex\Commands\InstallCommand;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Tests\Fixtures\Commands\DecliningInstallCommand;
 use FinityLabs\FinCodex\Tests\Fixtures\Commands\ShieldStubInstallCommand;
 use FinityLabs\FinCodex\Tests\Fixtures\TempAppTree;
 use FinityLabs\LinCodex\Enums\Visibility;
@@ -495,4 +496,38 @@ it('declines a core config it does not recognise instead of guessing at it', fun
     expect($exitCode)->toBe(0)
         ->and($output)->toContain('Could not edit config/lin-codex.php')
         ->and((string) file_get_contents($path))->toBe($before);
+});
+
+it('leaves the core config byte for byte when the switch is declined', function () {
+    TempAppTree::writePanelProvider('admin');
+    $path = TempAppTree::writeLinCodexConfig('/help');
+    $before = (string) file_get_contents($path);
+
+    Artisan::registerCommand(new DecliningInstallCommand);
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('Left as it is')
+        ->and($output)->not->toContain('Public help center switched off')
+        ->and((string) file_get_contents($path))->toBe($before);
+});
+
+it('names the public help center in its next steps only when the switch happened', function () {
+    TempAppTree::writePanelProvider('admin');
+
+    [$first, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($first)->toBe(0)
+        ->and($output)->toContain('/help is off; help now lives at {panel}/help inside the panel');
+
+    TempAppTree::cleanup();
+    TempAppTree::writePanelProvider('admin');
+    TempAppTree::writeLinCodexConfig(null);
+    config(['lin-codex.routes.help_center' => null]);
+
+    [$second, $again] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($second)->toBe(0)
+        ->and($again)->not->toContain('/help is off; help now lives at');
 });

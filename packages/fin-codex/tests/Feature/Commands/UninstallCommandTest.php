@@ -147,3 +147,46 @@ it('leaves a host without spatie/laravel-permission untouched', function () {
 
     expect($exitCode)->toBe(0);
 });
+
+/*
+ * PLACE-04, the uninstall half. Removing fin-codex removes the Help Center
+ * page inside the panel, so the public one is offered back — and unlike the
+ * two prompts above it, this one defaults to yes.
+ */
+
+it('switches the public help center back on and says where', function () {
+    TempAppTree::writePanelProvider('admin');
+    $path = TempAppTree::writeLinCodexConfig(null);
+    config(['lin-codex.routes.help_center' => null]);
+
+    [$exitCode, $output] = finCodexRunUninstallCommand('fin-codex:uninstall');
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('Public help center switched back on at /help')
+        ->and((string) file_get_contents($path))->toContain("'help_center' => '/help',");
+});
+
+it('leaves a prefix the host is already serving alone', function () {
+    TempAppTree::writePanelProvider('admin');
+    $path = TempAppTree::writeLinCodexConfig('/manual');
+    config(['lin-codex.routes.help_center' => '/manual']);
+
+    $before = (string) file_get_contents($path);
+
+    [$exitCode, $output] = finCodexRunUninstallCommand('fin-codex:uninstall');
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->not->toContain('switched back on')
+        ->and((string) file_get_contents($path))->toBe($before);
+});
+
+it('publishes nothing when the core config was never published', function () {
+    TempAppTree::writePanelProvider('admin');
+    config(['lin-codex.routes.help_center' => null]);
+
+    [$exitCode, $output] = finCodexRunUninstallCommand('fin-codex:uninstall');
+
+    expect($exitCode)->toBe(0)
+        ->and(file_exists(TempAppTree::linCodexConfigPath()))->toBeFalse()
+        ->and($output)->not->toContain('switched back on');
+});
