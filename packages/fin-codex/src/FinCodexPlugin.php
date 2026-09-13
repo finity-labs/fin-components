@@ -17,6 +17,7 @@ use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Panel\HelpMount;
+use FinityLabs\FinCodex\Panel\RefreshHelpCenterPrefix;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Scope\PanelScopeGate;
 use FinityLabs\FinCodex\Search\HelpSearchProvider;
@@ -158,6 +159,16 @@ class FinCodexPlugin implements Plugin
         // resource. Panel::pages() appends, so the authoring block's own call
         // below is unaffected.
         $panel->pages([$this->getHelpCenterPage() ?? HelpCenter::class]);
+
+        // A panel's tenant middleware is Filament's own IdentifyTenant followed
+        // by this, and Filament applies the list only inside the tenant route
+        // group, so a panel without tenancy never sees it. isPersistent puts it
+        // beside IdentifyTenant in Livewire's own list, so a drawer update on a
+        // tenanted panel keeps the tenant in its links. Registered here rather
+        // than in boot(): register() runs once when the provider builds the
+        // panel, boot() runs every request, and the middleware arrays live on a
+        // Panel that outlives both.
+        $panel->tenantMiddleware([RefreshHelpCenterPrefix::class], isPersistent: true);
 
         // A panel that only reads help registers none of the three admin screens:
         // ->authoring(false) keeps the button, the drawer, the hints and the help
