@@ -263,7 +263,7 @@ it('names the ability that lifts the panel scope in its next steps', function ()
         ->and($output)->toContain('viewAllPanels');
 });
 
-it('publishes nothing of lin-codex', function () {
+it('publishes no core migration, and of lin-codex only the config it has to edit', function () {
     TempAppTree::writePanelProvider('admin');
 
     [$exitCode] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
@@ -274,7 +274,11 @@ it('publishes nothing of lin-codex', function () {
 
     expect($exitCode)->toBe(0)
         ->and($published)->toBe([])
-        ->and(file_exists(config_path('lin-codex.php')))->toBeFalse();
+        // Since 0.5.0 the one exception: the install switches the public help
+        // center off, and the only place that value can be written is the
+        // published config file.
+        ->and((string) file_get_contents(TempAppTree::linCodexConfigPath()))
+        ->toContain("'help_center' => null,");
 });
 
 /*
@@ -460,8 +464,10 @@ it('takes the default and switches over a prefix the host chose, leaving the res
 
     $content = (string) file_get_contents($path);
 
+    // The question itself is never echoed: confirm() under --no-interaction
+    // takes its default without asking, which is the behaviour this row is
+    // here for. What the prompt says is proven by the declined row below.
     expect($exitCode)->toBe(0)
-        ->and($output)->toContain('It is mounted at /manual')
         ->and($output)->toContain('Public help center switched off')
         ->and($content)->toContain("'help_center' => null,")
         ->and($content)->not->toContain('/manual')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace FinityLabs\FinCodex\Commands;
 
 use FinityLabs\FinCodex\Ai\AiSettings;
+use FinityLabs\FinCodex\Commands\Concerns\EditsCoreConfig;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinSupport\Console\Concerns\DiscoversPanelProviders;
@@ -42,8 +43,11 @@ use Throwable;
  *
  * It deliberately owns very little. Articles, media, revisions, settings and
  * the search index all belong to lin-codex, which ships its own installer, so
- * this command points at (or calls) `codex:install` and never publishes or
- * migrates a single core asset itself. What is left is genuinely fin-codex's:
+ * this command points at (or calls) `codex:install` and never migrates a core
+ * table or publishes a core asset itself. Its one reach into lin-codex is the
+ * config file: since 0.5.0 the install switches the core's public help center
+ * off, and publishing that file is the only way to write the value.
+ * What is left is genuinely fin-codex's:
  * the plugin registration in a panel provider, the languages the editor
  * offers, the starter articles, the two optional publish groups this package
  * has (translations and views), and the Filament Shield wiring for the
@@ -68,6 +72,7 @@ use Throwable;
 class InstallCommand extends Command
 {
     use DiscoversPanelProviders;
+    use EditsCoreConfig;
     use EditsPanelProviders;
     use EditsShieldConfig;
     use PromptsForLocales;
@@ -104,6 +109,8 @@ class InstallCommand extends Command
 
     protected bool $aiConfigured = false;
 
+    protected bool $publicHelpCenterSwitched = false;
+
     /** @var list<string> */
     protected array $languages = [];
 
@@ -129,6 +136,7 @@ class InstallCommand extends Command
         $this->newLine();
 
         $this->ensureCoreInstalled();
+        $this->switchPublicHelpCenterOff();
         $this->registerInPanel();
         $this->configureLanguages();
         $this->importStarterArticles();
@@ -145,6 +153,10 @@ class InstallCommand extends Command
             ['Review the settings', 'Help → Help settings (languages, revisions, drawer)'],
             ['Find pages without help', 'Help → Help coverage'],
         ];
+
+        if ($this->publicHelpCenterSwitched) {
+            $nextSteps[] = ['Public help center', '/help is off; help now lives at {panel}/help inside the panel'];
+        }
 
         if ($this->shieldConfigured) {
             // The ability is named, the permission is not: the Shield config
@@ -189,6 +201,66 @@ class InstallCommand extends Command
         }
 
         $this->call('codex:install');
+    }
+
+    /**
+     * Switch the core's public help center off.
+     *
+     * Since 0.5.0 help lives at {panel}/help, inside the panel and behind its
+     * login, so the bare public page is a second, unthemed copy of the same
+     * articles sitting outside every panel. lin-codex reads its route prefix
+     * once and registers neither help-center route when it is null, so writing
+     * the null into the published config is the whole switch.
+     *
+     * It is a step of its own rather than something codex:install does, because
+     * codex:install is only reached on a host that has no articles table yet —
+     * an upgrading host would never see it.
+     *
+     * A host who set a prefix of their own is asked first. The default is yes,
+     * so a non-interactive run takes the switch.
+     */
+    protected function switchPublicHelpCenterOff(): void
+    {
+        $path = $this->coreConfigPath();
+
+        if (! file_exists($path)) {
+            $this->comment('Publishing the lin-codex config...');
+            $this->callSilently('vendor:publish', ['--tag' => 'lin-codex-config']);
+        }
+
+        if (! file_exists($path)) {
+            $this->components->warn('config/lin-codex.php is not published; set routes.help_center to null by hand.');
+
+            return;
+        }
+
+        $current = config('lin-codex.routes.help_center');
+
+        if ($current === null) {
+            $this->info('  The public help center is already off (lin-codex.routes.help_center is null)');
+
+            return;
+        }
+
+        if (! $this->confirm("Switch the public help center off? It is mounted at {$current}; the Help Center page inside the panel replaces it.", true)) {
+            $this->line('  Left as it is. Both help centers will answer.');
+
+            return;
+        }
+
+        if (! $this->setCoreRoutePrefix($path, null)) {
+            $this->components->warn('Could not edit config/lin-codex.php; set routes.help_center to null by hand.');
+
+            return;
+        }
+
+        $this->publicHelpCenterSwitched = true;
+
+        $this->info('  Public help center switched off: /help now answers 404, the Help Center page inside the panel replaces it');
+
+        if (app()->routesAreCached()) {
+            $this->line('  Your routes are cached: run php artisan route:clear for this to take effect.');
+        }
     }
 
     protected function registerInPanel(): void
