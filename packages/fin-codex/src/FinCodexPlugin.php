@@ -193,16 +193,76 @@ class FinCodexPlugin implements Plugin
 
     /**
      * Panel state (guard, global search provider, topbar) is read here or lazily,
-     * never in register(). Two independent concerns, two private methods: the SPA
+     * never in register(). Each concern is its own private method: the SPA
      * exception returns early on a panel without SPA mode, and appending the
      * global search block after that return would skip it on every non-SPA panel.
+     *
+     * The prefix write runs second and owns the SPA exception, which is built
+     * from the value it writes and must therefore be applied after it.
      */
     public function boot(Panel $panel): void
     {
         $this->bootPolicy();
-        $this->bootSpaExceptions($panel);
+        $this->applyHelpCenterPrefix($panel);
         $this->bootGlobalSearch($panel);
         $this->bootPanelScope();
+    }
+
+    /**
+     * This panel's help-center prefix, written where the core reads it.
+     *
+     * The core's link builders read lin-codex.routes.help_center at call time,
+     * so this one write per request steers the drawer footer, the field hints,
+     * the global search rows and every article-to-article link the renderer
+     * writes — with no setter and no core change. Idempotent across repeated
+     * boots for the same reason bootPanelScope() is: the value is derived, never
+     * accumulated. It must stay that way — no early-return guard may be added
+     * here, because the tenant refresh has to be free to overwrite what boot
+     * wrote.
+     *
+     * On a panel with tenancy the page route carries a tenant segment that
+     * nobody has filled in yet when plugins boot, so route generation throws,
+     * the prefix is null and the write is skipped; Panel\RefreshHelpCenterPrefix
+     * repeats the call once the tenant is known.
+     */
+    private function applyHelpCenterPrefix(Panel $panel): void
+    {
+        $prefix = $this->helpCenterPrefix($panel->getId());
+
+        if ($prefix !== null) {
+            config()->set('lin-codex.routes.help_center', $prefix);
+        }
+
+        $this->bootSpaExceptions($panel);
+    }
+
+    /**
+     * Re-derive and re-apply the prefix for the panel that is current now.
+     *
+     * The one public way in, for the tenant middleware and for nothing else.
+     */
+    public function refreshHelpCenterPrefix(Panel $panel): void
+    {
+        $this->applyHelpCenterPrefix($panel);
+    }
+
+    /**
+     * The panel's help-center path relative to the application root, or null
+     * when no URL can be built (a panel without the page, or a tenanted panel
+     * before its tenant is known).
+     *
+     * Relative on purpose. The core turns the prefix into an absolute URL with
+     * url(), which re-prepends the application root, so an absolute prefix on a
+     * host served from a subdirectory would carry that base path twice. The
+     * core's contract is a prefix relative to the application root.
+     */
+    private function helpCenterPrefix(?string $panelId): ?string
+    {
+        try {
+            return static::helpCenterPageClass($panelId)::getUrl([], false, $panelId);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /**
@@ -251,6 +311,21 @@ class FinCodexPlugin implements Plugin
      * here survives a host that chains ->spaUrlExceptions() after ->plugin().
      * hasSpaMode($pattern) is the guard: it turns false once the pattern is on
      * the list, so repeated boots within one process add nothing.
+     *
+     * The exception pattern and the core's link builder are both relative to the
+     * application root and therefore match each other; a Filament page's own
+     * getUrl() is absolute and therefore does not. The manager compares the raw
+     * href string, so the URL FORM, not the destination, decides whether
+     * Livewire's navigate listener is armed on a given link. That is what lets
+     * the hint keep its drawer intercept while a Help Center tree link still
+     * swaps the page in place. Move either side to the other form and the two
+     * behaviours silently trade places.
+     *
+     * A blank prefix is the third state and the reason for the early return
+     * below: it would leave a pattern that matches every application URL, which
+     * excepts the whole panel from SPA navigation. That is the state a published
+     * fin-codex config is in before the write above lands, and the state a
+     * tenanted panel is in at boot.
      */
     private function bootSpaExceptions(Panel $panel): void
     {
@@ -258,7 +333,15 @@ class FinCodexPlugin implements Plugin
             return;
         }
 
-        $pattern = rtrim((string) config('lin-codex.routes.help_center', '/help'), '/').'/*';
+        // No third argument: config() only falls back to a default when the key
+        // is absent, and the core's published config names it with a null value.
+        $prefix = rtrim((string) config('lin-codex.routes.help_center'), '/');
+
+        if ($prefix === '') {
+            return;
+        }
+
+        $pattern = $prefix.'/*';
         $view = app(ViewManager::class);
 
         if ($view->hasSpaMode($pattern)) {
@@ -560,6 +643,25 @@ class FinCodexPlugin implements Plugin
         }
 
         return $override !== null && is_a($override, HelpCenter::class, true) ? $override : HelpCenter::class;
+    }
+
+    /**
+     * The absolute URL of the Help Center page on the named panel, or on the
+     * current one when no id is given; null when no URL can be built — a panel
+     * without the page, or a tenanted panel before its tenant is known.
+     *
+     * Absolute on purpose, and the counterpart of the relative prefix the core
+     * links with: this is what the topbar button, the drawer footer and the
+     * user-menu entry link to, and an absolute URL keeps SPA navigation on for
+     * them while the relative one keeps the drawer intercept on the hints.
+     */
+    public function helpCenterUrl(?string $panelId = null): ?string
+    {
+        try {
+            return static::helpCenterPageClass($panelId)::getUrl([], true, $panelId);
+        } catch (Throwable) {
+            return null;
+        }
     }
 
     /**
