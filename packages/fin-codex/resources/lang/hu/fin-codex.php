@@ -18,6 +18,7 @@ return [
     ],
     'help_center' => [
         'title' => 'Súgó',
+        'navigation' => 'Súgóközpont',
         'rail_heading' => 'Súgó böngészése',
         'contents' => 'Tartalom',
         'panel_filter' => 'Panel',

@@ -18,6 +18,7 @@ return [
     ],
     'help_center' => [
         'title' => 'Help',
+        'navigation' => 'Help center',
         'rail_heading' => 'Browse help',
         'contents' => 'Contents',
         'panel_filter' => 'Panel',

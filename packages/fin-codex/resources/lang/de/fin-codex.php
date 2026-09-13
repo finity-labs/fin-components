@@ -18,6 +18,7 @@ return [
     ],
     'help_center' => [
         'title' => 'Hilfe',
+        'navigation' => 'Hilfecenter',
         'rail_heading' => 'Hilfe durchstöbern',
         'contents' => 'Inhalt',
         'panel_filter' => 'Panel',

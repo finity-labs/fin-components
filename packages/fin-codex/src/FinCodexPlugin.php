@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex;
 
+use BackedEnum;
 use Closure;
 use Filament\Contracts\Plugin;
 use Filament\Facades\Filament;
 use Filament\GlobalSearch\Providers\Contracts\GlobalSearchProvider;
 use Filament\Panel;
 use Filament\Support\Concerns\EvaluatesClosures;
+use Filament\Support\Icons\Heroicon;
 use Filament\Support\View\ViewManager;
 use Filament\View\PanelsRenderHook;
+use FinityLabs\FinCodex\Enums\HelpCenterPlacement;
 use FinityLabs\FinCodex\Enums\NavigationGroup;
 use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
@@ -21,6 +24,7 @@ use FinityLabs\FinCodex\Panel\RefreshHelpCenterPrefix;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinCodex\Scope\PanelScopeGate;
 use FinityLabs\FinCodex\Search\HelpSearchProvider;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\HtmlString;
 use Throwable;
 use UnitEnum;
@@ -56,6 +60,16 @@ class FinCodexPlugin implements Plugin
     protected string|UnitEnum|Closure|null $navigationGroup = NavigationGroup::Help;
 
     protected int|Closure|null $navigationSort = null;
+
+    protected HelpCenterPlacement|Closure $helpCenterPlacement = HelpCenterPlacement::UserMenu;
+
+    protected string|UnitEnum|Closure|null $helpCenterNavigationGroup = null;
+
+    protected int|Closure|null $helpCenterNavigationSort = 1000;
+
+    protected string|Closure|null $helpCenterNavigationLabel = null;
+
+    protected string|BackedEnum|Htmlable|Closure|null $helpCenterNavigationIcon = null;
 
     /** @var class-string|null */
     protected ?string $articleResource = null;
@@ -533,6 +547,106 @@ class FinCodexPlugin implements Plugin
     public function getNavigationSort(): ?int
     {
         return $this->evaluate($this->navigationSort);
+    }
+
+    /**
+     * Where this panel's Help Center is reachable from: the user menu (the
+     * default), the navigation, both, or neither.
+     *
+     * None withholds the two menu entries only. The page stays registered,
+     * {panel}/help keeps answering, and the drawer footer, the field hints,
+     * the global search rows and a bookmark all still reach it.
+     */
+    public function helpCenterPlacement(HelpCenterPlacement|Closure $placement): static
+    {
+        $this->helpCenterPlacement = $placement;
+
+        return $this;
+    }
+
+    public function getHelpCenterPlacement(): HelpCenterPlacement
+    {
+        return $this->evaluate($this->helpCenterPlacement) ?? HelpCenterPlacement::UserMenu;
+    }
+
+    /**
+     * The navigation group the Help Center item is filed under; null, the
+     * default, leaves it at the top level.
+     *
+     * This and the three options below are the Help Center's alone and are
+     * deliberately independent of navigationGroup() and navigationSort(),
+     * which keep meaning what they have always meant: the editor, Help
+     * settings and Help coverage. The Help Center must not join the sort
+     * arithmetic those three chain off — it is the reading surface, not a
+     * fourth admin screen, and a host arranges it wherever it likes.
+     */
+    public function helpCenterNavigationGroup(string|UnitEnum|Closure|null $group): static
+    {
+        $this->helpCenterNavigationGroup = $group;
+
+        return $this;
+    }
+
+    public function getHelpCenterNavigationGroup(): string|UnitEnum|null
+    {
+        return $this->evaluate($this->helpCenterNavigationGroup);
+    }
+
+    /**
+     * Where the Help Center item sorts. The default 1000 puts it at the
+     * bottom of a normal sidebar rather than in the middle of the host's own
+     * arrangement; null genuinely means "no sort".
+     */
+    public function helpCenterNavigationSort(int|Closure|null $sort): static
+    {
+        $this->helpCenterNavigationSort = $sort;
+
+        return $this;
+    }
+
+    public function getHelpCenterNavigationSort(): ?int
+    {
+        return $this->evaluate($this->helpCenterNavigationSort);
+    }
+
+    /**
+     * The Help Center item's label, in the navigation and in the user menu
+     * alike. Defaults to the translated "Help center".
+     *
+     * The page's own heading stays "Help": the menu says "Help center"
+     * because it opens the library, while the topbar's question-mark button
+     * pops help next to what the viewer is doing. Two affordances, two words,
+     * two icons.
+     */
+    public function helpCenterNavigationLabel(string|Closure|null $label): static
+    {
+        $this->helpCenterNavigationLabel = $label;
+
+        return $this;
+    }
+
+    public function getHelpCenterNavigationLabel(): string
+    {
+        return $this->evaluate($this->helpCenterNavigationLabel) ?? (string) __('fin-codex::fin-codex.help_center.navigation');
+    }
+
+    /**
+     * The Help Center item's icon, defaulting to an outlined book: the
+     * library, never the question mark the topbar button already carries.
+     *
+     * The union matches Filament's own Page::getNavigationIcon() return type
+     * exactly, because the page static hands this straight back.
+     */
+    public function helpCenterNavigationIcon(string|BackedEnum|Htmlable|Closure|null $icon): static
+    {
+        $this->helpCenterNavigationIcon = $icon;
+
+        return $this;
+    }
+
+    public function getHelpCenterNavigationIcon(): string|BackedEnum|Htmlable|null
+    {
+        return $this->evaluate($this->helpCenterNavigationIcon) ?? Heroicon::OutlinedBookOpen;
     }
 
     /**
