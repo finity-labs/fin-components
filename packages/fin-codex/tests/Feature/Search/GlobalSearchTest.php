@@ -486,5 +486,5 @@ it('still appends the help-center SPA exception after the boot split', function 
 
     expect($view->hasSpaMode())->toBeTrue()
         ->and($view->hasSpaMode('/admin/users'))->toBeTrue()
-        ->and($view->hasSpaMode('/help/users'))->toBeFalse();
+        ->and($view->hasSpaMode('/admin/help/users'))->toBeFalse();
 });
