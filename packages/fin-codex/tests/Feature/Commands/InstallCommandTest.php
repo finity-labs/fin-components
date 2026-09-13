@@ -411,3 +411,82 @@ it('gives a visitor on the sign-in page the sign-in article, and nothing from th
         ->toContain('data-codex-page-article="account/signing-in"')
         ->not->toContain('data-codex-page-article="help');
 });
+
+/*
+ * PLACE-04. The public help center goes off at install time.
+ *
+ * Every row reads config/lin-codex.php back from disk rather than asking
+ * config(): the test application loaded its configuration at bootstrap and the
+ * command wrote a file, so config() would still be answering with the value the
+ * run started from. Where a row needs the command to see a published value, it
+ * sets the config key too — that is what a real host's bootstrap would have
+ * done with the file already on disk.
+ */
+
+it('publishes the core config and switches the public help center off', function () {
+    TempAppTree::writePanelProvider('admin');
+
+    expect(file_exists(TempAppTree::linCodexConfigPath()))->toBeFalse();
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    $content = (string) file_get_contents(TempAppTree::linCodexConfigPath());
+
+    expect($exitCode)->toBe(0)
+        ->and($content)->toContain("'help_center' => null,")
+        ->and($output)->toContain('Public help center switched off');
+});
+
+it('leaves the core config byte for byte when the public help center is already off', function () {
+    TempAppTree::writePanelProvider('admin');
+    $path = TempAppTree::writeLinCodexConfig(null);
+    config(['lin-codex.routes.help_center' => null]);
+
+    $before = (string) file_get_contents($path);
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('already off')
+        ->and((string) file_get_contents($path))->toBe($before);
+});
+
+it('takes the default and switches over a prefix the host chose, leaving the rest of the file alone', function () {
+    TempAppTree::writePanelProvider('admin');
+    $path = TempAppTree::writeLinCodexConfig('/manual');
+    config(['lin-codex.routes.help_center' => '/manual']);
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    $content = (string) file_get_contents($path);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('It is mounted at /manual')
+        ->and($output)->toContain('Public help center switched off')
+        ->and($content)->toContain("'help_center' => null,")
+        ->and($content)->not->toContain('/manual')
+        // The longer key two lines below keeps its own line, and the comment
+        // block a host is meant to read survives the edit.
+        ->and($content)->toContain("'help_center_layout' => null,")
+        ->and($content)->toContain("'assets' => '/codex/assets',")
+        ->and($content)->toContain('The prefix the public help center is mounted under.');
+});
+
+it('declines a core config it does not recognise instead of guessing at it', function () {
+    TempAppTree::writePanelProvider('admin');
+
+    $path = TempAppTree::linCodexConfigPath();
+    file_put_contents($path, str_replace(
+        "        'help_center' => {{help_center}},\n",
+        '',
+        TempAppTree::LIN_CODEX_CONFIG,
+    ));
+
+    $before = (string) file_get_contents($path);
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('Could not edit config/lin-codex.php')
+        ->and((string) file_get_contents($path))->toBe($before);
+});
