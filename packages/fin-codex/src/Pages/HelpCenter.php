@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace FinityLabs\FinCodex\Pages;
 
+use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -46,6 +47,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Js;
 use Illuminate\Support\Str;
+use UnitEnum;
 
 /**
  * The Help Center: the whole help library inside the panel, at {panel}/help and
@@ -67,9 +69,14 @@ use Illuminate\Support\Str;
  * included: that flag means "this panel only reads help", and this page is the
  * reading surface the button, the drawer and the field hints point at.
  *
- * No navigation item in this phase — shouldRegisterNavigation() answers false
- * and thereby discards the Shield trait's version — so the page is reachable by
- * URL only until the phase that decides where it belongs in the menu.
+ * Whether it carries a navigation item follows the panel's placement option,
+ * and its group, sort, label and icon come from four options of their own —
+ * never from navigationGroup() / navigationSort(), which stay with the three
+ * authoring screens. Declaring shouldRegisterNavigation() here discards the
+ * Shield trait's version, so the canAccess() conjunct is re-stated rather than
+ * inherited. Under the None placement the page is still registered and
+ * {panel}/help still answers: only the two menu entries go, and the drawer,
+ * the field hints and a bookmark all still reach it.
  *
  * Not final: a helpCenterPage() override extends it, exactly as HelpSettings
  * and HelpCoverage are open for their own options.
@@ -142,13 +149,47 @@ class HelpCenter extends Page
     }
 
     /**
-     * No navigation item: the page is reachable by URL only for now. Declaring
-     * the method here discards the Shield trait's version, which is what this
-     * phase wants; canAccess() from the trait is untouched.
+     * The navigation half of the panel's placement option.
+     *
+     * canAccess() is spelled out rather than inherited: a method declared on
+     * the class always wins over the one the Shield trait ships, and parent::
+     * from here resolves to Filament's own page, not to the trait, so
+     * re-stating the conjunct is the only way to keep the Shield gate.
+     *
+     * FinCodexPlugin::get() bare, no try/catch, which is what every other
+     * navigation static in this package does: they are only ever called inside
+     * a panel render, where the plugin resolves.
      */
     public static function shouldRegisterNavigation(): bool
     {
-        return false;
+        return FinCodexPlugin::get()->getHelpCenterPlacement()->inNavigation()
+            && static::canAccess()
+            && parent::shouldRegisterNavigation();
+    }
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return FinCodexPlugin::get()->getHelpCenterNavigationGroup();
+    }
+
+    /**
+     * The Help Center's own sort, never the three authoring screens' shared
+     * one: it is the reading surface, not a fourth admin screen, so it does
+     * not join the arithmetic those three chain off the panel's navigationSort.
+     */
+    public static function getNavigationSort(): ?int
+    {
+        return FinCodexPlugin::get()->getHelpCenterNavigationSort();
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return FinCodexPlugin::get()->getHelpCenterNavigationLabel();
+    }
+
+    public static function getNavigationIcon(): string|BackedEnum|Htmlable|null
+    {
+        return FinCodexPlugin::get()->getHelpCenterNavigationIcon();
     }
 
     public function mount(PageHelpResolver $resolver, ?string $codexSlug = null): void

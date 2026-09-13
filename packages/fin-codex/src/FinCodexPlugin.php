@@ -6,6 +6,7 @@ namespace FinityLabs\FinCodex;
 
 use BackedEnum;
 use Closure;
+use Filament\Actions\Action;
 use Filament\Contracts\Plugin;
 use Filament\Facades\Filament;
 use Filament\GlobalSearch\Providers\Contracts\GlobalSearchProvider;
@@ -173,6 +174,45 @@ class FinCodexPlugin implements Plugin
         // resource. Panel::pages() appends, so the authoring block's own call
         // below is unaffected.
         $panel->pages([$this->getHelpCenterPage() ?? HelpCenter::class]);
+
+        // The user-menu half of the placement option, registered beside the
+        // page and before the authoring early return for the same reason: the
+        // page goes on every panel, so its entry must too.
+        //
+        // Here rather than in boot(), because userMenuItems() appends to a
+        // Panel that outlives the request while boot() runs on every one of
+        // them — registering there multiplies the entry on a long-lived
+        // worker. Everything that can vary between two requests is therefore a
+        // closure: the label follows the locale, the URL differs per tenant,
+        // and the visibility is a genuine per-request decision that Filament
+        // re-reads every time it collects the menu.
+        //
+        // The placement lives in the visibility closure, so one registration
+        // serves all four states and Navigation and None simply answer false.
+        // The gate is asked of the page class this panel actually registered,
+        // never of the shipped one, because a helpCenterPage() override may
+        // tighten access. And the sort is -1 rather than anything lower: at -2
+        // the entry becomes the first item of the block Filament groups on a
+        // negative sort, and since it carries a URL the dropdown then stops
+        // treating the viewer's name as its header on every panel without a
+        // profile page.
+        //
+        // Label and icon are the shipped ones, not the four helpCenterNavigation
+        // options: those describe the sidebar item, and this entry is fixed by
+        // design. A host who wants it worded or placed differently registers a
+        // user-menu item of its own and moves the placement to Navigation or
+        // None. A panel with no user menu at all renders nothing here whatever
+        // the placement, and the page stays reachable — the promise None makes,
+        // arrived at from the host's side.
+        $panel->userMenuItems([
+            Action::make('fin-codex-help-center')
+                ->label(fn (): string => (string) __('fin-codex::fin-codex.help_center.navigation'))
+                ->icon(Heroicon::OutlinedBookOpen)
+                ->sort(-1)
+                ->url(fn (): ?string => $this->helpCenterUrl($panel->getId()))
+                ->visible(fn (): bool => $this->getHelpCenterPlacement()->inUserMenu()
+                    && static::helpCenterPageClass($panel->getId())::canAccess()),
+        ]);
 
         // A panel's tenant middleware is Filament's own IdentifyTenant followed
         // by this, and Filament applies the list only inside the tenant route
