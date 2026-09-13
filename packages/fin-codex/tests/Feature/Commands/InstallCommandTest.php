@@ -1,6 +1,7 @@
 <?php
 
 use FinityLabs\FinCodex\Commands\InstallCommand;
+use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Resources\ArticleResource;
@@ -323,7 +324,7 @@ it('imports the starter articles in the configured languages only, as database a
         ->and($articles->pluck('slug')->all())->toBe(InstallCommand::starterSlugs())
         ->and($articles->pluck('source_path')->unique()->all())->toBe([null])
         ->and(ArticleTranslation::query()->distinct()->pluck('locale')->sort()->values()->all())->toBe(['de', 'en'])
-        ->and(ArticleTranslation::query()->count())->toBe(22)
+        ->and(ArticleTranslation::query()->count())->toBe(24)
         ->and($articles->firstWhere('slug', 'help/settings')?->contexts()->value('key'))->toBe(HelpSettings::class)
         // The package's docs folder is not left behind as a content source.
         ->and(config('lin-codex.sources.filesystem.paths'))->not->toContain(InstallCommand::starterDocsPath());
@@ -339,7 +340,7 @@ it('leaves existing starter articles alone on a repeated install', function () {
 
     expect($exitCode)->toBe(0)
         ->and($output)->toContain('already present')
-        ->and(Article::query()->count())->toBe(11)
+        ->and(Article::query()->count())->toBe(12)
         ->and(ArticleTranslation::query()->where('locale', 'en')->where('title', 'Edited by the admin')->count())->toBe(1);
 });
 
@@ -372,10 +373,13 @@ it('attaches the starter articles to their pages whatever the default language i
         ->and($contexts('help'))->toBe(['Filament\\Pages\\Dashboard'])
         ->and($contexts('help/writing-articles'))->toBe([ArticleResource::class])
         ->and($contexts('help/coverage'))->toBe([HelpCoverage::class])
+        // Proven from the database as well as from the files: this is the
+        // context the Help Center's own coverage row is closed by.
+        ->and($contexts('help/help-center'))->toBe([HelpCenter::class])
         ->and($contexts('help/settings'))->toBe([HelpSettings::class])
         ->and($contexts('help/help-in-code'))->toBe([ArticleResource::class])
         ->and(Article::query()->where('slug', 'help')->sole()->sort_order)->toBe(1)
-        ->and(Article::query()->where('slug', 'help/help-in-code')->sole()->sort_order)->toBe(5);
+        ->and(Article::query()->where('slug', 'help/help-in-code')->sole()->sort_order)->toBe(6);
 });
 
 it('stamps the installed panel onto the starter articles\' pages, and leaves them panel-less without one', function () {
@@ -386,7 +390,7 @@ it('stamps the installed panel onto the starter articles\' pages, and leaves the
 
     $panels = ArticleContext::query()->pluck('panel_id')->unique()->all();
 
-    expect(Article::query()->count())->toBe(11)
+    expect(Article::query()->count())->toBe(12)
         ->and($panels)->toBe(['staff'])
         // The guest pages' articles are public, so a visitor to the staff login sees them.
         ->and(Article::query()->where('slug', 'account/signing-in')->sole()->visibility)->toBe(Visibility::Public);
@@ -399,7 +403,7 @@ it('stamps the installed panel onto the starter articles\' pages, and leaves the
 
     expect($exitCode)->toBe(0)
         ->and($output)->toContain('No panel providers found')
-        ->and(Article::query()->count())->toBe(11)
+        ->and(Article::query()->count())->toBe(12)
         ->and(ArticleContext::query()->whereNotNull('panel_id')->count())->toBe(0);
 });
 
