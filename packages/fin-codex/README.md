@@ -623,14 +623,14 @@ Define nothing and nothing changes. The ability is named after the class **actua
 `fin-codex:install` writes the article resource into `config/filament-shield.php` with all nine abilities and runs `shield:generate`. The pages need nothing written for them — Shield 4 discovers pages from the panel and only reads `pages.exclude` from config — so the command prints the nudge instead:
 
 ```bash
-php artisan shield:generate --page=HelpSettings,HelpCoverage
+php artisan shield:generate --page=HelpSettings,HelpCoverage,HelpCenter
 ```
 
 Because `policies.merge` is on by default, the resource's own methods are folded into Shield's list, which is how `restore`, `import` and `convert` end up on the generated policy. That policy lands at `App\Policies\ArticlePolicy` — the same place Codex already looks — so a Shield install takes over the article authorization with no extra wiring and no Shield branch in our code.
 
 **On `page_HelpSettings` and `page_HelpCoverage`:** those are **fin-codex's own** Gate hook for hosts without Shield. They are not Shield's naming. Shield 3 used `page_{Class}`, but Shield 4 renamed every permission — separator `:`, pascal case, a `view` prefix for pages — so on a Shield install the settings page's permission is `View:HelpSettings` by default, and something else entirely on a reconfigured one. Codex never builds that name: it asks Shield for it, which is why a customised `filament-shield.php` keeps working.
 
-`fin-codex:uninstall` removes the resource entry from the Shield config and deletes the permission rows for the resource and both pages, asking Shield for their names rather than rebuilding them. If Shield cannot answer, nothing is deleted and the command says so.
+`fin-codex:uninstall` removes the resource entry from the Shield config and deletes the permission rows for the resource and all three pages, asking Shield for their names rather than rebuilding them. If Shield cannot answer, nothing is deleted and the command says so.
 
 ## Translations
 

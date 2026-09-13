@@ -173,8 +173,11 @@ it('prints the page nudge, because Shield discovers pages rather than reading th
 
     [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
 
+    // All three pages, Help center included: it carries HasPageShieldSupport
+    // like the other two, so on a Shield host its permission has to be
+    // generated before any role can be given the release's reading surface.
     expect($exitCode)->toBe(0)
-        ->and($output)->toContain('--page=HelpSettings,HelpCoverage');
+        ->and($output)->toContain('--page=HelpSettings,HelpCoverage,HelpCenter');
 });
 
 /*
@@ -207,7 +210,10 @@ it('prints what shield:generate said', function () {
     expect($exitCode)->toBe(0)
         ->and($output)->toContain('Permissions generated for the article resource')
         ->and($output)->toContain(ShieldStubInstallCommand::SKIP_LINE)
-        ->and($output)->toContain('Shield permissions and policies generated');
+        ->and($output)->toContain('Shield permissions and policies generated')
+        // The pages are a separate run whatever shield:generate said about the
+        // resource, and that second nudge names the same three pages.
+        ->and($output)->toContain('--page=HelpSettings,HelpCoverage,HelpCenter');
 });
 
 it('says in plain words that the skipped Article policy is expected', function () {

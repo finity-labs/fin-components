@@ -1,7 +1,12 @@
 <?php
 
+use FinityLabs\FinCodex\Commands\UninstallCommand;
+use FinityLabs\FinCodex\Pages\HelpCenter;
+use FinityLabs\FinCodex\Pages\HelpCoverage;
+use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Tests\Fixtures\TempAppTree;
 use FinityLabs\FinCodex\Tests\TestCase;
+use FinityLabs\FinSupport\Pages\Concerns\HasPageShieldSupport;
 use FinityLabs\LinCodex\Models\Article;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
@@ -108,6 +113,25 @@ it('drops the Codex entry from the Shield config and leaves the host entry alone
     expect($config['resources']['manage'])->toHaveCount(1)
         ->and(array_key_first($config['resources']['manage']))
         ->toBe('App\Filament\Resources\Users\UserResource');
+});
+
+/*
+ * The page list is read from the command rather than exercised through Shield:
+ * the harness has no Shield at all, so shieldPermissionNames() returns nothing
+ * here and a behavioural row could only prove the empty branch. What matters is
+ * that the list holds every page that asks Shield for its permission — a page
+ * missing from it leaves its permission rows behind on an uninstall, which is
+ * how Help center was missed when 0.5.0 added it.
+ */
+it('deletes the Shield permissions of every page that carries Shield support', function () {
+    $shieldedPages = collect((array) glob(dirname(__DIR__, 3).'/src/Pages/*.php'))
+        ->map(fn ($file): string => 'FinityLabs\\FinCodex\\Pages\\'.basename((string) $file, '.php'))
+        ->filter(fn (string $page): bool => in_array(HasPageShieldSupport::class, class_uses_recursive($page), true))
+        ->values()
+        ->all();
+
+    expect($shieldedPages)->toEqualCanonicalizing([HelpSettings::class, HelpCoverage::class, HelpCenter::class])
+        ->and(UninstallCommand::SHIELD_PAGES)->toEqualCanonicalizing($shieldedPages);
 });
 
 it('never drops a codex table and never deletes an article', function () {

@@ -465,7 +465,7 @@ class InstallCommand extends Command
 
     /**
      * Write the article resource into filament-shield.php's resources.manage
-     * list. The two pages need nothing here: Shield 4 auto-discovers pages
+     * list. The three pages need nothing here: Shield 4 auto-discovers pages
      * from the panel and only reads pages.exclude from config, so they get
      * their permissions the moment the plugin is registered.
      */
@@ -503,7 +503,7 @@ class InstallCommand extends Command
         if (! $this->hasCommand('shield:generate')) {
             $this->components->warn('shield:generate is not available. Run it yourself once Shield is installed:');
             $this->line("  php artisan shield:generate{$panelFlag} --option=policies_and_permissions --ignore-existing-policies");
-            $this->line("  php artisan shield:generate{$panelFlag} --page=HelpSettings,HelpCoverage");
+            $this->line("  php artisan shield:generate{$panelFlag} --page=HelpSettings,HelpCoverage,HelpCenter");
 
             return;
         }
@@ -537,8 +537,11 @@ class InstallCommand extends Command
             $this->line("  php artisan shield:generate{$panelFlag} --option=policies_and_permissions --ignore-existing-policies");
         }
 
-        // Pages are discovered, not configured, so they are a separate run.
-        $this->line("  Help settings and Help coverage are discovered by Shield: php artisan shield:generate{$panelFlag} --page=HelpSettings,HelpCoverage");
+        // Pages are discovered, not configured, so they are a separate run. The
+        // help center is on this line with the two editor screens: it asks
+        // Shield for its permission the same way, so on a Shield host it is
+        // closed to every role until this has run.
+        $this->line("  Help settings, Help coverage and the Help center are discovered by Shield: php artisan shield:generate{$panelFlag} --page=HelpSettings,HelpCoverage,HelpCenter");
     }
 
     /**
