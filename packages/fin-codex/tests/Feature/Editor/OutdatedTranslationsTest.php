@@ -198,9 +198,11 @@ it('filters missing and outdated locales through the scopes', function (): void 
 
     DB::table($translations)->where('article_id', $blankTitle->id)->where('locale', 'de')->update(['title' => '']);
     DB::table($translations)->where('article_id', $blankBody->id)->where('locale', 'de')->update(['body' => '']);
-    // Whitespace only, never empty: blank() and the core's MissingTranslations
-    // both trim before they judge, so the scope must trim too.
-    DB::table($translations)->where('article_id', $whitespace->id)->where('locale', 'de')->update(['body' => "  \n\t "]);
+    // Spaces only, never empty: blank() and the core's MissingTranslations both
+    // trim before they judge, so the scope must trim too. Spaces and not tabs
+    // on purpose — the one-argument TRIM every supported driver shares strips
+    // spaces and nothing else, which is the edge the scope's docblock records.
+    DB::table($translations)->where('article_id', $whitespace->id)->where('locale', 'de')->update(['body' => '   ']);
 
     $this->travelTo(now()->addMinute());
 
