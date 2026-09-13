@@ -362,3 +362,29 @@ it('renders no entry on a panel with no user menu and leaves the page reachable'
 
     $this->get(route('filament.portal.pages.help'))->assertOk();
 });
+
+it('places each fixture panel\'s Help Center where its own options say', function (string $panel, string $guard, string $label, string $group, bool $inUserMenu): void {
+    // The two fixture panels are the phase's only rendered proof that the
+    // placement reaches a real sidebar: admin carries a literal Navigation
+    // placement, staff a closure-valued Both, and both name their own group,
+    // sort, label and icon. Every rendered-HTML row in the suite sees these
+    // two providers, which is why this plan runs last.
+    $user = finCodexPlacementUser($guard, $panel.'-render@example.com');
+
+    $html = $this->actingAs($user, $guard)->get('/'.$panel)->assertOk()->getContent();
+
+    test()->usesPanel($panel, $user);
+
+    $entries = array_keys(Filament::getPanel($panel)->getUserMenuItems());
+
+    expect($html)->toContain($label)
+        ->toContain($group)
+        ->and(HelpCenter::shouldRegisterNavigation())->toBeTrue();
+
+    $inUserMenu
+        ? expect($entries)->toContain('fin-codex-help-center')
+        : expect($entries)->not->toContain('fin-codex-help-center');
+})->with([
+    'admin, in the navigation alone' => ['admin', 'web', 'Manual', 'Reading', false],
+    'staff, in both surfaces' => ['staff', 'staff', 'Handbook', 'Library', true],
+]);

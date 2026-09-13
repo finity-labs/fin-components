@@ -15,8 +15,9 @@ use Livewire\Livewire;
  * CENTER-01 and the override half of CENTER-06: one page class on one route
  * serving {panel}/help and every {panel}/help/{slug}, behind the panel's own
  * auth and guard, on every panel that carries the plugin — authoring(false)
- * included — with no navigation item, plus the helpCenterPage() option and the
- * static resolver Phase 16 builds URLs with.
+ * included — plus the helpCenterPage() option and the static resolver Phase 16
+ * builds URLs with. Whether a menu points at the page is Phase 16's placement
+ * option and lives in tests/Feature/Plugin/HelpCenterPlacementTest.php.
  *
  * The wildcard slug is the interesting part: Filament exposes no hook for a
  * route's where(), so the page overrides getRoutePath() and the provider
@@ -129,12 +130,17 @@ it('builds its own URLs through the page, keeping the slashes', function (): voi
  * -----------------------------------------------------------------------
  */
 
-it('produces no navigation item while staying open to a panel user', function (): void {
-    test()->usesPanel('admin', finCodexHelpCenterUser());
+it('produces no navigation item under the default placement while staying open to a panel user', function (): void {
+    // Portal, not admin: since Phase 16 the fixture panels carry explicit
+    // placements (admin is in the navigation, staff in both) and portal is the
+    // one that still takes the shipped default. Where the item goes is
+    // HelpCenterPlacementTest's; this row only holds the promise Phase 15 made
+    // — the page is registered and open whether or not a menu points at it.
+    test()->usesPanel('portal', finCodexHelpCenterUser());
 
     expect(HelpCenter::shouldRegisterNavigation())->toBeFalse()
         ->and(HelpCenter::canAccess())->toBeTrue()
-        ->and(array_values(Filament::getPanel('admin')->getPages()))->toContain(HelpCenter::class);
+        ->and(array_values(Filament::getPanel('portal')->getPages()))->toContain(HelpCenter::class);
 });
 
 it('shows the static Help heading while the browser tab follows the article', function (): void {
