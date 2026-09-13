@@ -116,10 +116,12 @@ FinCodexPlugin::make()
     ->helpButtonRenderHook(PanelsRenderHook::USER_MENU_AFTER)
     ->navigationGroup('Help')
     ->navigationSort(90)
+    ->helpCenterPlacement(HelpCenterPlacement::Both)
     ->policyNamespace('App\\Policies')
     ->articleResource(MyArticleResource::class)
     ->settingsPage(MyHelpSettings::class)
     ->coveragePage(MyHelpCoverage::class)
+    ->helpCenterPage(MyHelpCenter::class)
 ```
 
 | Method | Default | What it does |
@@ -133,14 +135,20 @@ FinCodexPlugin::make()
 | `helpButtonRenderHook(string\|Closure)` | `USER_MENU_AFTER` | Where the button renders. Set it explicitly and Codex honours it as given. Leave it alone and the button sits beside the user menu: in the topbar's end group next to the notification bell, or in the sidebar footer on a panel with `->topbar(false)`. A panel with `->userMenu(false)` gets it at `TOPBAR_END`, or `SIDEBAR_FOOTER` without a topbar. Under SPA mode Filament persists the topbar's end group across navigations, so the badge there keeps the count of the first page; name `TOPBAR_END` if you want it live. |
 | `navigationGroup(string\|UnitEnum\|Closure\|null)` | `NavigationGroup::Help` | The navigation group for the resource and both pages. The default enum's label follows the panel locale. |
 | `navigationSort(int\|Closure\|null)` | `null` | Sort for the article resource. Help settings files at `+1` and Help coverage at `+2`, so `->navigationSort(90)` gives 90, 91 and 92. Leave it null and Filament sorts the group by label. |
+| `helpCenterPlacement(HelpCenterPlacement\|Closure)` | `HelpCenterPlacement::UserMenu` | Where the help center is advertised: the user menu, the navigation, both or neither. The page stays reachable under all four. See [Placement](#placement). |
+| `helpCenterNavigationGroup(string\|UnitEnum\|Closure\|null)` | `null` | The group the help center's navigation item is filed under. Null leaves it at the top level, outside the Help group the authoring screens use. See [Placement](#placement). |
+| `helpCenterNavigationSort(int\|Closure\|null)` | `1000` | Where that item sorts. The default puts it below a panel's own arrangement; `null` means no sort at all. |
+| `helpCenterNavigationLabel(string\|Closure\|null)` | the translated `'Help center'` | That item's label. The user-menu entry's wording is fixed and does not read this. |
+| `helpCenterNavigationIcon(string\|BackedEnum\|Htmlable\|Closure\|null)` | an outlined book | That item's icon. A book, not the question mark the topbar button carries. |
 | `policyNamespace(string)` | `'App\Policies'` | Where Codex looks for your own `ArticlePolicy`. See [Authorization](#authorization). |
 | `articleResource(class-string)` | built-in | Swap in a subclass of `FinityLabs\FinCodex\Resources\ArticleResource`. |
 | `settingsPage(class-string)` | built-in | Swap in a subclass of `FinityLabs\FinCodex\Pages\HelpSettings`. |
 | `coveragePage(class-string)` | built-in | Swap in a subclass of `FinityLabs\FinCodex\Pages\HelpCoverage`. |
+| `helpCenterPage(class-string)` | built-in | Swap in a subclass of `FinityLabs\FinCodex\Pages\HelpCenter`. Registered on every panel, `->authoring(false)` included. |
 
-> **The three class overrides must name a real subclass of ours.** Filament calls `registerRoutes()` and `registerNavigationItems()` statically on whatever string you pass at panel registration time, so a typo or a class that doesn't extend the built-in one is a fatal error on the next request, not a quietly ignored option. Keep the built-in slug (or override `getPages()` too) so the internal links keep resolving.
+> **The four class overrides must name a real subclass of ours.** Filament calls `registerRoutes()` and `registerNavigationItems()` statically on whatever string you pass at panel registration time, so a typo or a class that doesn't extend the built-in one is a fatal error on the next request, not a quietly ignored option. Keep the built-in slug (or override `getPages()` too) so the internal links keep resolving.
 
-Extending is the intended way to adjust things. All three built-ins are non-final, and a subclass inherits the list, the filters, the "From files" tab, the form, the relation managers and every header action for free. The built-in pages resolve their resource through the plugin of the panel serving the request, so whatever you override on the subclass — the form, the table, `getEloquentQuery()`, the relation managers, the navigation statics — takes effect on those pages, and two panels can name two different subclasses:
+Extending is the intended way to adjust things. All four built-ins are non-final, and a subclass inherits the list, the filters, the "From files" tab, the form, the relation managers and every header action for free. The built-in pages resolve their resource through the plugin of the panel serving the request, so whatever you override on the subclass — the form, the table, `getEloquentQuery()`, the relation managers, the navigation statics — takes effect on those pages, and two panels can name two different subclasses:
 
 ```php
 use FinityLabs\FinCodex\Resources\ArticleResource;
@@ -574,8 +582,11 @@ The namespace is a per-panel option and is registered when that panel boots for 
 | `restore` | Restoring a **revision** — `Article` has no soft deletes |
 | `import` | Adopting a file article into the database |
 | `convert` | Rewriting an HTML article's body as Markdown |
+| `viewAllPanels` | Reading every panel's articles from inside one panel |
 
-The first five are Filament's. The last three are ours, and **a policy that only defines the first five keeps working**: `restore` and `convert` fall through to the article's `update`, and `import` falls through to `create`. You should not have to learn our vocabulary to keep the editor running.
+The first five are Filament's. The next three are ours, and **a policy that only defines the first five keeps working**: `restore` and `convert` fall through to the article's `update`, and `import` falls through to `create`. You should not have to learn our vocabulary to keep the editor running.
+
+`viewAllPanels` is the ninth and the odd one out: it guards no screen, it widens what a viewer may *read* across panels (see [Panel scoping](#panel-scoping)), and it has no fallback — a policy that does not define it answers no, where the three above it fall through. The shipped policy answers it from the permission Filament Shield generated for the ability, and a host `Gate::before` callback still runs before any of that.
 
 The fallback fills a missing method; it never overturns a no. Define `restore()` and return `false` and the restore button stays gone.
 
