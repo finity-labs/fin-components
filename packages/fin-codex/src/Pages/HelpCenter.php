@@ -259,6 +259,11 @@ class HelpCenter extends Page
      * column renders at all, so the three empty cases — no article, an article
      * without headings, and a slug that found nothing — all hide the column
      * rather than leaving an empty box in the grid.
+     *
+     * The three large-screen spans are hand-tuned against a real application,
+     * not an even split: the article gets the room and "On this page" gets the
+     * little it needs. They still add up to the grid's twelve, and a test row
+     * pins all three so a later layout edit cannot undo them in silence.
      */
     public function content(Schema $schema): Schema
     {
@@ -270,10 +275,10 @@ class HelpCenter extends Page
                     ->columnSpan(['default' => 1, 'lg' => 3])
                     ->extraAttributes(['class' => 'fin-codex-help__rail']),
                 Group::make($this->articleComponents())
-                    ->columnSpan(['default' => 1, 'lg' => 6])
+                    ->columnSpan(['default' => 1, 'lg' => 7])
                     ->extraAttributes(['class' => 'fin-codex-help__article']),
                 Group::make($headings)
-                    ->columnSpan(['default' => 1, 'lg' => 3])
+                    ->columnSpan(['default' => 1, 'lg' => 2])
                     ->extraAttributes(['class' => 'fin-codex-help__toc'])
                     ->hidden($headings === []),
             ]),
@@ -854,6 +859,10 @@ class HelpCenter extends Page
      *
      * An empty list here is what hides the whole column: see content().
      *
+     * The list is asked for a single column explicitly. Left alone it spreads
+     * over two from the small breakpoint upwards, which reads as two ragged
+     * stacks inside a column this narrow.
+     *
      * @return list<Component>
      */
     private function headingsComponents(): array
@@ -867,10 +876,13 @@ class HelpCenter extends Page
         return [
             Section::make(__('lin-codex::lin-codex.ui.on_this_page'))
                 ->compact()
-                ->schema([UnorderedList::make(array_map(
-                    static fn (array $entry): Text => Text::make(new HtmlString('<a href="#'.e($entry['id']).'">'.e($entry['text']).'</a>'))->size(TextSize::Small),
-                    $toc,
-                ))]),
+                ->schema([
+                    UnorderedList::make(array_map(
+                        static fn (array $entry): Text => Text::make(new HtmlString('<a href="#'.e($entry['id']).'">'.e($entry['text']).'</a>'))->size(TextSize::Small),
+                        $toc,
+                    ))
+                        ->columns(1),
+                ]),
         ];
     }
 

@@ -4,10 +4,13 @@ use Filament\Facades\Filament;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelRegistry;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\UnorderedList;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Tests\Fixtures\Pages\AdminHelpCenter;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
+use FinityLabs\LinCodex\Models\Article;
 use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 
@@ -171,6 +174,47 @@ it('renders the three-column grid, the rail included', function (): void {
         ->assertSee('fin-codex-help__rail', escape: false)
         ->assertSee('data-fin-codex-help-rail', escape: false)
         ->assertSee('fin-codex-help__article', escape: false);
+});
+
+it('pins the hand-tuned column spans and the single-column headings list', function (): void {
+    test()->usesPanel('admin', finCodexHelpCenterUser());
+
+    // The three spans are not an arbitrary grid: Albert widened the article
+    // column and narrowed "On this page" against the real application on
+    // 2026-09-13, and the list under that narrow column needs one column of its
+    // own because UnorderedList defaults to two from sm upwards. All three
+    // numbers are easy to undo by accident from a later layout edit, so they
+    // are read back off the schema rather than off the rendered style string,
+    // which is Filament's to change.
+    $article = Article::factory()->public()->published()
+        ->withTranslation('en', ['title' => 'Signing in', 'body' => "## Passwords\n\nType your **password**.\n\n### Resetting\n\nUse the link."])
+        ->create(['slug' => 'account/signing-in']);
+
+    forgetHelpMemo();
+
+    $content = Livewire::test(HelpCenter::class, [HelpCenter::SLUG_PARAMETER => $article->slug])
+        ->instance()
+        ->getSchema('content');
+
+    $grid = $content?->getComponents()[0] ?? null;
+
+    expect($grid)->toBeInstanceOf(Grid::class)
+        ->and($grid->getColumns('lg'))->toBe(12);
+
+    // Rail, article, headings, in grid order. The headings column only exists
+    // because the seeded article has two of them.
+    [$rail, $body, $headings] = $grid->getChildComponents();
+
+    expect($rail->getColumnSpan('lg'))->toBe(3)
+        ->and($body->getColumnSpan('lg'))->toBe(7)
+        ->and($headings->getColumnSpan('lg'))->toBe(2)
+        // 3 + 7 + 2 = 12, so the grid still fills its row.
+        ->and($rail->getColumnSpan('lg') + $body->getColumnSpan('lg') + $headings->getColumnSpan('lg'))->toBe(12);
+
+    $list = $headings->getChildComponents()[0]->getChildComponents()[0];
+
+    expect($list)->toBeInstanceOf(UnorderedList::class)
+        ->and($list->getColumns('lg'))->toBe(1);
 });
 
 /*
