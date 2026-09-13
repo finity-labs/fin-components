@@ -650,8 +650,10 @@ class FinCodexPlugin implements Plugin
     }
 
     /**
-     * The Help Center item's label, in the navigation and in the user menu
-     * alike. Defaults to the translated "Help center".
+     * The Help Center navigation item's label. The user-menu entry never
+     * reads it — that entry's wording is fixed by design — so a custom label
+     * renames the sidebar item alone. Defaults to the translated "Help
+     * center", which is what the fixed entry says as well.
      *
      * The page's own heading stays "Help": the menu says "Help center"
      * because it opens the library, while the topbar's question-mark button
