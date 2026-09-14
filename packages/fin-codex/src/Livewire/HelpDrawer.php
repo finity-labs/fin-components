@@ -427,15 +427,15 @@ class HelpDrawer extends CoreHelpDrawer implements HasActions, HasSchemas
                 continue;
             }
 
-            $components[] = Section::make(
-                // A Filament Action is Htmlable, so the whole link renders
-                // inside the section's heading. The guard keeps a click on the
-                // label from flipping the section as well as showing the
-                // article: Filament's toggle listens on the element around the
-                // heading. An empty string, never true — a true value renders
-                // as its own attribute name, which Alpine would evaluate.
-                $link->extraAttributes(['x-on:click.stop' => ''], merge: true)
-            )
+            // A Filament Action is Htmlable, so the whole link renders inside
+            // the section's heading. The guard keeps a click on the label from
+            // flipping the section as well as showing the article: Filament's
+            // toggle listens on the element around the heading. An empty
+            // string, never true — a true value renders as its own attribute
+            // name, which Alpine would evaluate.
+            $link = $link->extraAttributes(['x-on:click.stop' => ''], merge: true);
+
+            $components[] = Section::make($link)
                 // Not optional. Filament's own key closure would put the heading
                 // through a string-typed helper, and an Action cannot be cast
                 // to one; setting the key replaces the closure so it never runs.
