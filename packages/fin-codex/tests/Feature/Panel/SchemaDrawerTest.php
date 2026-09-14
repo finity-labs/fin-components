@@ -117,6 +117,13 @@ it('points the footer link at the panel\'s own Help Center page', function (): v
         ->toContain('href="http://localhost/admin/help"');
 });
 
+it('carries the open article through to the Help Center page', function (): void {
+    $html = finCodexSchemaDrawer()->call('open')->html();
+
+    expect($html)->toContain('data-fin-codex-drawer-help-center')
+        ->toContain('href="http://localhost/admin/help/users"');
+});
+
 it('withholds the footer link on a simple-layout page and keeps the shortcut hint', function (): void {
     $html = finCodexSchemaDrawer(Login::class)->html();
 
