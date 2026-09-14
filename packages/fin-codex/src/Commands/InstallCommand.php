@@ -606,6 +606,11 @@ class InstallCommand extends Command
      * created it. Laravel stamps both timestamps from one value on insert,
      * so on this table they are still equal exactly when no later save has
      * touched the row.
+     *
+     * The two columns hold whole seconds, which leaves one blind spot: an
+     * edit made in the same second as the install still reads as untouched.
+     * A host editing an article a second after installing it is not a case
+     * worth carrying a second column for.
      */
     protected function isUntouchedSinceImport(ArticleTranslation $translation): bool
     {
