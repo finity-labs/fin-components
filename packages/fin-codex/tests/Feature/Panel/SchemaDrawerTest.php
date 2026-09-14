@@ -105,23 +105,31 @@ it('returns to the page tab and the article when the tab strip says so', functio
  * Actions group goes, not just the Action, so no empty wrapper is left; the
  * shortcut hint stays, which is the shape the core's own drawer view has.
  *
+ * The link carries the article the reader has open, so they keep their place
+ * on the way to the page, and falls back to the center's root only when the
+ * drawer has no article open. Two rows for the two states, because one state
+ * on its own cannot tell the difference.
+ *
  * The page class comes from the locked memo the core captures at mount, not
  * from the current route: a Livewire update request has no page, and a footer
  * that read the route would flip its own visibility between the first render
  * and the next update.
  */
-it('points the footer link at the panel\'s own Help Center page', function (): void {
+it('points the footer link at the help center root while no article is open', function (): void {
     $html = finCodexSchemaDrawer()->html();
 
     expect($html)->toContain('data-fin-codex-drawer-help-center')
         ->toContain('href="http://localhost/admin/help"');
 });
 
-it('carries the open article through to the Help Center page', function (): void {
+it('points the footer link at the article the drawer has open', function (): void {
     $html = finCodexSchemaDrawer()->call('open')->html();
 
+    // The closing quote is what makes the negative honest: the root href is a
+    // prefix of the article's, so only the full attribute can tell them apart.
     expect($html)->toContain('data-fin-codex-drawer-help-center')
-        ->toContain('href="http://localhost/admin/help/users"');
+        ->toContain('href="http://localhost/admin/help/users"')
+        ->not->toContain('href="http://localhost/admin/help"');
 });
 
 it('withholds the footer link on a simple-layout page and keeps the shortcut hint', function (): void {
