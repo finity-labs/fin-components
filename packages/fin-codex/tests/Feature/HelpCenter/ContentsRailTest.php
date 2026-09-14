@@ -259,12 +259,17 @@ it('marks the entry for the article being read as the current page, in a colour 
     // it could not fail while the entry looked exactly like its siblings. What
     // a reader and a screen reader actually perceive is a difference, so both
     // halves below are differential: the count proves the current-page marker
-    // is unique in the page, and the gray sibling proves there is a contrast.
+    // is unique in the page, and the sibling proves there is a contrast.
+    //
+    // A sibling carries no colour class at all: gray is a link's own default in
+    // Filament, so asking for it drops the class rather than adding one. The
+    // absence is the assertion — every entry here used to carry the primary
+    // class, this one now does not, and only the current entry still does.
     expect($entry)->toContain('data-fin-codex-help-node="guides/advanced/tuning"')
         ->toContain('aria-current="page"')
         ->toContain('fi-color-primary')
         ->and(substr_count($html, 'aria-current="page"'))->toBe(1)
-        ->and(finCodexHelpTreeEntry($html, 'guides/deep'))->toContain('fi-color-gray');
+        ->and(finCodexHelpTreeEntry($html, 'guides/deep'))->not->toContain('fi-color');
 });
 
 it('renders an article that has children as a collapsible section headed by its own link', function (): void {
