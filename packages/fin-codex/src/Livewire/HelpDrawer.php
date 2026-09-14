@@ -31,6 +31,7 @@ use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\LinCodex\Data\TreeNode;
 use FinityLabs\LinCodex\Livewire\HelpDrawer as CoreHelpDrawer;
 use FinityLabs\LinCodex\Reading\ReadArticle;
+use FinityLabs\LinCodex\Rendering\ArticlePath;
 use FinityLabs\LinCodex\Search\SearchHit;
 use FinityLabs\LinCodex\Search\SearchResult;
 use Illuminate\Contracts\View\View;
@@ -164,6 +165,12 @@ class HelpDrawer extends CoreHelpDrawer implements HasActions, HasSchemas
      * The shortcut hint, and "Open help center" whenever the viewer can
      * actually walk through that door.
      *
+     * The link carries the article the drawer has open, so a reader keeps
+     * their place on the way to the page, and falls back to the center's
+     * root only when there is no article to carry. It stays an absolute URL:
+     * the relative form matches the panel's own SPA exception pattern, which
+     * would quietly turn the footer into a full page load (PLACE-02).
+     *
      * Three reasons to withhold it, and the whole Actions group goes rather
      * than the Action alone, so no empty wrapper is left behind. The URL is
      * null when no help-center prefix could be computed — a tenanted panel
@@ -185,6 +192,7 @@ class HelpDrawer extends CoreHelpDrawer implements HasActions, HasSchemas
     {
         $shortcut = $this->data()['options']['shortcut'] ?? null;
         $url = $this->data()['helpCenterUrl'];
+        $href = blank($this->slug) ? $url : url(ArticlePath::href($this->slug));
         $pageClass = $this->page['class'] ?? null;
         $isSimple = is_string($pageClass) && is_subclass_of($pageClass, SimplePage::class);
         $mayRead = FinCodexPlugin::helpCenterPageClass($this->page['panel'] ?? null)::canAccess();
@@ -199,7 +207,7 @@ class HelpDrawer extends CoreHelpDrawer implements HasActions, HasSchemas
                         ->icon(Heroicon::OutlinedArrowTopRightOnSquare)
                         ->iconPosition(IconPosition::After)
                         ->extraAttributes(['data-fin-codex-drawer-help-center' => 'true'])
-                        ->url((string) $url),
+                        ->url((string) $href),
                 ])->grow(false)->hidden($url === null || $isSimple || ! $mayRead),
                 Text::make($shortcut === null ? '' : (string) __('lin-codex::lin-codex.ui.shortcut_hint', ['shortcut' => $shortcut]))
                     ->size(TextSize::ExtraSmall)
