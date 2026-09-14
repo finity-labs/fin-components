@@ -15,9 +15,13 @@ use FinityLabs\LinCodex\Ai\AiCallFailed;
 use FinityLabs\LinCodex\Ai\AiReason;
 use FinityLabs\LinCodex\Ai\Contracts\AiClient;
 use FinityLabs\LinCodex\Ai\ProviderCatalog;
+use FinityLabs\LinCodex\Data\ArticleData;
+use FinityLabs\LinCodex\Data\TranslationData;
+use FinityLabs\LinCodex\Enums\RevisionReason;
 use FinityLabs\LinCodex\Models\Article;
 use FinityLabs\LinCodex\Models\ArticleContext;
 use FinityLabs\LinCodex\Models\ArticleTranslation;
+use FinityLabs\LinCodex\Revisions\RevisionManager;
 use FinityLabs\LinCodex\Settings\CodexSettings;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
 use FinityLabs\LinCodex\Sync\ArticleImporter;
@@ -25,6 +29,7 @@ use FinityLabs\LinCodex\Sync\ImportOptions;
 use FinityLabs\LinSupport\Console\Concerns\PromptsForLocales;
 use FinityLabs\LinSupport\Locale\InstalledLocales;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 use function Laravel\Prompts\confirm;
@@ -436,6 +441,169 @@ class InstallCommand extends Command
         if ($imported->isNotEmpty() && $created !== []) {
             $this->info('  Starter articles imported in '.implode(', ', $locales).': '.implode(', ', $created));
         }
+    }
+
+    /**
+     * Bring the starter articles a host already has back in line with the
+     * files this version ships, without ever replacing words the host wrote.
+     *
+     * The importer leaves an existing slug alone, which is right — the
+     * article belongs to the host once it is in the database — but it also
+     * means a host who installed before a docs rewrite never sees the new
+     * text. Per slug and configured language there are four cases:
+     *
+     * 1. the stored row already carries the shipped text: nothing to do, and
+     *    nothing to say about it;
+     * 2. it differs, and the row's updated_at still equals its created_at, so
+     *    nothing has been written to it since the import that created it:
+     *    refresh it;
+     * 3. it differs and was written later: the host wrote it, so it is only
+     *    named, never touched;
+     * 4. there is no row at all in a configured language: fill it in, which
+     *    is how a language added after the install finally gets the starter
+     *    set.
+     *
+     * The two timestamps come from the translation row and never from the
+     * article: the install's own post-import step writes codex_articles, so
+     * an article's updated_at says nothing about whether anyone edited its
+     * text. Case 3 is deliberately generous — an AI translation, a hand edit,
+     * even a re-save that changed nothing all move updated_at, and all are
+     * left alone. A row missing either timestamp cannot be shown untouched
+     * and is treated as the host's.
+     *
+     * The comparison is byte-exact against the core's own read of the shipped
+     * Markdown, which is safe because the importer stores those three values
+     * verbatim. The one step in the file read that depends on host config
+     * rewrites image paths, and the starter docs carry no images.
+     *
+     * Only title, excerpt and body move. Nothing here writes the article row,
+     * its contexts or its panel, so where, whether and in what order a host's
+     * articles appear is left exactly as they arranged it — a docs refresh
+     * changes the reader's text and nothing else.
+     *
+     * @param  array<string, ArticleData>  $shipped  the files this version ships, keyed by slug
+     * @param  list<string>  $slugs  the slugs the importer skipped because they already exist
+     * @param  list<string>  $locales  the configured languages the starter set exists in
+     *
+     * @return array{refreshed: array<string, list<string>>, edited: array<string, list<string>>} slug => languages
+     */
+    protected function refreshStarterArticles(array $shipped, array $slugs, array $locales): array
+    {
+        $refreshed = [];
+        $edited = [];
+
+        $articles = Article::query()->whereIn('slug', $slugs)->get()->keyBy('slug');
+
+        foreach ($slugs as $slug) {
+            $file = $shipped[$slug] ?? null;
+            $article = $articles->get($slug);
+
+            if ($file === null || ! $article instanceof Article) {
+                continue;
+            }
+
+            $rows = ArticleTranslation::query()
+                ->where('article_id', $article->id)
+                ->whereIn('locale', $locales)
+                ->get()
+                ->keyBy('locale');
+
+            /** @var array<string, TranslationData> $stale */
+            $stale = [];
+            $theirs = [];
+
+            foreach ($locales as $locale) {
+                $translation = $file->translation($locale);
+
+                if ($translation === null) {
+                    continue;
+                }
+
+                $row = $rows->get($locale);
+
+                if (! $row instanceof ArticleTranslation) {
+                    $stale[$locale] = $translation;
+
+                    continue;
+                }
+
+                if ($row->title === $translation->title
+                    && $row->excerpt === $translation->excerpt
+                    && $row->body === $translation->body) {
+                    continue;
+                }
+
+                if ($this->isUntouchedSinceImport($row)) {
+                    $stale[$locale] = $translation;
+                } else {
+                    $theirs[] = $locale;
+                }
+            }
+
+            if ($theirs !== []) {
+                $edited[$slug] = $theirs;
+            }
+
+            if ($stale === []) {
+                continue;
+            }
+
+            try {
+                app(RevisionManager::class)->attributing(RevisionReason::Import, null, function () use ($article, $stale): void {
+                    DB::transaction(function () use ($article, $stale): void {
+                        foreach ($stale as $locale => $translation) {
+                            $this->writeStarterTranslation($article, $locale, $translation);
+                        }
+                    });
+                });
+
+                $refreshed[$slug] = array_keys($stale);
+            } catch (Throwable $e) {
+                $this->components->warn("Starter article {$slug} could not be refreshed: {$e->getMessage()}");
+            }
+        }
+
+        return ['refreshed' => $refreshed, 'edited' => $edited];
+    }
+
+    /**
+     * A translation row nothing has been written to since the import that
+     * created it. Laravel stamps both timestamps from one value on insert,
+     * so on this table they are still equal exactly when no later save has
+     * touched the row.
+     */
+    protected function isUntouchedSinceImport(ArticleTranslation $translation): bool
+    {
+        $created = $translation->created_at;
+        $updated = $translation->updated_at;
+
+        return $created !== null && $updated !== null && $updated->equalTo($created);
+    }
+
+    /**
+     * The refresh's one write: the three columns a docs update moves, saved
+     * through the model so the core's own hooks run — the replaced content is
+     * kept as a revision the host can restore when they have revisions on,
+     * and the search text is rebuilt from the new body.
+     *
+     * The article is handed to the row rather than looked up from it, which
+     * saves a query and keeps the write working where lazy loading is turned
+     * off, as it is throughout this package's suite.
+     */
+    protected function writeStarterTranslation(Article $article, string $locale, TranslationData $translation): void
+    {
+        $row = ArticleTranslation::query()->firstOrNew([
+            'article_id' => $article->id,
+            'locale' => $locale,
+        ]);
+
+        $row->setRelation('article', $article);
+
+        $row->fill([
+            'title' => $translation->title,
+            'excerpt' => $translation->excerpt,
+            'body' => $translation->body,
+        ])->save();
     }
 
     /**
