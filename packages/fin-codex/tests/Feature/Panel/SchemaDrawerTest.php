@@ -7,6 +7,7 @@ use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Models\Article;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Js;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 
@@ -32,6 +33,12 @@ function finCodexSchemaDrawer(string $pageClass = Dashboard::class): Testable
     test()->usesPanel('admin', User::create(['name' => 'Tester', 'email' => 'drawer@example.com']));
 
     return Livewire::test(HelpDrawer::class, ['pageClass' => $pageClass, 'panelId' => 'admin', 'guard' => 'web']);
+}
+
+/** The Alpine persistence key Filament renders for one collapsible section id. */
+function finCodexDrawerPersistKey(string $id): string
+{
+    return 'section-${'.Js::from($id).' ?? $el.id}-isCollapsed';
 }
 
 it('lists the page\'s articles as Filament link actions with their excerpts, under a search field and tabs', function (): void {
@@ -73,6 +80,28 @@ it('follows the tab strip into the tree and renders nested articles beneath thei
         ->and($html)->toContain('data-codex-tree-node="users"')
         ->toContain('data-codex-tree-node="users/roles"')
         ->toContain('fin-codex-drawer__children');
+});
+
+it('gives every drawer tree section its own persisted id, under a prefix the page cannot collide with', function (): void {
+    // A folder group beside the article-rooted section. The groups carried no
+    // id at all, so Alpine fell back to an empty element id and every group in
+    // the drawer remembered its open state under one shared key.
+    Article::factory()->public()->published()
+        ->withTranslation('en', ['title' => 'Tools', 'body' => 'Tools body.'])
+        ->create(['slug' => 'library/tools']);
+
+    $html = finCodexSchemaDrawer()->call('open')->set('tab', 'tree')->html();
+
+    expect($html)->toContain(finCodexDrawerPersistKey('fin-codex-drawer-users'))
+        ->toContain(finCodexDrawerPersistKey('fin-codex-drawer-library'))
+        // The drawer is mounted on the Help Center page as well, so borrowing
+        // that page's ids would mean duplicate DOM ids, one persistence key
+        // shared between the two trees, and the page's arrival dispatcher
+        // opening the drawer's sections behind the overlay.
+        ->not->toContain('fin-codex-help-')
+        // The article the drawer is showing is the current page in its own
+        // tree too, the way it is in the page's rail.
+        ->toContain('aria-current="page"');
 });
 
 it('renders search hits while a query is typed and goes back when it is cleared', function (): void {
