@@ -369,6 +369,18 @@ class InstallCommand extends Command
      * filled), from the package's docs folder swapped in as the file source
      * for the duration; the rows are then cut loose from their files so the
      * editor treats them as its own and nothing in vendor/ shadows them.
+     *
+     * The second state, the one an upgrade lands in: the database already
+     * holds these slugs, so the importer skips them and this version's
+     * rewritten docs would never reach the reader. Those skipped slugs go to
+     * refreshStarterArticles(), which corrects the ones nobody has written to
+     * since they were imported, fills in a language configured after the
+     * install, and names — without touching — the ones the host has edited.
+     * That last refusal is absolute: there is no flag and no prompt that
+     * overwrites an article the host has made their own, and --force on this
+     * command means published files, nothing else. Only title, excerpt and
+     * body move, so a refresh never changes where, whether or in what order
+     * an article appears.
      */
     protected function importStarterArticles(): void
     {
@@ -402,6 +414,11 @@ class InstallCommand extends Command
 
         try {
             $report = app(ArticleImporter::class)->import(new ImportOptions);
+
+            // Read inside the same window: the docs folder is only the file
+            // source in here, and the set is what the refresh below compares
+            // an existing host's stored articles against.
+            $shipped = app(FilesystemSource::class)->set()->articles;
         } finally {
             config()->set($configKey, $hostPaths);
             app()->forgetInstance(FilesystemSource::class);
@@ -432,8 +449,26 @@ class InstallCommand extends Command
 
         $skipped = $report->skippedSlugs();
 
-        if ($skipped !== []) {
-            $this->line('  Starter articles already present, left as they are: '.implode(', ', $skipped));
+        // Both lines are about slugs the importer skipped, so neither can
+        // appear on a first install — the "imported in" line below already
+        // says everything true about that run. An article that is already
+        // current says nothing at all: silence there is the point.
+        ['refreshed' => $refreshed, 'edited' => $edited] = $this->refreshStarterArticles($shipped, $skipped, $locales);
+
+        if ($refreshed !== []) {
+            $refreshedIn = array_values(array_intersect($locales, array_unique(array_merge(...array_values($refreshed)))));
+
+            $this->info('  Starter articles refreshed in '.implode(', ', $refreshedIn).': '.implode(', ', array_keys($refreshed)));
+        }
+
+        if ($edited !== []) {
+            $names = [];
+
+            foreach ($edited as $slug => $editedIn) {
+                $names[] = $slug.' ('.implode(', ', $editedIn).')';
+            }
+
+            $this->line('  Starter articles you have edited, left as they are: '.implode(', ', $names));
         }
 
         $created = array_values(array_diff($slugs, $skipped));
