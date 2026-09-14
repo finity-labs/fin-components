@@ -179,18 +179,26 @@ it('renders every node the viewer may read, a section per group and a link per a
         ->not->toContain('Draft');
 });
 
-it('nests an article\'s own children beneath it, indented by the class 15-02 shipped', function (): void {
+it('nests an article\'s own children inside its section rather than beside it', function (): void {
     finCodexHelpTreeSeed();
 
     $html = finCodexHelpTreePage()->html();
 
     $parent = strpos($html, 'data-fin-codex-help-node="account"');
-    $indent = strpos($html, 'fin-codex-help__children');
+    $content = strpos($html, 'id="fin-codex-help-account-content"');
     $child = strpos($html, 'data-fin-codex-help-node="account/signing-in"');
+    $grandchild = strpos($html, 'data-fin-codex-help-node="account/signing-in/two-factor"');
+    $next = strpos($html, 'data-fin-codex-help-node="guides"');
 
-    expect($indent)->toBeInt()
-        ->and($parent)->toBeLessThan($indent)
-        ->and($indent)->toBeLessThan($child);
+    // 15-02's indented wrapper and the class it carried are gone. The children
+    // sit in the section's own content container now, which is the thing the
+    // chevron folds away — an indent has nothing to fold.
+    expect($content)->toBeInt()
+        ->and($parent)->toBeLessThan($content)
+        ->and($content)->toBeLessThan($child)
+        ->and($child)->toBeLessThan($grandchild)
+        // And the whole subtree closes before the next top-level node opens.
+        ->and($grandchild)->toBeLessThan($next);
 });
 
 it('points every tree entry at the page\'s own route', function (): void {
@@ -327,12 +335,20 @@ it('opens both ancestors of an article nested two deep under an article', functi
     expect($html)->toContain('data-fin-codex-help-expand="fin-codex-help-account fin-codex-help-account-signing-in"');
 });
 
-it('dispatches nothing where there is no ancestor group to open', function (): void {
+it('dispatches nothing on the landing, where the reader is on no article at all', function (): void {
     finCodexHelpTreeSeed();
 
-    // The landing is on no article at all, and account/signing-in's only
-    // ancestor is an ARTICLE — a link, not a collapsible section — so neither
-    // page renders an inert block.
-    expect(finCodexHelpTreePage()->html())->not->toContain('data-fin-codex-help-expand')
-        ->and(finCodexHelpTreePage('account/signing-in')->html())->not->toContain('data-fin-codex-help-expand');
+    // Nothing to arrive at, so nothing to open and no inert block rendered.
+    expect(finCodexHelpTreePage()->html())->not->toContain('data-fin-codex-help-expand');
+});
+
+it('opens the ancestor of an article whose parent is itself an article', function (): void {
+    finCodexHelpTreeSeed();
+
+    // This row used to assert the opposite and read it as intended behaviour:
+    // account is an article, and an article was a link with nothing to open. It
+    // is a collapsible section now, so the entry the reader arrived at would be
+    // folded away inside it unless arriving unfolds it.
+    expect(finCodexHelpTreePage('account/signing-in')->html())
+        ->toContain('data-fin-codex-help-expand="fin-codex-help-account"');
 });

@@ -71,15 +71,28 @@ it('shows the article with its table of contents, and a back button, once opened
         ->toContain("mountAction('close'");
 });
 
-it('follows the tab strip into the tree and renders nested articles beneath their parent', function (): void {
+it('follows the tab strip into the tree and nests an article\'s children inside its own section', function (): void {
     $drawer = finCodexSchemaDrawer()->call('open')->set('tab', 'tree');
     $html = $drawer->html();
 
+    $parent = strpos($html, 'data-codex-tree-node="users"');
+    $heading = strpos($html, 'id="fin-codex-drawer-users-heading"');
+    $content = strpos($html, 'id="fin-codex-drawer-users-content"');
+    $child = strpos($html, 'data-codex-tree-node="users/roles"');
+
+    // The indented wrapper this row used to read is gone. An article that has
+    // children is a section of its own now, headed by the action that shows it
+    // — so the label still opens the article and the chevron beside it folds
+    // the children away, which it could not do while the label was a bare link.
     expect($drawer->get('view'))->toBe('tree')
         ->and($drawer->get('tab'))->toBe('tree')
-        ->and($html)->toContain('data-codex-tree-node="users"')
-        ->toContain('data-codex-tree-node="users/roles"')
-        ->toContain('fin-codex-drawer__children');
+        ->and($heading)->toBeInt()
+        ->and($content)->toBeInt()
+        ->and(substr($html, $heading, $content - $heading))
+        ->toContain("mountAction('open-users')")
+        ->toContain('aria-controls="fin-codex-drawer-users-content"')
+        ->and($parent)->toBeLessThan($content)
+        ->and($content)->toBeLessThan($child);
 });
 
 it('gives every drawer tree section its own persisted id, under a prefix the page cannot collide with', function (): void {
