@@ -103,6 +103,49 @@ function finCodexHelpTreeSection(string $html, string $slug): string
     return substr($html, $open, (int) strpos($html, '>', $open) - $open + 1);
 }
 
+/**
+ * The header of one tree section: everything between the node's marker and the
+ * opening of its content container, which is where the heading link and the
+ * collapse button both live.
+ */
+function finCodexHelpTreeHeader(string $html, string $slug): string
+{
+    $marker = strpos($html, 'data-fin-codex-help-node="'.$slug.'"');
+
+    if ($marker === false) {
+        test()->fail("No tree node for {$slug} in the rail.");
+    }
+
+    $content = strpos($html, 'fi-section-content-ctn', $marker);
+
+    if ($content === false) {
+        test()->fail("The tree node for {$slug} is not a section.");
+    }
+
+    return substr($html, $marker, $content - $marker);
+}
+
+/**
+ * The anchor one tree entry is rendered as, from its own tag up to the marker
+ * that names it.
+ */
+function finCodexHelpTreeEntry(string $html, string $slug): string
+{
+    $marker = strpos($html, 'data-fin-codex-help-node="'.$slug.'"');
+
+    if ($marker === false) {
+        test()->fail("No tree node for {$slug} in the rail.");
+    }
+
+    $open = strrpos(substr($html, 0, $marker), '<a');
+
+    if ($open === false) {
+        test()->fail("The tree entry for {$slug} is not a link.");
+    }
+
+    return substr($html, $open, (int) strpos($html, '>', $marker) - $open + 1);
+}
+
 /** The Alpine persistence key Filament renders for one collapsible section id. */
 function finCodexHelpTreePersistKey(string $id): string
 {
@@ -200,7 +243,7 @@ it('opens the top level on a first visit and leaves deeper groups closed', funct
  * -----------------------------------------------------------------------
  */
 
-it('marks and colours the entry for the article being read', function (): void {
+it('marks the entry for the article being read as the current page, in a colour its siblings do not carry', function (): void {
     finCodexHelpTreeSeed();
 
     $html = finCodexHelpTreePage('guides/advanced/tuning')->html();
@@ -211,8 +254,44 @@ it('marks and colours the entry for the article being read', function (): void {
 
     $entry = substr($html, (int) strrpos(substr($html, 0, $marker), '<a'), 400);
 
+    // This row used to prove the highlight with fi-color-primary alone, which
+    // Filament puts on every link action that carries no explicit colour — so
+    // it could not fail while the entry looked exactly like its siblings. What
+    // a reader and a screen reader actually perceive is a difference, so both
+    // halves below are differential: the count proves the current-page marker
+    // is unique in the page, and the gray sibling proves there is a contrast.
     expect($entry)->toContain('data-fin-codex-help-node="guides/advanced/tuning"')
-        ->toContain('fi-color-primary');
+        ->toContain('aria-current="page"')
+        ->toContain('fi-color-primary')
+        ->and(substr_count($html, 'aria-current="page"'))->toBe(1)
+        ->and(finCodexHelpTreeEntry($html, 'guides/deep'))->toContain('fi-color-gray');
+});
+
+it('renders an article that has children as a collapsible section headed by its own link', function (): void {
+    finCodexHelpTreeSeed();
+
+    // Read from an article page rather than the landing: the landing's middle
+    // column lists the top level as links too, and a second link to account
+    // would make the count at the bottom of this row say nothing.
+    $url = HelpCenter::getUrl([HelpCenter::SLUG_PARAMETER => 'account']);
+    $html = finCodexHelpTreePage('guides/deep')->html();
+    $header = finCodexHelpTreeHeader($html, 'account');
+
+    expect(finCodexHelpTreeSection($html, 'account'))
+        ->toContain(finCodexHelpTreePersistKey('fin-codex-help-account'))
+        // The heading IS the link: the label opens the article, and the chevron
+        // beside it is a real disclosure button for the children.
+        ->and($header)->toContain('fi-section-header-heading')
+        ->toContain('href="'.$url.'"')
+        ->toContain('aria-expanded')
+        ->toContain('aria-controls="fin-codex-help-account-content"')
+        // Filament's own header toggle sits on the element around the heading,
+        // so without this guard one click on the label would both open the
+        // article and flip the section shut, and remember it that way.
+        ->toContain('x-on:click.stop=""')
+        // One entry per article: the heading link is the only way in, so there
+        // is no repeated overview entry among the children.
+        ->and(substr_count($html, 'href="'.$url.'"'))->toBe(1);
 });
 
 it('forces every ancestor group open and scrolls the entry into view, after the tree', function (): void {
@@ -230,6 +309,17 @@ it('forces every ancestor group open and scrolls the entry into view, after the 
         ->and($html)->toContain('data-fin-codex-help-expand="fin-codex-help-guides fin-codex-help-guides-advanced"')
         ->toContain('expand-section')
         ->toContain('scrollIntoView');
+});
+
+it('opens both ancestors of an article nested two deep under an article', function (): void {
+    finCodexHelpTreeSeed();
+
+    $html = finCodexHelpTreePage('account/signing-in/two-factor')->html();
+
+    // Neither ancestor is a folder group, and the deeper of the two comes up
+    // closed on a first visit — so without this the reader would arrive at an
+    // article whose entry in the rail is hidden inside two shut sections.
+    expect($html)->toContain('data-fin-codex-help-expand="fin-codex-help-account fin-codex-help-account-signing-in"');
 });
 
 it('dispatches nothing where there is no ancestor group to open', function (): void {
