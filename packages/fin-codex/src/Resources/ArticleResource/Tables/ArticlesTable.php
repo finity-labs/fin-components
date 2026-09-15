@@ -62,6 +62,7 @@ final class ArticlesTable
         $verdicts = app(OutdatedTranslations::class);
         $missing = app(MissingTranslations::class);
         $available = app(AiAvailabilityCheck::class)->available();
+        $fileSlugs = self::fileSlugs();
 
         /** @var array<string, string> $localeOptions */
         $localeOptions = array_column($languages['languages'], 'display', 'code');
@@ -85,7 +86,7 @@ final class ArticlesTable
                     )),
                 TextColumn::make('source')
                     ->label(__('fin-codex::fin-codex.editor.columns.source'))
-                    ->state(fn (Article $record): string => isset(self::fileSlugs()[$record->slug]) ? 'both' : 'database')
+                    ->state(fn (Article $record): string => isset($fileSlugs[$record->slug]) ? 'both' : 'database')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => __("fin-codex::fin-codex.editor.source.{$state}"))
                     ->color(fn (string $state): string => $state === 'both' ? 'info' : 'gray'),
@@ -143,8 +144,8 @@ final class ArticlesTable
                         'database' => __('fin-codex::fin-codex.editor.source.database'),
                         'both' => __('fin-codex::fin-codex.editor.source.both'),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        $slugs = array_keys(self::fileSlugs());
+                    ->query(function (Builder $query, array $data) use ($fileSlugs): Builder {
+                        $slugs = array_keys($fileSlugs);
 
                         return match ($data['value'] ?? null) {
                             'both' => $query->whereIn('slug', $slugs),

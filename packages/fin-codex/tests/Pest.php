@@ -2,6 +2,7 @@
 
 use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\Coverage\SourceWarnings;
+use FinityLabs\FinCodex\Editor\ContextPicker;
 use FinityLabs\FinCodex\Help\ArticleLookup;
 use FinityLabs\FinCodex\Help\DeclaredContexts;
 use FinityLabs\FinCodex\Panel\CurrentPage;
@@ -45,6 +46,7 @@ function forgetHelpMemo(): void
     app()->forgetInstance(PageHelpResolver::class);
     app()->forgetInstance(CurrentPage::class);
     app()->forgetInstance(ArticleLookup::class);
+    app()->forgetInstance(ContextPicker::class);
     app()->forgetInstance(ContentSource::class);
     app()->forgetInstance(DeclaredContexts::class);
     app()->forgetInstance(ContextPanels::class);

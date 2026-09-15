@@ -8,6 +8,7 @@ use Filament\Forms\Components\Field;
 use FinityLabs\FinCodex\Ai\NotifyTranslationFinished;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\Coverage\SourceWarnings;
+use FinityLabs\FinCodex\Editor\ContextPicker;
 use FinityLabs\FinCodex\Forms\CodexHelp;
 use FinityLabs\FinCodex\Help\ArticleLookup;
 use FinityLabs\FinCodex\Help\DeclaredContexts;
@@ -65,7 +66,8 @@ class FinCodexServiceProvider extends PackageServiceProvider
      * ArticleLookup is scoped for the same reason as CurrentPage: one lookup
      * per request answers the title and the gate verdict for every field
      * hint on a page, so ten hints cost one ContentSource::all() and one
-     * viewer.
+     * viewer. ContextPicker is scoped so its per-panel row lists are built
+     * once per request rather than once per contexts-repeater row.
      *
      * CoverageReport is scoped because the coverage page and the navigation
      * badge that links to it must show the same number, and because that
@@ -96,6 +98,7 @@ class FinCodexServiceProvider extends PackageServiceProvider
 
         $this->app->scoped(CurrentPage::class);
         $this->app->scoped(ArticleLookup::class);
+        $this->app->scoped(ContextPicker::class);
         $this->app->scoped(CoverageReport::class);
         $this->app->scoped(SourceWarnings::class);
         $this->app->singleton(DeclaredContexts::class);

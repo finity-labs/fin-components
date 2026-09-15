@@ -315,7 +315,9 @@ class HelpCenter extends Page
                     // can hold.
                     Select::make('panelFilter')
                         ->label(__('fin-codex::fin-codex.help_center.panel_filter'))
-                        ->options($this->panelFilterOptions())
+                        // A closure, so the coverage report behind the options
+                        // is only built for the viewer who gets the select.
+                        ->options(fn (): array => $this->panelFilterOptions())
                         ->selectablePlaceholder(false)
                         ->native(false)
                         ->live()
