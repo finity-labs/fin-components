@@ -5,9 +5,11 @@ use FinityLabs\FinCodex\Pages\HelpCenter;
 use FinityLabs\FinCodex\Pages\HelpCoverage;
 use FinityLabs\FinCodex\Pages\HelpSettings;
 use FinityLabs\FinCodex\Resources\ArticleResource;
+use FinityLabs\FinCodex\Starter\StarterManifest;
 use FinityLabs\FinCodex\Tests\Fixtures\Commands\DecliningInstallCommand;
 use FinityLabs\FinCodex\Tests\Fixtures\Commands\ShieldStubInstallCommand;
 use FinityLabs\FinCodex\Tests\Fixtures\TempAppTree;
+use FinityLabs\LinCodex\Data\TranslationData;
 use FinityLabs\LinCodex\Enums\RevisionReason;
 use FinityLabs\LinCodex\Enums\Visibility;
 use FinityLabs\LinCodex\Models\Article;
@@ -18,7 +20,6 @@ use FinityLabs\LinCodex\Settings\CodexSettings;
 use FinityLabs\LinCodex\Sources\FilesystemSource;
 use FinityLabs\LinSupport\Locale\InstalledLocales;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
 
 /*
  * CLI-01, the install half.
@@ -380,17 +381,22 @@ it('imports the starter articles in the configured languages only, as database a
         ->and(config('lin-codex.sources.filesystem.paths'))->not->toContain(InstallCommand::starterDocsPath());
 });
 
+/**
+ * Teach the manifest one more text for one starter article, as if an earlier
+ * version had shipped it, for the rest of the test.
+ */
+function finCodexStarterManifestKnowing(string $slug, string $locale, string $title, ?string $excerpt, string $body): void
+{
+    $hash = StarterManifest::hash(new TranslationData($locale, $title, $excerpt, $body, null));
+
+    app()->instance(StarterManifest::class, (new StarterManifest)->with($slug, $locale, $hash));
+}
+
 it('refreshes a stale starter article on a repeated install and leaves an edited one alone', function () {
     TempAppTree::writePanelProvider('admin');
 
     finCodexRunCommand('fin-codex:install', ['--panel' => 'admin', '--locales' => 'en']);
     enableRevisions(true);
-
-    // The install was yesterday. Both stamps go back together, which is what
-    // the import leaves behind, and it puts the host's edit below a
-    // measurable distance later — the two columns hold whole seconds, so an
-    // edit made in the same second as the install would be unprovable.
-    ArticleTranslation::query()->update(['created_at' => now()->subDay(), 'updated_at' => now()->subDay()]);
 
     // The state an upgrade lands in, in one database: an article the host
     // has made their own, and an article nobody has touched since it was
@@ -399,14 +405,10 @@ it('refreshes a stale starter article on a repeated install and leaves an edited
 
     $stale = Article::query()->where('slug', 'help/writing-articles')->sole();
     $oldBody = "# Writing articles\n\nThe text an older version shipped.";
+    $row = $stale->translations()->where('locale', 'en')->sole();
 
-    ArticleTranslation::query()
-        ->where('article_id', $stale->id)
-        ->where('locale', 'en')
-        // updated_at is not fillable, and it has to go back to created_at:
-        // that pair is what says nothing has been written to the row since
-        // the import that created it.
-        ->update(['body' => $oldBody, 'updated_at' => DB::raw('created_at')]);
+    finCodexStarterManifestKnowing('help/writing-articles', 'en', $row->title, $row->excerpt, $oldBody);
+    $stale->translations()->where('locale', 'en')->update(['body' => $oldBody]);
 
     $before = [$stale->is_published, $stale->visibility, $stale->sort_order, $stale->contexts()->orderBy('id')->pluck('key')->all()];
 
@@ -431,6 +433,48 @@ it('refreshes a stale starter article on a repeated install and leaves an edited
         // A docs refresh moves the text and nothing else: not where the
         // article appears, not whether it appears, not in what order.
         ->and($after)->toBe($before);
+});
+
+it('refreshes the same article again on the next docs change, whatever its timestamps say', function () {
+    TempAppTree::writePanelProvider('admin');
+
+    finCodexRunCommand('fin-codex:install', ['--panel' => 'admin', '--locales' => 'en']);
+
+    $article = Article::query()->where('slug', 'help/coverage')->sole();
+    $row = $article->translations()->where('locale', 'en')->sole();
+
+    // Two docs versions in a row. Each older text is one the manifest knows,
+    // and every refresh moves updated_at past created_at — which is exactly
+    // the state a timestamp rule would have mistaken for a host edit.
+    foreach (['The 0.4 text.', 'The 0.5 text.'] as $older) {
+        finCodexStarterManifestKnowing('help/coverage', 'en', $row->title, $row->excerpt, $older);
+        $article->translations()->where('locale', 'en')->update(['body' => $older, 'updated_at' => now()->addMinute()]);
+
+        [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin', '--locales' => 'en']);
+
+        expect($exitCode)->toBe(0)
+            ->and($output)->toContain('  Starter articles refreshed in en: help/coverage'.PHP_EOL)
+            ->and($output)->not->toContain('you have edited')
+            ->and($article->translations()->where('locale', 'en')->value('body'))->toBe(finCodexShippedBody('help/coverage', 'en'));
+    }
+});
+
+it('never touches a host article that only shares a starter slug', function () {
+    TempAppTree::writePanelProvider('admin');
+
+    // Written in the editor before the plugin was ever installed: saved once,
+    // so its timestamps look exactly like an import's.
+    $own = Article::factory()->withTranslation('en', ['title' => 'Our own help index', 'body' => 'Written here.'])->create(['slug' => 'help']);
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin', '--locales' => 'en,de']);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('  Starter articles you have edited, left as they are: help (en)'.PHP_EOL)
+        ->and($output)->not->toContain('refreshed in en: help,')
+        ->and($own->translations()->where('locale', 'en')->value('body'))->toBe('Written here.')
+        // No German is written beside an article that is not ours.
+        ->and($own->translations()->where('locale', 'de')->exists())->toBeFalse()
+        ->and(Article::query()->where('slug', 'help/coverage')->sole()->translations()->where('locale', 'de')->exists())->toBeTrue();
 });
 
 it('fills in a language configured after the install', function () {
