@@ -109,7 +109,7 @@ class HelpCoverage extends Page implements HasTable
      * Read eagerly when the navigation item is built (Filament passes a VALUE,
      * not a closure), which is once per panel page render, so the report's
      * request memo is what keeps this at one reading of the content source.
-     * Null at zero, the Phase 3 help-button rule.
+     * Null at zero, the same rule as the help button's badge.
      */
     public static function getNavigationBadge(): ?string
     {

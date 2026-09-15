@@ -168,7 +168,7 @@ class HelpDrawer extends CoreHelpDrawer implements HasActions, HasSchemas
      * their place on the way to the page, and falls back to the center's
      * root only when there is no article to carry. It stays an absolute URL:
      * the relative form matches the panel's own SPA exception pattern, which
-     * would quietly turn the footer into a full page load (PLACE-02).
+     * would quietly turn the footer into a full page load.
      *
      * Three reasons to withhold it, and the whole Actions group goes rather
      * than the Action alone, so no empty wrapper is left behind. The URL is
@@ -176,7 +176,7 @@ class HelpDrawer extends CoreHelpDrawer implements HasActions, HasSchemas
      * before its tenant is known — and an action with a null URL still
      * renders an anchor, with an empty href. A simple-layout page is a guest
      * page, and the Help Center now lives inside the panel, behind the very
-     * login the guest is looking at (PLACE-03). And a viewer the page's own
+     * login the guest is looking at. And a viewer the page's own
      * gate refuses is never offered the link, only to meet a 403 behind it.
      *
      * The page class comes from $this->page, the locked memo the core

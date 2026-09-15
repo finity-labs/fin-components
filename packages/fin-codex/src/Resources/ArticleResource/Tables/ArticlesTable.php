@@ -41,8 +41,8 @@ use Illuminate\Database\Eloquent\Builder;
  * the `MissingTranslations` service (whose `candidates()` reads the languages
  * once per instance, so one instance serves the whole render the way
  * `OutdatedTranslations` does) and the AI availability bool
- * (`AiAvailabilityCheck::available()` is a settings load, and Phase 10's rule
- * is one load per build, handed down as a bool). The translations themselves
+ * (`AiAvailabilityCheck::available()` is a settings load, and the rule is
+ * one load per build, handed down as a bool). The translations themselves
  * come from `with('translations')`, so the flags column and the Translate
  * missing gates cost no query at all. The file slugs are the one per-row
  * lookup; `FilesystemSource` is a singleton that memoises its scan by path

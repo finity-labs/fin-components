@@ -40,8 +40,8 @@ use Throwable;
  * getPages(), so they reach the class list through the panel's auth route
  * actions instead, and only when the row is on "any panel" — a context that
  * names both a panel and an auth class resolves to nothing and would hide the
- * article in every panel. This is not in tension with the Phase 14 rows that
- * pin ContextPanels::forClass() to an empty list for those classes: that class
+ * article in every panel. This is not in tension with ContextPanels::forClass()
+ * answering an empty list for those classes: that class
  * is untouched and still answers the same, it is only asked which panel files
  * a screen, never which classes a panel offers.
  *
