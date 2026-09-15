@@ -534,16 +534,26 @@ it('attaches the starter articles to their pages whatever the default language i
         ->and(Article::query()->where('slug', 'help/help-in-code')->sole()->sort_order)->toBe(6);
 });
 
-it('stamps the installed panel onto the starter articles\' pages, and leaves them panel-less without one', function () {
+it('stamps the installed panel onto the help section only, and leaves everything panel-less without one', function () {
     TempAppTree::writePanelProvider('admin');
     TempAppTree::writePanelProvider('staff');
 
     finCodexRunCommand('fin-codex:install', ['--panel' => 'staff', '--locales' => 'en']);
 
-    $panels = ArticleContext::query()->pluck('panel_id')->unique()->all();
+    $panelOf = fn (string $slug): array => ArticleContext::query()
+        ->whereIn('article_id', Article::query()->where('slug', $slug)->pluck('id'))
+        ->pluck('panel_id')->unique()->all();
 
     expect(Article::query()->count())->toBe(12)
-        ->and($panels)->toBe(['staff'])
+        // The editor's manual is the staff panel's.
+        ->and($panelOf('help'))->toBe(['staff'])
+        ->and($panelOf('help/writing-articles'))->toBe(['staff'])
+        // The account section is bound to Filament's own auth pages, which
+        // every panel serves: it stays on any panel so the admin panel's login
+        // page gets the sign-in article too.
+        ->and($panelOf('account'))->toBe([])
+        ->and($panelOf('account/signing-in'))->toBe([null])
+        ->and($panelOf('account/your-profile'))->toBe([null])
         // The guest pages' articles are public, so a visitor to the staff login sees them.
         ->and(Article::query()->where('slug', 'account/signing-in')->sole()->visibility)->toBe(Visibility::Public);
 

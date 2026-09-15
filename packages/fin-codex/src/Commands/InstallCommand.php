@@ -360,8 +360,10 @@ class InstallCommand extends Command
      * "account" section — public because the core hides an article whose
      * ancestor the viewer may not read, so a guest on the sign-in page only
      * sees an article whose whole path is public. Each carries the context
-     * of the page it describes and the panel it was installed on, so those
-     * pages have help from the first day.
+     * of the page it describes; the help section also carries the panel it
+     * was installed on, while the account section is left on any panel so
+     * every panel's login page gets it. Those pages have help from the first
+     * day.
      *
      * Only the configured languages are kept, and only when at least one of
      * them is a language the articles exist in — an install in French alone
@@ -433,13 +435,21 @@ class InstallCommand extends Command
             ArticleTranslation::query()->whereIn('article_id', $imported)->whereNotIn('locale', $locales)->delete();
             Article::query()->whereIn('id', $imported)->update(['source_path' => null]);
 
-            // The articles describe this panel's screens, so they belong to
-            // this panel: a second panel carrying the plugin — a customer
-            // portal, say — must not offer its users the editor's manual.
-            // Without a registered panel they stay "any panel"; an admin
-            // widens or narrows a context in the editor either way.
+            // The help section describes this panel's editor, so it belongs
+            // to this panel: a second panel carrying the plugin — a customer
+            // portal, say — must not offer its users the editor's manual. The
+            // account section stays "any panel" on purpose: it is bound to
+            // Filament's own sign-in, register, password and profile pages,
+            // which every panel serves and no panel registers, and naming
+            // one panel would hide it on every other panel's login page.
+            // Without a registered panel everything stays "any panel"; an
+            // admin widens or narrows a context in the editor either way.
             if ($this->panelId !== null) {
-                ArticleContext::query()->whereIn('article_id', $imported)->whereNull('panel_id')->update(['panel_id' => $this->panelId]);
+                $helpSection = Article::query()->whereIn('id', $imported)->where(function ($query): void {
+                    $query->where('slug', 'help')->orWhere('slug', 'like', 'help/%');
+                })->pluck('id');
+
+                ArticleContext::query()->whereIn('article_id', $helpSection)->whereNull('panel_id')->update(['panel_id' => $this->panelId]);
             }
         }
 
