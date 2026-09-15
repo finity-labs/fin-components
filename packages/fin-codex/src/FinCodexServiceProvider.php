@@ -138,22 +138,29 @@ class FinCodexServiceProvider extends PackageServiceProvider
      * A write to an article, a translation or a context drops the decorated
      * source's request memo, so a save earlier in the same request is visible
      * to the next read, which is the guarantee the core's DatabaseSource gives
-     * by never memoising. Only a source that has already been resolved is
-     * touched: resolving it from inside a model event during a migration or a
-     * seeder would be the wrong moment.
+     * by never memoising. The coverage report and the source warnings memoise
+     * one reading of that source per request and are dropped with it, so the
+     * coverage page's attach and import see their own write in the render they
+     * trigger. Only an instance that has already been resolved is touched:
+     * resolving one from inside a model event during a migration or a seeder
+     * would be the wrong moment.
      */
     protected function forgetSourceMemoOnWrite(): void
     {
         $forget = function (): void {
-            if (! $this->app->resolved(ContentSource::class)) {
-                return;
+            if ($this->app->resolved(ContentSource::class)) {
+                $source = $this->app->make(ContentSource::class);
+
+                // A host may rebind the source without the decorator, so the check stays.
+                if ($source instanceof DeclaredContextsSource) { // @phpstan-ignore instanceof.alwaysTrue
+                    $source->forget();
+                }
             }
 
-            $source = $this->app->make(ContentSource::class);
-
-            // A host may rebind the source without the decorator, so the check stays.
-            if ($source instanceof DeclaredContextsSource) { // @phpstan-ignore instanceof.alwaysTrue
-                $source->forget();
+            foreach ([CoverageReport::class, SourceWarnings::class] as $memo) {
+                if ($this->app->resolved($memo)) {
+                    $this->app->make($memo)->forget();
+                }
             }
         };
 

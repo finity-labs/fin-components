@@ -95,6 +95,12 @@ final class CoverageReport
         return $this->memo;
     }
 
+    /** Drop the memo, so the next read sees a write made earlier in this request. */
+    public function forget(): void
+    {
+        $this->memo = null;
+    }
+
     /** Uncovered rows of one panel — the badge number, and the default view's count. */
     public function uncovered(?string $panelId): int
     {

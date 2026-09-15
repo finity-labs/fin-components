@@ -386,8 +386,9 @@ class HelpCoverage extends Page implements HasTable
      * told; a wider or overlapping context is a legitimate thing to have and
      * is appended without comment.
      *
-     * The admin stays on the page. The report memoises one reading of the
-     * content source per request, so the row goes green on the next render.
+     * The admin stays on the page. The report's request memo is dropped by
+     * the write itself (the provider's model hooks), so the row goes green in
+     * the render this action triggers.
      *
      * The ability is asked twice, about two different things, and both halves
      * are needed. The button asks `create` at class level, because until this
