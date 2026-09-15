@@ -33,7 +33,7 @@ In-app help for Filament panels. Codex puts a help drawer in the topbar, shows a
 - PHP 8.2+
 - Laravel 11, 12 or 13
 - Filament 4 or 5
-- [`finity-labs/lin-codex`](https://github.com/finity-labs/lin-codex) ^0.3.1
+- [`finity-labs/lin-codex`](https://github.com/finity-labs/lin-codex) ^0.4.2
 - Optional, for AI translation: PHP 8.3+, Laravel 12+ and [`laravel/ai`](https://github.com/laravel/ai) ^0.11 — lin-codex's suggested SDK, documented in [its README](https://github.com/finity-labs/lin-codex#ai-translation)
 
 Codex is split across two packages, and it matters for where you configure things. **lin-codex** owns the content: the `codex_*` tables, the Markdown renderer, the filesystem source, visibility rules, search, translations and the JSON API. It ships its own config file, its own install command and its own Blade drawer, and it works in any Laravel app with no Filament at all.
@@ -70,7 +70,7 @@ The install command:
 
 It never publishes or migrates anything belonging to lin-codex. That is `codex:install`'s job, and running it twice is safe.
 
-Pass `--force` to overwrite already-published files, and `--no-interaction` to take every default (the first panel it finds, the installed locales, the starter articles, no publishing, Shield wiring on if the config is there, no AI step). `--ai` answers the AI question with yes, and `--ai-only` runs that one step and nothing else — which is what you want on an install that's already done.
+Pass `--force` to overwrite already-published files, and `--no-interaction` to take every default (the public help center switched off, the first panel it finds, the installed locales, the starter articles, no publishing, Shield wiring on if the config is there, no AI step). `--ai` answers the AI question with yes, and `--ai-only` runs that one step and nothing else — which is what you want on an install that's already done.
 
 ### Register the plugin by hand
 
@@ -122,6 +122,8 @@ FinCodexPlugin::make()
     ->settingsPage(MyHelpSettings::class)
     ->coveragePage(MyHelpCoverage::class)
     ->helpCenterPage(MyHelpCenter::class)
+    ->documentTypes(['application/pdf'])          // MIME types the Media tab's upload accepts
+    ->documentMaxSize(20480)                       // its ceiling, in kilobytes
 ```
 
 | Method | Default | What it does |
@@ -145,6 +147,8 @@ FinCodexPlugin::make()
 | `settingsPage(class-string)` | built-in | Swap in a subclass of `FinityLabs\FinCodex\Pages\HelpSettings`. |
 | `coveragePage(class-string)` | built-in | Swap in a subclass of `FinityLabs\FinCodex\Pages\HelpCoverage`. |
 | `helpCenterPage(class-string)` | built-in | Swap in a subclass of `FinityLabs\FinCodex\Pages\HelpCenter`. Registered on every panel, `->authoring(false)` included. |
+| `documentTypes(list<string>\|Closure)` | PDF, Word, Excel, PowerPoint, plain text, CSV | The MIME types the Media tab's **Upload file** accepts. The body editor's image drop zone is unaffected. See [Media](#media). |
+| `documentMaxSize(int\|Closure)` | `10240` | The largest document the Media tab accepts, in kilobytes. |
 
 > **The four class overrides must name a real subclass of ours.** Filament calls `registerRoutes()` and `registerNavigationItems()` statically on whatever string you pass at panel registration time, so a typo or a class that doesn't extend the built-in one is a fatal error on the next request, not a quietly ignored option. Keep the built-in slug (or override `getPages()` too) so the internal links keep resolving.
 
@@ -176,7 +180,7 @@ Register the plugin in a second panel and that panel gets everything: the button
 ->plugin(FinCodexPlugin::make()->authoring(false))
 ```
 
-The management panel keeps the button, the drawer, its shortcut, field hints, global search if it asked for it, the panel scope and its own help center. What it no longer has is the three admin screens: `/management/help-articles` is not a route there, and nothing files under a Help group in its navigation. Articles, media, revisions and Shield abilities are untouched — one knowledge base, edited from one place.
+The management panel keeps the button, the drawer, its shortcut, field hints, global search if it asked for it, the panel scope and its own help center. What it no longer has is the three admin screens: `/management/codex-articles` is not a route there, and nothing files under a Help group in its navigation. Articles, media, revisions and Shield abilities are untouched — one knowledge base, edited from one place.
 
 Two things stay true with authoring off. Articles still scope per panel, so an article written for `management` shows up in that panel's drawer even though the editor lives in `admin` (see [Contexts](#contexts)). And Help coverage still scans every panel, so a management screen without an article is still a gap on the report — a cleaner one, since the panel's own Help screens no longer count themselves.
 
@@ -300,7 +304,7 @@ FinCodexPlugin::make()
     ->helpCenterNavigationIcon('heroicon-o-academic-cap')
 ```
 
-`UserMenu`, the default, puts a **Help center** entry at the top of the user menu. `Navigation` files an item in the panel's navigation instead, `Both` does both, and `None` neither. The page is registered and reachable under all four: `{panel}/help` answers, and the drawer's footer link, the field hints, the global-search rows and a bookmark all still open it.
+`UserMenu`, the default, puts a **Help center** entry in the user menu, directly after **Profile**. `Navigation` files an item in the panel's navigation instead, `Both` does both, and `None` neither. The page is registered and reachable under all four: `{panel}/help` answers, and the drawer's footer link, the field hints, the global-search rows and a bookmark all still open it.
 
 Three things follow from that:
 
@@ -667,7 +671,7 @@ php artisan fin-codex:uninstall
 composer remove finity-labs/fin-codex
 ```
 
-It removes `FinCodexPlugin::make()` from every panel provider that carries it, drops the article resource from the Shield config, deletes the Shield permission rows, and offers to delete the published views and translations.
+It removes `FinCodexPlugin::make()` from every panel provider that carries it, drops the article resource from the Shield config, deletes the Shield permission rows, offers to delete the published views and translations, and offers to switch lin-codex's public help center back on at `/help`, since the Help Center page inside the panel goes with the plugin.
 
 **It does not touch your content.** Articles, translations, contexts, revisions, media files, the Codex settings and the AI translation settings all belong to lin-codex and survive removing the Filament layer. If you want those gone too:
 
