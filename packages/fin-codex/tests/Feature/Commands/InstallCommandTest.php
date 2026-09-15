@@ -268,6 +268,23 @@ it('adds no note when shield skipped nothing', function () {
         ->and($output)->not->toContain('fin-codex registers its own');
 });
 
+it('names the article resource when it asks Shield to generate', function () {
+    TempAppTree::writePanelProvider('admin');
+    TempAppTree::writeShieldConfig();
+
+    finCodexShieldStubInstall(0, '');
+
+    [$exitCode] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    // Shield 4 generates nothing for a run that names no entity: each of its
+    // generators is gated on --resource, --page, --widget or --all, and the
+    // bare run exits 0 with an empty summary, which used to pass for success.
+    expect($exitCode)->toBe(0)
+        ->and(ShieldStubInstallCommand::$shieldArgs)->toContain('--resource=ArticleResource')
+        ->and(ShieldStubInstallCommand::$shieldArgs)->toContain('--option=policies_and_permissions')
+        ->and(ShieldStubInstallCommand::$shieldArgs)->toContain('--panel=admin');
+});
+
 it('prints the output of a failed run and still falls back to the manual command', function () {
     TempAppTree::writePanelProvider('admin');
     TempAppTree::writeShieldConfig();
@@ -279,7 +296,7 @@ it('prints the output of a failed run and still falls back to the manual command
     expect($exitCode)->toBe(0)
         ->and($output)->toContain('SQLSTATE[42S02]')
         ->and($output)->toContain('Could not generate the Shield permissions automatically')
-        ->and($output)->toContain('php artisan shield:generate --panel=admin --option=policies_and_permissions')
+        ->and($output)->toContain('php artisan shield:generate --panel=admin --resource=ArticleResource --option=policies_and_permissions')
         // A run that failed configured nothing, so the next step that sends the
         // user to Shield's role screen is not offered.
         ->and($output)->not->toContain('Assign permissions');

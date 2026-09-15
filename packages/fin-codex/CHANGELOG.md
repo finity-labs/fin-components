@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `fin-codex:install` asks Shield to generate the article resource by name. Shield 4 generates nothing for a `shield:generate` run that names no entity — each of its generators is gated on `--resource`, `--page`, `--widget` or `--all` — and the bare run exited 0 with an empty summary, which the installer reported as "Shield permissions and policies generated". The run now passes `--resource=ArticleResource`, and so do the two manual commands printed when Shield is absent or the run fails. A host that installed under an earlier release has the resource in `config/filament-shield.php` already and only needs one `php artisan shield:generate --resource=ArticleResource --option=policies_and_permissions --ignore-existing-policies` to catch up
+
 ## [0.5.1] - 2026-09-14
 
 ### Fixed

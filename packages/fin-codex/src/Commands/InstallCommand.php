@@ -710,7 +710,7 @@ class InstallCommand extends Command
 
         if (! $this->hasCommand('shield:generate')) {
             $this->components->warn('shield:generate is not available. Run it yourself once Shield is installed:');
-            $this->line("  php artisan shield:generate{$panelFlag} --option=policies_and_permissions --ignore-existing-policies");
+            $this->line("  php artisan shield:generate{$panelFlag} --resource=ArticleResource --option=policies_and_permissions --ignore-existing-policies");
             $this->line("  php artisan shield:generate{$panelFlag} --page=HelpSettings,HelpCoverage,HelpCenter");
 
             return;
@@ -718,8 +718,13 @@ class InstallCommand extends Command
 
         $this->comment('Generating Shield permissions and policies for the Codex article resource...');
 
+        // Shield 4 generates nothing unless it is told what for: every one of
+        // its generators is gated on --resource, --page, --widget or --all, and
+        // a run that names none exits 0 with an empty summary. Naming the
+        // resource is what makes this run produce the article permissions.
         $args = [
             PHP_BINARY, 'artisan', 'shield:generate',
+            '--resource=ArticleResource',
             '--option=policies_and_permissions',
             '--ignore-existing-policies',
             '--no-interaction',
@@ -742,7 +747,7 @@ class InstallCommand extends Command
             }
         } else {
             $this->components->warn('Could not generate the Shield permissions automatically. Run manually:');
-            $this->line("  php artisan shield:generate{$panelFlag} --option=policies_and_permissions --ignore-existing-policies");
+            $this->line("  php artisan shield:generate{$panelFlag} --resource=ArticleResource --option=policies_and_permissions --ignore-existing-policies");
         }
 
         // Pages are discovered, not configured, so they are a separate run. The
