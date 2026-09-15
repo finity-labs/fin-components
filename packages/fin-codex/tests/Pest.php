@@ -1,5 +1,6 @@
 <?php
 
+use Filament\Support\View\ViewManager;
 use FinityLabs\FinCodex\Coverage\CoverageReport;
 use FinityLabs\FinCodex\Coverage\SourceWarnings;
 use FinityLabs\FinCodex\Editor\ContextPicker;
@@ -12,6 +13,8 @@ use FinityLabs\FinCodex\Tests\Fixtures\FakeAiClient;
 use FinityLabs\FinCodex\Tests\Fixtures\User;
 use FinityLabs\FinCodex\Tests\TestCase;
 use FinityLabs\LinCodex\Ai\Contracts\AiClient;
+use FinityLabs\LinCodex\Auth\ArticleGate;
+use FinityLabs\LinCodex\Auth\Viewer;
 use FinityLabs\LinCodex\Contracts\ContentSource;
 use FinityLabs\LinCodex\Settings\CodexAiSettings;
 use FinityLabs\LinCodex\Settings\CodexSettings;
@@ -203,4 +206,41 @@ function finCodexButtonTag(string $html, string $panel): string
     $close = (int) strpos($html, '>', $open);
 
     return substr($html, $open, $close - $open + 1);
+}
+
+/**
+ * A fixture user. firstOrCreate, so a test that mounts a page more than once
+ * with the same address does not trip the unique index.
+ */
+function finCodexUser(string $email = 'user@example.com', string $name = 'User'): User
+{
+    return User::firstOrCreate(['email' => $email], ['name' => $name]);
+}
+
+/**
+ * Every slug the core's own gate lets this viewer read, sorted: the one
+ * question every panel-scope test asks, from whichever surface.
+ *
+ * @return list<string>
+ */
+function finCodexSeenSlugs(Viewer $viewer): array
+{
+    $seen = array_keys(app(ArticleGate::class)->filter(app(ContentSource::class)->all(), $viewer));
+
+    sort($seen);
+
+    return $seen;
+}
+
+/**
+ * The SPA URL exception list, which Filament's view manager keeps private and
+ * exposes only through hasSpaMode(). The one place the suite reaches into a
+ * Filament private, and only for the rows that must count entries rather than
+ * ask whether one matches: repeated boots must not grow the list.
+ *
+ * @return list<string>
+ */
+function finCodexSpaExceptions(ViewManager $view): array
+{
+    return array_values((new ReflectionProperty($view, 'spaModeUrlExceptions'))->getValue($view));
 }
