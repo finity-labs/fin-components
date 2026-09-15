@@ -394,7 +394,12 @@ class HelpCenter extends Page
     {
         $filter = $this->panelFilter;
 
-        if ($filter === null || $filter === self::ALL_PANELS) {
+        // The grant is asked again here, not only where the select is drawn: a
+        // public Livewire property can be set from the browser whether or not
+        // the field for it rendered, and the preview seam answers before the
+        // grant, so without this a reader could ask for another panel's tree
+        // and hits by hand. Without the grant the normal rule is the answer.
+        if ($filter === null || $filter === self::ALL_PANELS || ! $this->showsPanelFilter()) {
             return $callback();
         }
 

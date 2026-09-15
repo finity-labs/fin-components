@@ -192,6 +192,20 @@ it('shows no filter at all to a viewer the host policy grants nothing', function
         ->and($html)->not->toContain((string) __('fin-codex::fin-codex.help_center.all_panels'));
 });
 
+it('answers by the normal rule to a viewer without the grant who sets the filter by hand', function (): void {
+    finCodexHelpFilterSeed();
+
+    // No select rendered, but the property is public: this is $wire.set from
+    // the browser console. Tree and hits must stay the admin panel's own.
+    $page = finCodexHelpFilterPage(granted: false)->set('panelFilter', 'staff')->set('query', 'documents');
+    $rail = finCodexHelpFilterRailHtml($page->html());
+
+    expect($rail)->toContain('data-fin-codex-help-node="admin-guide"')
+        ->toContain('data-fin-codex-help-hit="admin-guide"')
+        ->not->toContain('data-fin-codex-help-node="staff-guide"')
+        ->not->toContain('data-fin-codex-help-hit="staff-guide"');
+});
+
 it('shows the filter above the search field and the tab strip to a viewer granted viewAllPanels', function (): void {
     finCodexHelpFilterSeed();
 
