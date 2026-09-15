@@ -46,6 +46,8 @@ use Symfony\Component\Mime\MimeTypes;
  */
 final class MediaRecorder
 {
+    public function __construct(private readonly MediaReferences $references) {}
+
     /**
      * Store one upload and record it, returning the stored path.
      *
@@ -155,7 +157,7 @@ final class MediaRecorder
         $linked = 0;
 
         foreach (Media::query()->whereNull('article_id')->get() as $media) {
-            $url = $this->url($media);
+            $url = $this->references->urlFor($media);
 
             if ($url === null) {
                 continue;
@@ -174,19 +176,6 @@ final class MediaRecorder
         }
 
         return $linked;
-    }
-
-    /**
-     * The public URL of one stored file, or null when its disk cannot build
-     * one: a row left behind by a disk that has since been removed from the
-     * host's config must not turn every article save into a 500.
-     */
-    private function url(Media $media): ?string
-    {
-        /** @var string|null $url */
-        $url = rescue(fn (): string => Storage::disk($media->disk)->url($media->path), null, report: false);
-
-        return ($url === null || $url === '') ? null : $url;
     }
 
     private function disk(): string

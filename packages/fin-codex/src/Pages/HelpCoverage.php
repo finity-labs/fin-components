@@ -26,19 +26,17 @@ use FinityLabs\FinCodex\Editor\ArticlePicker;
 use FinityLabs\FinCodex\Editor\ArticlePickerTable;
 use FinityLabs\FinCodex\Editor\ArticleTitle;
 use FinityLabs\FinCodex\Editor\ArticleWriter;
+use FinityLabs\FinCodex\Editor\Concerns\ImportsFileArticle;
 use FinityLabs\FinCodex\Editor\ContextPicker;
-use FinityLabs\FinCodex\Editor\FileArticleAdopter;
 use FinityLabs\FinCodex\FinCodexPlugin;
 use FinityLabs\FinCodex\Resources\ArticleResource;
 use FinityLabs\FinModalTableSelect\Components\ModalTableSelect;
 use FinityLabs\FinSupport\Pages\Concerns\HasPageShieldSupport;
-use FinityLabs\FinSupport\Panel\Concerns\ResolvesPanelUser;
 use FinityLabs\LinCodex\Enums\ContextType;
 use FinityLabs\LinCodex\Models\Article;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
-use RuntimeException;
 use UnitEnum;
 
 /**
@@ -72,8 +70,8 @@ use UnitEnum;
 class HelpCoverage extends Page implements HasTable
 {
     use HasPageShieldSupport;
+    use ImportsFileArticle;
     use InteractsWithTable;
-    use ResolvesPanelUser;
 
     protected static ?string $slug = 'codex-coverage';
 
@@ -246,7 +244,7 @@ class HelpCoverage extends Page implements HasTable
                     ->label(__('fin-codex::fin-codex.coverage.actions.import'))
                     ->icon(Heroicon::OutlinedArrowDownTray)
                     ->visible(fn (array $record): bool => $record['covered'] && $record['file_only'] && ! $record['declared'])
-                    ->action(fn (array $record) => $this->import((string) $record['slug'])),
+                    ->action(fn (array $record) => $this->importFileArticle((string) $record['slug'])),
             ])
             ->filters([
                 TernaryFilter::make('covered')
@@ -437,36 +435,6 @@ class HelpCoverage extends Page implements HasTable
     }
 
     /**
-     * Import the file article covering this screen and open it, mirroring the
-     * files tab's own action: the notification is persistent and sent before
-     * the redirect, because Notification::send() pushes it into the session
-     * where the edit page picks it up.
-     */
-    private function import(string $slug): void
-    {
-        try {
-            $article = app(FileArticleAdopter::class)->adopt($slug, $this->userId());
-        } catch (RuntimeException $e) {
-            Notification::make()
-                ->danger()
-                ->title(__('fin-codex::fin-codex.editor.imported.failed'))
-                ->body($e->getMessage())
-                ->send();
-
-            return;
-        }
-
-        Notification::make()
-            ->warning()
-            ->persistent()
-            ->title(__('fin-codex::fin-codex.editor.imported.title'))
-            ->body(__('fin-codex::fin-codex.editor.imported.body', ['path' => (string) $article->source_path]))
-            ->send();
-
-        $this->redirect($this->articleResource()::getUrl('edit', ['record' => $article]));
-    }
-
-    /**
      * Null for an uncovered row, for a row covered by a declaration in code
      * (there is nothing to open) and for a file article that has no database
      * row yet (the import action is what that row offers).
@@ -478,23 +446,6 @@ class HelpCoverage extends Page implements HasTable
         return $record['covered'] && ! $record['declared'] && $record['article_id'] !== null
             ? $this->articleResource()::getUrl('edit', ['record' => $record['article_id']])
             : null;
-    }
-
-    /**
-     * The resource the current panel registered, so a host's
-     * articleResource() override builds both URLs.
-     *
-     * @return class-string<ArticleResource>
-     */
-    private function articleResource(): string
-    {
-        return FinCodexPlugin::articleResourceClass();
-    }
-
-    /** The panel user's id, the attribution of the attach and the import. */
-    private function userId(): int|string|null
-    {
-        return $this->panelUserId();
     }
 
     /**
