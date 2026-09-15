@@ -654,6 +654,34 @@ it('declines a core config it does not recognise instead of guessing at it', fun
         ->and((string) file_get_contents($path))->toBe($before);
 });
 
+it('declines a value it cannot read, such as an env() call, rather than cutting it at a comma', function () {
+    TempAppTree::writePanelProvider('admin');
+
+    $path = TempAppTree::linCodexConfigPath();
+    file_put_contents($path, str_replace('{{help_center}}', "env('CODEX_HELP_CENTER', '/help')", TempAppTree::LIN_CODEX_CONFIG));
+    config(['lin-codex.routes.help_center' => '/help']);
+
+    $before = (string) file_get_contents($path);
+
+    [$exitCode, $output] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('Could not edit config/lin-codex.php')
+        ->and((string) file_get_contents($path))->toBe($before);
+});
+
+it('rewrites a quoted prefix that itself holds a comma', function () {
+    TempAppTree::writePanelProvider('admin');
+    $path = TempAppTree::writeLinCodexConfig('/help,desk');
+    config(['lin-codex.routes.help_center' => '/help,desk']);
+
+    [$exitCode] = finCodexRunCommand('fin-codex:install', ['--panel' => 'admin']);
+
+    expect($exitCode)->toBe(0)
+        ->and((string) file_get_contents($path))->toContain("'help_center' => null,")
+        ->and((string) file_get_contents($path))->not->toContain('desk');
+});
+
 it('leaves the core config byte for byte when the switch is declined', function () {
     TempAppTree::writePanelProvider('admin');
     $path = TempAppTree::writeLinCodexConfig('/help');
