@@ -35,6 +35,41 @@ jobs:
         working-directory: packages/${{ matrix.package }}
         run: vendor/bin/pest
 
+  lowest:
+    name: ${{ matrix.package }} | PHP 8.2 / lowest deps
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # Catches constraint drift: code that needs newer dependencies than the
+      # composer.json floor admits. The filament job always resolves the newest
+      # matching versions, so a floor can rot unnoticed — standaloneRecords()
+      # needed Filament 4.12 while the constraint still said ^4.0 (mirror PR #1).
+      matrix:
+        package: [fin-avatar, fin-codex, fin-mail, fin-modal-table-select, fin-sentinel, fin-support]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Install lowest dependencies
+        working-directory: packages/${{ matrix.package }}
+        # block-insecure (default on since Composer 2.9) hides advisory-affected
+        # releases from the resolver, which silently lifts the floor — Filament
+        # <4.12.6 is all blocked. Users without blocking still get the declared
+        # floor, so that's what this leg has to install.
+        run: |
+          composer config audit.block-insecure false
+          composer update --no-interaction --prefer-dist --prefer-lowest --prefer-stable --no-progress
+          composer show | grep -E '^(filament/filament|livewire/livewire|laravel/framework) '
+
+      - name: Run tests
+        working-directory: packages/${{ matrix.package }}
+        run: vendor/bin/pest
+
   laravel:
     name: ${{ matrix.package }} | PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}${{ matrix.database && format(' / {0}', matrix.database) || '' }}${{ matrix.sdk && ' / +sdk' || '' }}
     runs-on: ubuntu-latest
