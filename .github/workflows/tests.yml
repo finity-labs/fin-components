@@ -45,7 +45,7 @@ jobs:
       # matching versions, so a floor can rot unnoticed — standaloneRecords()
       # needed Filament 4.12 while the constraint still said ^4.0 (mirror PR #1).
       matrix:
-        package: [fin-avatar, fin-codex, fin-mail, fin-modal-table-select, fin-sentinel, fin-support]
+        package: [fin-avatar, fin-codex, fin-mail, fin-modal-table-select, fin-sentinel, fin-support, lin-codex]
     steps:
       - uses: actions/checkout@v4
 
