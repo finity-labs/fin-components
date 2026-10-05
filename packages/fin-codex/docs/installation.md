@@ -6,7 +6,7 @@ Everything about getting Codex into a panel, and out again: requirements, the tw
 
 - PHP 8.2+
 - Laravel 11, 12 or 13
-- Filament 4 or 5
+- Filament 4.12.6 or newer, or Filament 5
 - [`finity-labs/lin-codex`](https://github.com/finity-labs/lin-codex) ^0.4.3
 - Optional, for AI translation: PHP 8.3+, Laravel 12+ and [`laravel/ai`](https://github.com/laravel/ai) ^0.11 — lin-codex's suggested SDK, documented in [its README](https://github.com/finity-labs/lin-codex#ai-translation)
 
