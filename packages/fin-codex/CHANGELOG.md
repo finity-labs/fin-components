@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-10-06
+
 ### Changed
 
 - Requires Filament 4.12.6 or newer on the 4.x line where 4.0 was enough. Filament's `fillForm()` test helper, which every action test with `data:` goes through, left stale list entries behind until 4.12.6 (filamentphp/filament#20318), so a `CheckboxList` with a default could not be narrowed in a test. 4.12.6 is also the first 4.x release without the open multi-factor advisories, and the version Composer's default advisory blocking already refuses to install below, so for a host on current Composer nothing changes. The 5.x constraint is unchanged
