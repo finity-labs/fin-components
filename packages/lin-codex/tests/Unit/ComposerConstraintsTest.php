@@ -18,7 +18,7 @@ it('pins the locked runtime constraint for :dataset', function (string $package,
     'illuminate/contracts' => ['illuminate/contracts', '^11.0|^12.0|^13.0'],
     'league/commonmark' => ['league/commonmark', '^2.10'],
     'spatie/laravel-package-tools' => ['spatie/laravel-package-tools', '^1.92'],
-    'spatie/laravel-settings' => ['spatie/laravel-settings', '^3.7|^4.0'],
+    'spatie/laravel-settings' => ['spatie/laravel-settings', '^3.7.2|^4.0'],
     'symfony/html-sanitizer' => ['symfony/html-sanitizer', '^7.1|^8.0'],
     'symfony/yaml' => ['symfony/yaml', '^7.0|^8.0'],
 ]);

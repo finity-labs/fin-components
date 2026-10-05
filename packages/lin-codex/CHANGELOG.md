@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Requires `spatie/laravel-settings` 3.7.2 or newer where 3.7.0 was enough. `Settings\CodexAiSettings` marks `api_key` with the `ShouldBeEncrypted` attribute, which that package only introduced in 3.7.2; on 3.7.0 and 3.7.1 the attribute was unknown, so a key saved through the settings class (the fin-codex AI settings page, `fin-codex:install --ai`) was written to `settings.payload` in plain text, while the row the settings migration seeds was encrypted. Hosts on one of those two versions should `composer update spatie/laravel-settings` and save the key once more
+
 ## [0.4.3] - 2026-10-05
 
 ### Fixed

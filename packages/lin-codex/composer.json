@@ -24,7 +24,7 @@
         "league/commonmark": "^2.10",
         "livewire/livewire": "^3.0|^4.0",
         "spatie/laravel-package-tools": "^1.92",
-        "spatie/laravel-settings": "^3.7|^4.0",
+        "spatie/laravel-settings": "^3.7.2|^4.0",
         "symfony/html-sanitizer": "^7.1|^8.0",
         "symfony/yaml": "^7.0|^8.0"
     },
