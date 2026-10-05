@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-10-06
+
 ### Changed
 
 - Requires Filament 4.12.6 or newer on the 4.x line, and `spatie/laravel-settings` 3.7.2 or newer, where 4.0 and 3.0 were declared. The settings pages have used Filament's `Callout` component since 1.2.0, which only exists from 4.7, and the AI settings migration calls `SettingsMigrator::exists()` (3.4) while `ErrorChannelSettings` marks the API key with the `ShouldBeEncrypted` attribute (3.7.2): on anything older the package did not boot, or saved the key in plain text. 4.12.6 is also the first 4.x release without the open multi-factor advisories and the version Composer's default advisory blocking already refuses to install below, so for a host on current Composer nothing changes. The 5.x constraint is unchanged
