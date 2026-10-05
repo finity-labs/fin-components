@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.4] - 2026-10-06
+
 ### Fixed
 
 - Requires `spatie/laravel-settings` 3.7.2 or newer where 3.7.0 was enough. `Settings\CodexAiSettings` marks `api_key` with the `ShouldBeEncrypted` attribute, which that package only introduced in 3.7.2; on 3.7.0 and 3.7.1 the attribute was unknown, so a key saved through the settings class (the fin-codex AI settings page, `fin-codex:install --ai`) was written to `settings.payload` in plain text, while the row the settings migration seeds was encrypted. The new settings migration `encrypt_codex_ai_api_key` encrypts such a row in place and leaves an encrypted row byte for byte as it is, so publishing the migrations and migrating once is enough on every install; saving the key again does the same
