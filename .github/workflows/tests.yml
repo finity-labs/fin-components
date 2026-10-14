@@ -5,6 +5,15 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # The matrix resolves the newest Filament, Laravel and Livewire on every run,
+  # so an upstream release can turn main red without a push. A weekly run
+  # catches that on its own schedule instead of on the next unrelated commit
+  # (Filament 4.15.2 / 5.10.2 surfaced on a fin-sentinel release push on
+  # 2026-10-14). GitHub fires it on the default branch only and pauses it
+  # after 60 days without commits.
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
 
 jobs:
   filament:
