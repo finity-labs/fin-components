@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-10-14
+
 ### Fixed
 
 - The log file viewer (`sentinel/logs/{file}`) answered to no permission at all. `Pages\LogFileViewer` had neither `HasPageShieldSupport` nor a `canAccess()` of its own, so any signed-in panel user who could guess a file name (`laravel.log` is enough) could open `/{panel}/sentinel/logs/{base64 name}` and read the log whatever their role held, and the plugin's `canAccess()` closure never reached the viewer either. The viewer now carries the same trait as the list page: with Shield it answers to `View:LogFileViewer`, without Shield to a `page_LogFileViewer` Gate ability when the host defines one, and otherwise to the plugin's `canAccess()` closure. Shield already generates `View:LogFileViewer` (the install command names the page and `shield:generate` discovers it from the panel), so there is nothing to regenerate, but roles that may read logs need it granted next to `View:LogFileList`, or their users now get a 403 where the log used to open. The path check in `mount()` is unchanged
