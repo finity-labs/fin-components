@@ -185,11 +185,11 @@ it('opens an image full size from its thumbnail or its row, and offers no view f
         ->assertTableActionVisible('view', $image)
         ->assertTableActionHidden('view', $document);
 
-    // The thumbnail cell mounts the same action the row offers. The manager
-    // is lazy, so the rows only render once the table is loaded.
-    $component->loadTable();
-
-    expect($component->html())->toContain("mountTableAction(&#039;view&#039;, &#039;{$image->getKey()}&#039;)");
+    // The thumbnail cell mounts the same action the row offers. The column's
+    // own action is read, not the click handler around the cell: that one is
+    // Filament's (a mountTableAction() call through 4.16.0 / 5.11.0, a
+    // mountAction() call carrying the table and record key after that).
+    expect($component->instance()->getTable()->getColumn('preview')?->getAction()?->getName())->toBe('view');
 
     $component->mountTableAction('view', $image);
 
