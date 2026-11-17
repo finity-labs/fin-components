@@ -131,6 +131,15 @@ jobs:
           php-version: ${{ matrix.php }}
           coverage: none
 
+      # Laravel 11 left security support on 2026-03-12 and every 11.x release
+      # now carries an advisory that was only fixed on 12.x, so block-insecure
+      # (default on since Composer 2.9) leaves the resolver nothing to install.
+      # The constraints still admit ^11.28, so this row installs it anyway.
+      - name: Allow advisory-affected releases
+        if: matrix.laravel == '^11.0'
+        working-directory: packages/${{ matrix.package }}
+        run: composer config audit.block-insecure false
+
       - name: Install dependencies
         working-directory: packages/${{ matrix.package }}
         run: |
